@@ -140,6 +140,7 @@ export class SocialConnectionService {
   async handleTelegramAuth(authData: {
     id: number;
     first_name: string;
+    last_name: string;
     username?: string;
     photo_url?: string;
     auth_date: number;
@@ -155,6 +156,7 @@ export class SocialConnectionService {
       const telegramAuth = new TelegramAuth();
       telegramAuth.id = authData.id;
       telegramAuth.firstName = authData.first_name;
+      telegramAuth.lastName = authData.last_name;
       telegramAuth.username = authData.username || '';
       telegramAuth.photoUrl = authData.photo_url;
       telegramAuth.authDate = authData.auth_date;

@@ -78,6 +78,7 @@ const request: TelegramAuthApiTelegramCallbackRequest = {
   telegramAuth: {
     id: 1,
     firstName: "firstName_example",
+    lastName: "lastName_example",
     username: "username_example",
     photoUrl: "photoUrl_example",
     authDate: 1,
