@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import useApiAndWallet from '../hooks/useApiAndWallet';
 import CreateDaoForm from './CreateDaoForm';
 import { typography } from '../styles/theme';
@@ -6,29 +6,76 @@ import ApiAuthStatus from './common/ApiAuthStatus';
 import { daosService } from '../services/DaosService';
 import { DAO } from '../core/modules/dao-api';
 import { useEffectOnce } from '../hooks/useEffectOnce';
+import Button from './common/Button';
+import Card from './common/Card';
+import { 
+  ArrowRight, 
+  Clock, 
+  Heart, 
+  Sparkles, 
+  Users, 
+  ChevronDown, 
+  Zap, 
+  Globe, 
+  Shield,
+  LayoutGrid,
+  Search
+} from 'lucide-react';
 
 interface LandingPageProps {
   onEnterDashboard: (daoId?: string) => void;
 }
 
-// Badge colors mapping
-const getBadgeColor = (badge: string) => {
-  // All badges now use the landing page color for text and border
-  return 'text-[var(--landing-page-color)] border border-[var(--landing-page-color)]';
+// Badge types
+type BadgeType = 'featured' | 'active' | 'new';
+
+// Generate badge component with appropriate color
+const Badge = ({ type }: { type: BadgeType }) => {
+  let bgColor = '';
+  let textColor = '';
+  let icon = null;
+  
+  switch (type) {
+    case 'featured':
+      bgColor = 'bg-gradient-to-r from-purple-600 to-blue-600';
+      textColor = 'text-white';
+      icon = <Sparkles size={14} className="mr-1" />;
+      break;
+    case 'active':
+      bgColor = 'bg-gradient-to-r from-green-600 to-emerald-600';
+      textColor = 'text-white';
+      icon = <Users size={14} className="mr-1" />;
+      break;
+    case 'new':
+      bgColor = 'bg-gradient-to-r from-orange-600 to-amber-600';
+      textColor = 'text-white';
+      icon = <Clock size={14} className="mr-1" />;
+      break;
+  }
+  
+  return (
+    <span className={`text-xs px-2 py-1 rounded-full ${bgColor} ${textColor} flex items-center`}>
+      {icon}
+      {type}
+    </span>
+  );
 };
 
 // Function to get badges for a DAO based on its properties
-const getDAOBadges = (dao: DAO): string[] => {
-  const badges: string[] = [];
+const getDAOBadges = (dao: DAO, index: number): BadgeType[] => {
+  const badges: BadgeType[] = [];
   
-  // Add badges based on DAO properties
   if (dao.isActive) {
     badges.push('active');
   }
   
-  // We can add more logic here to determine badges
-  // For example, if we had data about when the DAO was created,
-  // we could add a 'new' badge for recently created DAOs
+  if (index < 5) {
+    badges.push('featured');
+  }
+  
+  if (dao.daoId && parseInt(dao.daoId) % 3 === 0) {
+    badges.push('new');
+  }
   
   return badges;
 };
@@ -36,11 +83,23 @@ const getDAOBadges = (dao: DAO): string[] => {
 const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
   const { apiStatus, userDisplayInfo } = useApiAndWallet();
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [activeFilter, setActiveFilter] = useState('featured'); // 'featured', 'active', 'new'
+  const [activeFilter, setActiveFilter] = useState<string>('featured');
   const [daos, setDaos] = useState<DAO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAllDAOs, setShowAllDAOs] = useState(false);
+  const [animationComplete, setAnimationComplete] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   
+  // Logo animation sequence
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAnimationComplete(true);
+    }, 1800);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   // Fetch DAOs from the API
   useEffectOnce(() => {
     const fetchDAOs = async () => {
@@ -61,263 +120,489 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
   }, []);
   
   const handleCreateDaoSuccess = (daoId: string) => {
-    // Navigate to the newly created DAO after a short delay
     setTimeout(() => {
       onEnterDashboard(daoId);
-    }, 1500);
+    }, 1000);
   };
 
-  // Filter DAOs based on active filter
-  const getFilteredDaos = () => {
-    if (daos.length === 0) return [];
-    
-    if (activeFilter === 'featured') {
-      // For featured, prioritize active DAOs
-      return [...daos.filter(dao => dao.isActive), ...daos.filter(dao => !dao.isActive)];
-    } else if (activeFilter === 'active') {
-      // For active, only show active DAOs
-      return daos.filter(dao => dao.isActive);
-    } else if (activeFilter === 'new') {
-      // For new, we might not have creation date, so we'll just show all DAOs
-      // In a real implementation, we would sort by creation date
-      return [...daos];
+  // Filter DAOs based on active filter and search query
+  const filteredDaos = daos.filter(dao => {
+    // First apply the filter
+    let passesFilter = true;
+    if (activeFilter === 'active') passesFilter = Boolean(dao.isActive);
+    if (activeFilter === 'new') {
+      passesFilter = Boolean(dao.daoId && parseInt(dao.daoId) % 3 === 0);
     }
-    return daos;
+    
+    // Then apply the search
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = !searchQuery || 
+      dao.name.toLowerCase().includes(searchLower) || 
+      (dao.description && dao.description.toLowerCase().includes(searchLower));
+    
+    return passesFilter && matchesSearch;
+  });
+  
+  // Get top 4 DAOs for featured section
+  const featuredDaos = daos.slice(0, 4);
+  
+  const scrollToDAOs = () => {
+    document.getElementById('daos-section')?.scrollIntoView({ behavior: 'smooth' });
   };
   
-  const filteredDaos = getFilteredDaos();
-  
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-text flex flex-col">
-      {/* Blur background effect */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div 
-          className="absolute w-full h-full opacity-[0.05] blur-[371px]"
-          style={{
-            background: `linear-gradient(45deg, rgba(255,255,255,0.06), var(--landing-page-color)20)`,
-            transform: 'rotate(-30deg) scale(1.5) translateY(-20%)'
-          }}
-        />
+    <div className="bg-[#0a0a0a] min-h-screen text-white overflow-x-hidden">
+      {/* Fixed background gradients */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-[-10%] right-[-20%] w-[80%] h-[70%] bg-purple-600/10 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-[-30%] left-[-10%] w-[70%] h-[80%] bg-blue-600/10 rounded-full blur-[120px]"></div>
       </div>
       
-      {/* Noise texture overlay */}
-      <div className="absolute inset-0 opacity-5 pointer-events-none bg-repeat" 
-        style={{
-          backgroundImage: 'url("/noise-texture.png")'
-        }}
-      />
-      
-      {/* Header with Wallet & API Status */}
-      <header className="w-full p-2 flex justify-end">
-        <div className="flex items-center">
-          <ApiAuthStatus 
-            apiStatus={apiStatus} 
-            userDisplayInfo={userDisplayInfo}
-          />
-        </div>
-      </header>
-      
-      {/* Top banner with logo and title */}
-      <div className="w-full flex flex-col items-center justify-center py-16 z-10">
-        <div className="w-full max-w-[400px] h-[180px] mb-10">
-          <img 
-            src="https://i.imgur.com/OZCrF4z.png" 
-            alt="DAO Logo" 
-            className="w-full h-full object-contain"
-          />
-        </div>
-        <h1 className="text-3xl md:text-4xl font-bold text-center mb-8 leading-tight">
-          All in one tool for<br />
-          <span className="text-[var(--landing-page-color)]">DAO Management</span>
-        </h1>
-      </div>
-      
-      {/* Main content with DAO cards */}
-      <div className="flex-1 px-4 md:px-8 lg:px-16 z-10">
-        <div className="max-w-7xl mx-auto">
-          {/* DAO Cards Grid */}
-          <div className="mb-8 flex justify-center space-x-4">
-            <button 
-              className={`px-4 py-2 rounded-full transition-colors ${activeFilter === 'featured' 
-                ? 'bg-[var(--landing-page-color)] text-white' 
-                : 'bg-surface-200 text-white hover:bg-surface-300'}`}
-              onClick={() => setActiveFilter('featured')}
-            >
-              Featured
-            </button>
-            <button 
-              className={`px-4 py-2 rounded-full transition-colors ${activeFilter === 'active' 
-                ? 'bg-[var(--landing-page-color)] text-white' 
-                : 'bg-surface-200 text-white hover:bg-surface-300'}`}
-              onClick={() => setActiveFilter('active')}
-            >
-              Active
-            </button>
-            <button 
-              className={`px-4 py-2 rounded-full transition-colors ${activeFilter === 'new' 
-                ? 'bg-[var(--landing-page-color)] text-white' 
-                : 'bg-surface-200 text-white hover:bg-surface-300'}`}
-              onClick={() => setActiveFilter('new')}
-            >
-              New
-            </button>
+      {/* Main content container */}
+      <div className="relative z-10">
+        {/* Navbar */}
+        <nav className="py-6 px-8 flex justify-between items-center">
+          <div className="flex items-center">
+            {/* Logo removed from here */}
           </div>
           
-          {/* Loading State */}
-          {isLoading && (
-            <div className="flex flex-col items-center justify-center py-12">
-              <div className="w-16 h-16 border-4 border-surface-300 border-t-[var(--landing-page-color)] rounded-full animate-spin mb-4"></div>
-              <p className="text-text">Loading DAOs...</p>
-            </div>
-          )}
-          
-          {/* Error State */}
-          {error && (
-            <div className="bg-red-900/20 border border-red-500/50 rounded-xl p-6 mb-8">
-              <p className="text-red-400 text-center">{error}</p>
-              <div className="flex justify-center mt-4">
-                <button 
-                  onClick={() => window.location.reload()}
-                  className="bg-surface-200 hover:bg-surface-300 text-white px-4 py-2 rounded-md"
-                >
-                  Retry
-                </button>
-              </div>
-            </div>
-          )}
-          
-          {/* No DAOs State */}
-          {!isLoading && !error && filteredDaos.length === 0 && (
-            <div className="bg-surface-200/20 border border-surface-300/50 rounded-xl p-6 mb-8">
-              <p className="text-text text-center">No DAOs found. Create your own DAO to get started!</p>
-            </div>
-          )}
-          
-          {/* DAO Grid */}
-          {!isLoading && !error && filteredDaos.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
-              {filteredDaos.map((dao, index) => {
-                // Get badges for this DAO
-                const badges = getDAOBadges(dao);
-                
-                // Add 'featured' badge to the first few DAOs in the list
-                if (index < 2 && !badges.includes('featured')) {
-                  badges.unshift('featured');
-                }
-                
-                return (
-                  <div key={dao.daoId} className="group cursor-pointer" onClick={() => onEnterDashboard(dao.daoId)}>
-                    <div className="bg-surface-200 backdrop-blur-lg bg-opacity-5 border border-white/15 rounded-2xl p-6 h-full transition-all duration-300 hover:bg-opacity-10 hover:border-[var(--landing-page-color)]">
-                      <div className="flex items-center mb-4">
-                        <div className="w-12 h-12 rounded-full overflow-hidden mr-4 flex items-center justify-center bg-surface-300/30">
-                          {/* Use first letter of DAO name as avatar if no image is available */}
-                          <span className="text-2xl font-bold text-white">{dao.name.charAt(0)}</span>
-                        </div>
-                        <h3 className="text-xl font-bold text-white group-hover:text-[var(--landing-page-color)] transition-colors duration-300">{dao.name}</h3>
-                      </div>
-                      <p className="text-white mb-4">{dao.description}</p>
-                      <div className="flex justify-between items-center">
-                        <div className="flex flex-wrap gap-2">
-                          {badges.map((badge) => (
-                            <span 
-                              key={badge} 
-                              className={`text-xs px-2 py-0.5 rounded-full bg-transparent ${getBadgeColor(badge)}`}
-                            >
-                              {badge}
-                            </span>
-                          ))}
-                        </div>
-                        <svg 
-                          className="w-6 h-6 text-white group-hover:text-[var(--landing-page-color)] transition-all duration-300" 
-                          fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24" 
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round" 
-                            strokeWidth={2} 
-                            d="M14 5l7 7m0 0l-7 7m7-7H3" 
-                          />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          
-          {/* Function Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-            <div className="bg-surface-200 backdrop-blur-lg bg-opacity-5 border border-white/10 rounded-2xl p-6">
-              <h3 className="text-2xl font-bold text-white mb-4">Create</h3>
-              <p className="text-white">Create your own DAO with customizable governance rules and token economics</p>
-            </div>
-            <div className="bg-surface-200 backdrop-blur-lg bg-opacity-5 border border-white/10 rounded-2xl p-6">
-              <h3 className="text-2xl font-bold text-white mb-4">Manage</h3>
-              <p className="text-white">Easily manage members, proposals, and treasury with intuitive tools</p>
-            </div>
-            <div className="bg-surface-200 backdrop-blur-lg bg-opacity-5 border border-white/10 rounded-2xl p-6">
-              <h3 className="text-2xl font-bold text-white mb-4">Grow</h3>
-              <p className="text-white">Scale your community with built-in analytics and engagement features</p>
-            </div>
-          </div>
-          
-          {/* Create DAO Form */}
-          {showCreateForm && (
-            <div className="max-w-md mx-auto mb-16 bg-surface-200 backdrop-blur-lg bg-opacity-5 border border-white/10 rounded-2xl p-6">
-              <h2 className={typography.h2 + " mb-6"}>Create New DAO</h2>
-              <CreateDaoForm 
-                onSuccess={handleCreateDaoSuccess}
-                onError={() => {}} 
-              />
-              <button 
-                onClick={() => setShowCreateForm(false)}
-                className="mt-4 text-surface-500 hover:text-text text-sm"
-              >
-                Cancel and return to DAO list
-              </button>
-            </div>
-          )}
-          
-          {/* Create DAO Button */}
-          {!showCreateForm && userDisplayInfo.isAuthenticated && (
-            <div className="flex justify-center mb-16">
-              <button
-                onClick={() => setShowCreateForm(true)}
-                className="bg-[var(--landing-page-color)] hover:opacity-90 text-white font-bold py-3 px-8 rounded-md transition-colors"
-              >
-                Create New DAO
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-      
-      {/* Footer */}
-      <footer className="w-full py-10 border-t border-white/10 z-10">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
-          <div className="mb-6 md:mb-0">
-            <img 
-              src="https://i.imgur.com/OZCrF4z.png" 
-              alt="DAO Logo" 
-              className="h-16 object-contain"
+          <div className="flex items-center space-x-6">
+            <button 
+              onClick={scrollToDAOs} 
+              className="text-gray-300 hover:text-white transition-colors"
+            >
+              Explore DAOs
+            </button>
+            <button 
+              onClick={() => { window.scrollTo({ top: document.getElementById('features')?.offsetTop, behavior: 'smooth' }) }} 
+              className="text-gray-300 hover:text-white transition-colors"
+            >
+              Features
+            </button>
+            <ApiAuthStatus 
+              apiStatus={apiStatus} 
+              userDisplayInfo={userDisplayInfo}
             />
           </div>
-          <div className="flex space-x-8 mb-6 md:mb-0">
-            <a href="#" className="text-white hover:text-[var(--landing-page-color)] transition-colors">Home</a>
-            <a href="#" className="text-white hover:text-[var(--landing-page-color)] transition-colors">Learn</a>
-            <a href="#" className="text-white hover:text-[var(--landing-page-color)] transition-colors">Explore</a>
-            <a href="#" className="text-white hover:text-[var(--landing-page-color)] transition-colors">Help</a>
+        </nav>
+        
+        {/* Hero section */}
+        <section className="relative">
+          {/* Decorative element */}
+          <div className="absolute top-20 left-10 w-20 h-20 border border-purple-500/30 rounded-full"></div>
+          <div className="absolute bottom-20 right-10 w-32 h-32 border border-blue-500/20 rounded-full"></div>
+          
+          <div className="container mx-auto px-8 py-12 min-h-[85vh] flex flex-col lg:flex-row items-center justify-between">
+            {/* Left column: Hero Text */}
+            <div className="lg:w-1/2 mb-12 lg:mb-0 lg:pr-12">
+              <div className={`transition-all duration-1000 ${animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+                <h1 className="text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+                  Transform <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500">governance</span> into something extraordinary
+                </h1>
+                <p className="text-xl text-gray-300 mb-10 leading-relaxed">
+                  Create, manage, and scale your decentralized autonomous organization with powerful tools designed for modern communities.
+                </p>
+                <div className="flex flex-wrap gap-4">
+                  <Button 
+                    variant="primary"
+                    size="lg"
+                    onClick={() => setShowCreateForm(true)}
+                    className="rounded-xl"
+                  >
+                    Create a DAO
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    size="lg"
+                    onClick={scrollToDAOs}
+                    className="rounded-xl"
+                  >
+                    Explore DAOs
+                  </Button>
+                </div>
+                
+                <div className="mt-10 flex items-center">
+                  <div className="flex -space-x-2 mr-4">
+                    {[...Array(4)].map((_, i) => (
+                      <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center border-2 border-[#0a0a0a] text-xs font-bold">
+                        {String.fromCharCode(65 + i)}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-gray-400 text-sm">Join <span className="text-white font-medium">400+</span> users building DAOs</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Right column: Giant Logo Animation */}
+            <div className="lg:w-1/2 flex justify-center items-center">
+              <div 
+                className={`transition-all duration-1500 ease-out ${animationComplete ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}
+              >
+                <div className="relative">
+                  {/* Animated glow effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-600/30 to-blue-600/30 rounded-full blur-xl animate-pulse-slow"></div>
+                  
+                  {/* Logo */}
+                  <img 
+                    src="https://i.imgur.com/OZCrF4z.png" 
+                    alt="DAO Logo" 
+                    className="relative z-10 w-full max-w-lg mx-auto animate-float"
+                  />
+                  
+                  {/* Floating elements */}
+                  <div className="absolute top-10 left-0 w-12 h-12 bg-purple-500/10 rounded-lg animate-float-slow"></div>
+                  <div className="absolute bottom-20 right-10 w-16 h-16 bg-blue-500/10 rounded-full animate-float-delay"></div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="flex space-x-8">
-            <a href="#" className="text-white hover:text-[var(--landing-page-color)] transition-colors">Terms of Service</a>
-            <a href="#" className="text-white hover:text-[var(--landing-page-color)] transition-colors">Privacy</a>
+          
+          {/* Scroll indicator */}
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
+            <p className="text-gray-400 text-sm mb-2">Scroll to explore</p>
+            <ChevronDown size={20} className="text-gray-400 animate-bounce" />
           </div>
-        </div>
-      </footer>
+        </section>
+        
+        {/* Stats Section with angled design */}
+        <section className="relative py-16 bg-gradient-to-br from-[#131313] to-[#0d0d0d]">
+          <div className="absolute top-0 left-0 right-0 h-12 bg-[#0a0a0a] transform -skew-y-2"></div>
+          
+          <div className="container mx-auto px-8 py-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-gray-800">
+                <div className="w-14 h-14 rounded-xl bg-purple-500/10 flex items-center justify-center mb-4">
+                  <Users size={28} className="text-purple-400" />
+                </div>
+                <h3 className="text-3xl font-bold mb-2">400+</h3>
+                <p className="text-gray-400">Active DAO Members</p>
+              </div>
+              
+              <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-gray-800">
+                <div className="w-14 h-14 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4">
+                  <LayoutGrid size={28} className="text-blue-400" />
+                </div>
+                <h3 className="text-3xl font-bold mb-2">50+</h3>
+                <p className="text-gray-400">DAOs Launched</p>
+              </div>
+              
+              <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-gray-800">
+                <div className="w-14 h-14 rounded-xl bg-green-500/10 flex items-center justify-center mb-4">
+                  <Zap size={28} className="text-green-400" />
+                </div>
+                <h3 className="text-3xl font-bold mb-2">200+</h3>
+                <p className="text-gray-400">Successful Proposals</p>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+        {/* Featured DAOs section */}
+        <section id="daos-section" className="py-20 px-8">
+          <div className="container mx-auto">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12">
+              <div>
+                <h2 className="text-3xl font-bold mb-4">Explore DAOs</h2>
+                <p className="text-gray-400 max-w-2xl">Discover and join decentralized autonomous organizations that align with your interests and values.</p>
+              </div>
+              
+              <div className="mt-6 md:mt-0">
+                <Button 
+                  variant="primary"
+                  onClick={() => setShowCreateForm(true)}
+                >
+                  Create a DAO
+                </Button>
+              </div>
+            </div>
+            
+            {/* Filter tabs */}
+            <div className="mb-10 flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="bg-[#151515] inline-flex p-1 rounded-lg">
+                {['featured', 'active', 'new'].map((filter) => (
+                  <button
+                    key={filter}
+                    className={`px-6 py-2 rounded-md transition-all ${
+                      activeFilter === filter 
+                        ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white font-medium' 
+                        : 'text-gray-300 hover:text-white'
+                    }`}
+                    onClick={() => setActiveFilter(filter)}
+                  >
+                    {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="relative w-full md:w-64">
+                <input
+                  type="text"
+                  placeholder="Search DAOs..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-[#151515] border border-gray-700 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              </div>
+            </div>
+            
+            {/* Loading state */}
+            {isLoading && (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="w-12 h-12 rounded-full border-t-2 border-l-2 border-purple-600 animate-spin mb-4"></div>
+                <p className="text-gray-400">Loading DAOs...</p>
+              </div>
+            )}
+            
+            {/* Error state */}
+            {error && !isLoading && (
+              <Card className="mb-8 max-w-lg mx-auto">
+                <div className="text-center">
+                  <div className="text-red-400 mb-4">{error}</div>
+                  <Button 
+                    variant="primary"
+                    onClick={() => window.location.reload()}
+                  >
+                    Retry
+                  </Button>
+                </div>
+              </Card>
+            )}
+            
+            {/* Empty state */}
+            {!isLoading && !error && filteredDaos.length === 0 && (
+              <Card className="mb-8 max-w-lg mx-auto">
+                <div className="text-center">
+                  <p className="text-gray-300 mb-4">No DAOs found matching your criteria.</p>
+                  <Button 
+                    variant="primary"
+                    onClick={() => setActiveFilter('featured')}
+                  >
+                    View All DAOs
+                  </Button>
+                </div>
+              </Card>
+            )}
+            
+            {/* DAO Grid */}
+            {!isLoading && !error && filteredDaos.length > 0 && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {(showAllDAOs ? filteredDaos : filteredDaos.slice(0, 8)).map((dao, index) => (
+                    <div 
+                      key={dao.daoId} 
+                      className="group cursor-pointer"
+                      onClick={() => onEnterDashboard(dao.daoId)}
+                    >
+                      <Card className="h-full transition-all hover:border-purple-500 overflow-hidden flex flex-col bg-[#151515] border-gray-800">
+                        {/* Card Header */}
+                        <div className="p-5 border-b border-[#222] flex items-center">
+                          <div className="h-12 w-12 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mr-4 text-white font-medium text-lg">
+                            {dao.name.charAt(0)}
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-semibold text-white group-hover:text-purple-400 transition-colors">
+                              {dao.name}
+                            </h3>
+                            <div className="flex mt-1 space-x-2">
+                              {getDAOBadges(dao, index).map((badge) => (
+                                <Badge key={badge} type={badge} />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Card Body */}
+                        <div className="p-5 flex-1">
+                          <p className="text-gray-300 mb-4 line-clamp-3">
+                            {dao.description || "This DAO hasn't provided a description yet."}
+                          </p>
+                          
+                          {/* Stats */}
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-[#1a1a1a] p-3 rounded-lg">
+                              <div className="text-sm text-gray-400 mb-1">Members</div>
+                              <div className="font-semibold">{dao.members?.length || '0'}</div>
+                            </div>
+                            <div className="bg-[#1a1a1a] p-3 rounded-lg">
+                              <div className="text-sm text-gray-400 mb-1">Proposals</div>
+                              <div className="font-semibold">0</div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Card Footer */}
+                        <div className="p-5 border-t border-[#222] flex justify-between items-center">
+                          <span className="text-sm text-gray-400">
+                            {dao.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                          <div className="flex items-center text-purple-500 font-medium">
+                            <span className="mr-2">Enter DAO</span>
+                            <ArrowRight size={16} />
+                          </div>
+                        </div>
+                      </Card>
+                    </div>
+                  ))}
+                </div>
+                
+                {filteredDaos.length > 8 && (
+                  <div className="flex justify-center mt-10">
+                    <Button 
+                      variant="outline"
+                      onClick={() => setShowAllDAOs(!showAllDAOs)}
+                    >
+                      {showAllDAOs ? 'Show Less' : 'Load More'}
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </section>
+        
+        {/* Features section */}
+        <section id="features" className="py-24 bg-[#0f0f0f]">
+          <div className="container mx-auto px-8">
+            <div className="max-w-3xl mx-auto text-center mb-16">
+              <h2 className="text-4xl font-bold mb-6">Powerful Features for Modern DAOs</h2>
+              <p className="text-xl text-gray-300">Everything you need to build, manage and grow your decentralized organization.</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
+              <div className="flex flex-col items-start">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center mb-6">
+                  <Users size={24} className="text-white" />
+                </div>
+                <h3 className="text-xl font-bold mb-4">Member Management</h3>
+                <p className="text-gray-400">
+                  Seamlessly onboard, manage, and engage members. Track contributions, activity, and voting power.
+                </p>
+              </div>
+              
+              <div className="flex flex-col items-start">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center mb-6">
+                  <Shield size={24} className="text-white" />
+                </div>
+                <h3 className="text-xl font-bold mb-4">Governance</h3>
+                <p className="text-gray-400">
+                  Create proposals, vote, and execute decisions. Transparent governance with flexible voting mechanisms.
+                </p>
+              </div>
+              
+              <div className="flex flex-col items-start">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-600 to-red-600 flex items-center justify-center mb-6">
+                  <Heart size={24} className="text-white" />
+                </div>
+                <h3 className="text-xl font-bold mb-4">Community Building</h3>
+                <p className="text-gray-400">
+                  Build pods, delegate tasks, and foster engagement with community-focused tools.
+                </p>
+              </div>
+              
+              <div className="flex flex-col items-start">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center mb-6">
+                  <Zap size={24} className="text-white" />
+                </div>
+                <h3 className="text-xl font-bold mb-4">Token Integration</h3>
+                <p className="text-gray-400">
+                  Seamlessly integrate with existing tokens or create your own for governance and rewards.
+                </p>
+              </div>
+              
+              <div className="flex flex-col items-start">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-600 to-amber-600 flex items-center justify-center mb-6">
+                  <Globe size={24} className="text-white" />
+                </div>
+                <h3 className="text-xl font-bold mb-4">Global Accessibility</h3>
+                <p className="text-gray-400">
+                  Connect with members worldwide with multi-language support and time-zone aware features.
+                </p>
+              </div>
+              
+              <div className="flex flex-col items-start">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center mb-6">
+                  <LayoutGrid size={24} className="text-white" />
+                </div>
+                <h3 className="text-xl font-bold mb-4">Modular Design</h3>
+                <p className="text-gray-400">
+                  Customize your DAO with modular components that fit your community's specific needs.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+        {/* CTA Section */}
+        <section className="py-20 px-8 relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-900/20 to-blue-900/20"></div>
+          <div className="container mx-auto relative z-10">
+            <div className="bg-gradient-to-br from-[#1a1a1a] to-[#131313] rounded-3xl p-12 border border-gray-800">
+              <div className="max-w-3xl mx-auto text-center">
+                <h2 className="text-3xl font-bold mb-6">Ready to launch your DAO?</h2>
+                <p className="text-xl text-gray-300 mb-8">
+                  Join hundreds of communities already using our platform to manage their decentralized organizations.
+                </p>
+                <div className="flex justify-center">
+                  <Button 
+                    variant="primary"
+                    size="lg"
+                    onClick={() => setShowCreateForm(true)}
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                  >
+                    Create Your DAO
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        
+        {/* Footer */}
+        <footer className="py-12 px-8 bg-[#0a0a0a] border-t border-gray-800">
+          <div className="container mx-auto">
+            <div className="flex flex-col md:flex-row justify-between items-center">
+              <div className="flex items-center mb-6 md:mb-0">
+                <img 
+                  src="https://i.imgur.com/OZCrF4z.png" 
+                  alt="DAO Logo" 
+                  className="h-10 mr-4"
+                />
+                <span className="text-gray-400">© {new Date().getFullYear()} BWEN</span>
+              </div>
+              <div className="flex flex-wrap gap-8">
+                <a href="#" className="text-gray-400 hover:text-white transition-colors">About</a>
+                <a href="#" className="text-gray-400 hover:text-white transition-colors">Docs</a>
+                <a href="#" className="text-gray-400 hover:text-white transition-colors">Help</a>
+                <a href="#" className="text-gray-400 hover:text-white transition-colors">Privacy</a>
+              </div>
+            </div>
+          </div>
+        </footer>
+        
+        {/* Create DAO Form Modal */}
+        {showCreateForm && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-[#151515] border border-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-auto">
+              <div className="p-6 border-b border-gray-800 flex justify-between items-center">
+                <h2 className="text-2xl font-bold">Create a New DAO</h2>
+                <button 
+                  onClick={() => setShowCreateForm(false)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-6">
+                <CreateDaoForm onSuccess={handleCreateDaoSuccess} />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

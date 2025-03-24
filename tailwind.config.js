@@ -35,6 +35,21 @@ export default {
         'error': '#ef4444',   // Rouge (erreur, alerte)
         'warning': '#f59e0b', // Jaune/orange (avertissement)
       },
+      animation: {
+        'pulse-subtle': 'pulse-subtle 4s ease-in-out infinite',
+      },
+      keyframes: {
+        'pulse-subtle': {
+          '0%, 100%': {
+            opacity: 1,
+            transform: 'scale(1)',
+          },
+          '50%': {
+            opacity: 0.9,
+            transform: 'scale(1.05)',
+          },
+        },
+      },
     },
   },
   plugins: [

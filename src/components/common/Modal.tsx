@@ -1,14 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import UserProfile from './UserProfile';
+import React, { useEffect, ReactNode } from 'react';
 import { X } from 'lucide-react';
 
-interface ProfileModalProps {
+interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
+  title: string | ReactNode;
+  children: ReactNode;
+  maxWidth?: string;
 }
 
-const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
+const Modal: React.FC<ModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  title, 
+  children,
+  maxWidth = 'max-w-2xl'
+}) => {
   // Handle ESC key to close modal
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
@@ -36,15 +43,19 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Overlay */}
       <div 
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm" 
+        className="absolute inset-0 bg-black/85 backdrop-blur-md" 
         onClick={onClose}
       />
       
       {/* Modal content */}
-      <div className="relative bg-[#111] border border-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden z-10">
+      <div className={`relative bg-[#0f0f0f] border border-gray-800 rounded-lg shadow-xl ${maxWidth} w-full max-h-[90vh] overflow-hidden z-10`}>
         {/* Modal header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-800">
-          <h2 className="text-xl font-semibold text-white">Your Profile</h2>
+          {typeof title === 'string' ? (
+            <h2 className="text-xl font-semibold text-white">{title}</h2>
+          ) : (
+            title
+          )}
           <button 
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
@@ -56,11 +67,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose }) => {
         
         {/* Modal body - Scrollable content */}
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-4rem)]">
-          <UserProfile />
+          {children}
         </div>
       </div>
     </div>
   );
 };
 
-export default ProfileModal; 
+export default Modal; 

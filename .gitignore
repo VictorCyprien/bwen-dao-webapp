@@ -32,3 +32,5 @@ dao-treasury-cli/
 dao-treasury-cli.ts
 dao-treasury-package.json
 setup-treasury-cli.sh
+node_modules/.vite/
+.vite_cache/

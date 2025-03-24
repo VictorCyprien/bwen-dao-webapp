@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { PieChart, Plus, X, Check, AlertCircle } from 'lucide-react';
+import { PieChart, Plus, X, Check, AlertCircle, ChevronRight } from 'lucide-react';
 import PopupProposal from './PopupProposal';
-import { containers } from '../styles/theme';
+import { containers, typography, ui, utils } from '../styles/theme';
 import { proposalService } from '../services/ProposalService';
 import { useEffectOnce } from '../hooks/useEffectOnce';
 import { useSolanaTransaction } from '../hooks/useSolanaTransaction';
@@ -12,6 +12,9 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Connection } from '@solana/web3.js';
 import { daosService } from '../services/DaosService';
 import { userService } from '../services/UserService';
+import Card from './common/Card';
+import Button from './common/Button';
+import Badge from './common/Badge';
 
 interface Action {
   type: string;
@@ -1059,191 +1062,191 @@ const Governance = () => {
   };
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div className="relative">
-          <button 
-            onClick={() => userIsDaoMember ? setShowProposalForm(true) : setShowMembershipTooltip(true)}
-            onMouseEnter={() => !userIsDaoMember && setShowMembershipTooltip(true)}
-            onMouseLeave={() => setShowMembershipTooltip(false)}
-            className={`flex items-center text-text px-4 py-2 rounded-md ${
-              userIsDaoMember 
-                ? "bg-primary hover:bg-primary" 
-                : "bg-gray-600 opacity-60 cursor-not-allowed"
-            }`}
-            disabled={!userIsDaoMember}
-            aria-disabled={!userIsDaoMember}
-          >
-            <Plus size={16} className="mr-2" />
-            New Proposal
-          </button>
-          
-          {/* Membership tooltip - only shown on hover */}
-          {(showMembershipTooltip && !userIsDaoMember && connected) && (
-            <div className="absolute top-full left-0 mt-10 p-2 bg-surface-400 border border-gray-700 text-white text-xs rounded-md shadow-lg z-10 w-60">
-              <div className="flex items-start">
-                <AlertCircle size={14} className="text-yellow-400 mr-1 flex-shrink-0 mt-0.5" />
-                <p>You must be a member of this DAO to create proposals.</p>
+    <div className="p-6 h-screen overflow-hidden flex flex-col">
+      <div className={containers.flexBetween}>
+        <h1 className={typography.h1}>Governance</h1>
+      </div>
+
+      <div className="mt-6">
+        <Card title="DAO Governance Overview">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="flex flex-col">
+              <span className={typography.label}>Total Proposals</span>
+              <span className={ui.stat.value}>{proposals.length}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className={typography.label}>Active Proposals</span>
+              <span className={ui.stat.value}>{proposals.filter(p => p.status === 'Active').length}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className={typography.label}>Completed Proposals</span>
+              <span className={ui.stat.value}>{proposals.filter(p => p.status === 'Passed').length}</span>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      <div className="mt-6 grid grid-cols-10 gap-6 flex-1 overflow-hidden">
+        {/* Active Proposals Column - 70% */}
+        <div className="col-span-7 flex flex-col h-full overflow-hidden">
+          <Card title="Active Proposals" className="flex-1 flex flex-col h-full">
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin h-8 w-8 border-4 border-purple-500 rounded-full border-t-transparent"></div>
               </div>
+            ) : proposals.filter(p => p.status === 'Active' || p.status === 'active').length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-gray-400">No active proposals at the moment.</p>
+              </div>
+            ) : (
+              <div className="space-y-4 overflow-y-auto flex-1 custom-scrollbar pr-1">
+                {proposals
+                  .filter(p => p.status === 'Active' || p.status === 'active')
+                  .map(proposal => (
+                    <div 
+                      key={proposal.id} 
+                      className="border border-gray-800 hover:border-purple-800/40 rounded-lg p-4 cursor-pointer transition-all"
+                      onClick={() => handleViewProposal(proposal.id)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className={typography.h3}>{proposal.name}</h3>
+                          <p className={`${typography.small} mt-1 line-clamp-2`}>
+                            {proposal.description}
+                          </p>
+                        </div>
+                        <Badge variant="primary">Active</Badge>
+                      </div>
+                      
+                      <div className="mt-4 pt-4 border-t border-gray-800/40 flex justify-between items-center">
+                        <div className="flex items-center space-x-4">
+                          <div className="flex flex-col">
+                            <span className={typography.small}>For</span>
+                            <span className="text-green-400">{proposal.votes.for}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className={typography.small}>Against</span>
+                            <span className="text-red-400">{proposal.votes.against}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className={typography.small}>Created</span>
+                            <span className="text-gray-300">{formatDate(proposal.createdAt)}</span>
+                          </div>
+                        </div>
+                        <ChevronRight size={16} className="text-gray-400" />
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </Card>
+        </div>
+
+        {/* Right Column - 30% */}
+        <div className="col-span-3 space-y-6 flex flex-col h-full">
+          {/* Create Proposal Card */}
+          <Card title="Actions" className="flex-shrink-0">
+            <div className="flex justify-center">
+              {userIsDaoMember ? (
+                <Button 
+                  variant="primary" 
+                  onClick={() => setShowProposalForm(true)}
+                  leftIcon={<Plus size={16} />}
+                  className="w-full"
+                >
+                  Create Proposal
+                </Button>
+              ) : membershipLoading ? (
+                <div className="animate-pulse h-10 w-full bg-gray-700 rounded-lg"></div>
+              ) : (
+                <div className="relative w-full">
+                  <Button 
+                    variant="secondary" 
+                    disabled={true}
+                    onClick={() => setShowMembershipTooltip(!showMembershipTooltip)}
+                    leftIcon={<AlertCircle size={16} />}
+                    className="w-full"
+                  >
+                    Members Only
+                  </Button>
+                  {showMembershipTooltip && (
+                    <div className={`${utils.glassmorphism} absolute right-0 mt-2 p-3 rounded-lg z-10 w-64`}>
+                      <p className={typography.small}>
+                        Only DAO members can create proposals. Join this DAO to participate in governance.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          )}
-          
-          {/* Permanent notice to join DAO if not a member */}
-          {(!userIsDaoMember && connected) && (
-            <div className="mt-2 text-xs text-yellow-300 flex items-center">
-              <AlertCircle size={12} className="mr-1" />
-              <span>Please join this DAO to create new proposals</span>
-            </div>
-          )}
+          </Card>
+
+          {/* Completed Proposals */}
+          <Card title="Completed Proposals" className="flex-1 flex flex-col overflow-hidden">
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin h-8 w-8 border-4 border-purple-500 rounded-full border-t-transparent"></div>
+              </div>
+            ) : proposals.filter(p => p.status === 'Passed' || p.status === 'completed' || p.status === 'Completed').length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-gray-400">No completed proposals yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-4 overflow-y-auto flex-1 custom-scrollbar pr-1">
+                {proposals
+                  .filter(p => p.status === 'Passed' || p.status === 'completed' || p.status === 'Completed')
+                  .map(proposal => (
+                    <div 
+                      key={proposal.id} 
+                      className="border border-gray-800 hover:border-purple-800/40 rounded-lg p-4 cursor-pointer transition-all"
+                      onClick={() => handleViewProposal(proposal.id)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="w-full">
+                          <h3 className={`${typography.h3} truncate`}>{proposal.name}</h3>
+                          <div className="flex justify-between mt-2 items-center">
+                            <span className="text-gray-300 text-xs">{formatDate(proposal.createdAt)}</span>
+                            <Badge variant="success">Completed</Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </Card>
         </div>
       </div>
+
+      {selectedProposal && (
+        <PopupProposal 
+          proposal={selectedProposal}
+          onClose={closeProposalDetails}
+          onVote={handleVoteTransaction}
+          canVote={userIsDaoMember}
+          onVoteSubmitted={handleVoteSubmitted}
+          wallet={wallet}
+        />
+      )}
       
       {showProposalForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-          <div className="bg-surface-menu rounded-lg shadow-xl w-full max-w-md mx-4">
-            <div className="flex justify-between items-center p-4 border-b border-gray-600">
-              <h2 className="text-xl font-semibold text-text">Create New Proposal</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#111] rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            <div className="flex justify-between items-center p-6 border-b border-gray-800">
+              <h2 className="text-xl font-bold text-white">Create Proposal</h2>
               <button 
-                onClick={resetForm}
-                className="text-surface-500 hover:text-text"
+                onClick={() => resetForm()}
+                className="text-gray-400 hover:text-white p-1 rounded-full"
               >
-                <X size={20} />
+                <X size={24} />
               </button>
             </div>
-            
-            <div className="p-4">
-              <div className="flex mb-6">
-                {[1, 2, 3, 4].map((step) => (
-                  <div key={step} className="flex-1 flex items-center">
-                    <div 
-                      className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                        step === proposalStep 
-                          ? 'bg-primary text-text' 
-                          : step < proposalStep 
-                            ? 'bg-blue-900 text-primary' 
-                            : 'bg-surface-300 text-surface-500'
-                      }`}
-                    >
-                      {step}
-                    </div>
-                    {step < 4 && (
-                      <div 
-                        className={`flex-1 h-1 ${
-                          step < proposalStep ? 'bg-primary' : 'bg-surface-300'
-                        }`}
-                      ></div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-136px)]">
               {renderProposalForm()}
             </div>
           </div>
         </div>
       )}
-      
-      {selectedProposal && (
-        <PopupProposal 
-          proposal={selectedProposal} 
-          onClose={closeProposalDetails}
-          onVoteSubmitted={handleVoteSubmitted}
-          onVote={handleVoteTransaction}
-          canVote={userIsDaoMember}
-          wallet={wallet}
-        />
-      )}
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-primary rounded-lg p-4 text-text">
-          <h3 className="text-sm font-medium mb-2">Active Proposals</h3>
-          <p className="text-3xl font-bold">{proposals.filter(p => p.status === 'Active').length}</p>
-        </div>
-        
-        <div className="bg-primary rounded-lg p-4 text-text">
-          <h3 className="text-sm font-medium mb-2">Voting Power</h3>
-          <p className="text-3xl font-bold">1,250 SOL</p>
-        </div>
-      </div>
-      
-      <div className="bg-surface-200 rounded-lg overflow-hidden mb-6">
-        <div className="p-4 border-b border-[#333333]">
-          <h2 className="text-lg font-medium text-text">Active Proposals</h2>
-        </div>
-        {isLoading ? (
-          <div className="p-4 text-center text-surface-500">Loading proposals...</div>
-        ) : proposals.length > 0 ? (
-          <div>
-            {proposals.map((proposal, index) => (
-              <div 
-                key={proposal.id} 
-                className={`p-4 ${index !== proposals.length - 1 ? 'border-b border-[#333333]' : ''} hover:bg-surface-200 cursor-pointer`}
-                onClick={() => handleViewProposal(proposal.id)}
-              >
-                <div className="flex justify-between items-center mb-2">
-                  <div>
-                    <h3 className="font-medium text-text">{proposal.name}</h3>
-                  </div>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    proposal.status === 'Active' ? 'bg-green-900 text-success' :
-                    proposal.status === 'Pending' ? 'bg-yellow-900 text-warning' :
-                    proposal.status === 'Passed' ? 'bg-blue-900 text-primary' :
-                    proposal.status === 'Rejected' ? 'bg-red-900 text-error' :
-                    'bg-gray-900 text-text opacity-80'
-                  }`}>
-                    {proposal.status}
-                  </span>
-                </div>
-                <div className="w-full bg-surface-300 rounded-full h-2.5">
-                  <div 
-                    className="bg-primary h-2.5 rounded-full" 
-                    style={{ width: `${proposal.votes.for / (proposal.votes.for + proposal.votes.against) * 100 || 0}%` }}
-                  ></div>
-                </div>
-                <div className="flex justify-between text-xs mt-1">
-                  <span className="text-primary">{Math.round(proposal.votes.for / (proposal.votes.for + proposal.votes.against) * 100 || 0)}% For</span>
-                  <span className="text-surface-500">{Math.round(proposal.votes.against / (proposal.votes.for + proposal.votes.against) * 100 || 0)}% Against</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="p-4 text-center text-surface-500">No proposals found. Create a new proposal to get started.</div>
-        )}
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-surface-200 rounded-lg overflow-hidden">
-          <div className="p-4 border-b border-[#333333]">
-            <h2 className="text-lg font-medium text-text">Voting Power Distribution</h2>
-          </div>
-          <div className="p-4">
-            <div className="h-64 flex items-center justify-center">
-              <PieChart className="text-text opacity-80" size={100} />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-surface-200 rounded-lg overflow-hidden">
-          <div className="p-4 border-b border-[#333333]">
-            <h2 className="text-lg font-medium text-text">Recent Governance Activity</h2>
-          </div>
-          <div>
-            {proposals.length > 0 ? (
-              proposals.slice(0, 4).map((proposal, index) => (
-                <div key={index} className={`p-4 ${index !== 3 ? 'border-b border-[#333333]' : ''} hover:bg-surface-200`}>
-                  <div className="flex justify-between">
-                    <span className="text-text">Proposal "{proposal.name}" created</span>
-                    <span className="text-sm text-surface-500">{proposal.createdAt}</span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="p-4 text-center text-surface-500">No recent activity</div>
-            )}
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
