@@ -1,8 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { userService } from '../services/UserService';
 import { socialConnectionService } from '../services/SocialConnectionService';
 import { ui } from '../styles/theme';
+import { useEffectOnce } from '../hooks/useEffectOnce';
+
+// Telegram Login Widget component
+const TelegramLoginWidget: React.FC<{
+  botName: string,
+  size?: 'large' | 'medium' | 'small',
+  showUserPic?: boolean,
+  cornerRadius?: number,
+  authUrl: string,
+  onCallback?: (user: any) => void
+}> = ({ botName, size = 'large', showUserPic = false, cornerRadius = 20, authUrl }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Remove any existing script
+    const container = containerRef.current;
+    if (container) {
+      while (container.firstChild) {
+        container.removeChild(container.firstChild);
+      }
+
+      // Create and append the script element
+      const script = document.createElement('script');
+      script.src = 'https://telegram.org/js/telegram-widget.js?22';
+      script.setAttribute('data-telegram-login', botName);
+      script.setAttribute('data-size', size);
+      script.setAttribute('data-userpic', showUserPic.toString());
+      script.setAttribute('data-radius', cornerRadius.toString());
+      script.setAttribute('data-auth-url', authUrl);
+      script.async = true;
+
+      container.appendChild(script);
+    }
+
+    // Cleanup function
+    return () => {
+      if (container) {
+        while (container.firstChild) {
+          container.removeChild(container.firstChild);
+        }
+      }
+    };
+  }, [botName, size, showUserPic, cornerRadius, authUrl]);
+
+  return <div ref={containerRef}></div>;
+};
 
 const UserProfile: React.FC = () => {
   const { userInfo, refreshUserInfo, isAuthenticated } = useAuth();
@@ -19,6 +65,65 @@ const UserProfile: React.FC = () => {
     twitterUsername: null as string | null,
     telegramUsername: null as string | null
   });
+
+  // Check URL for Telegram login data when component mounts
+  useEffectOnce(() => {
+    async function processTelegramAuth() {
+      // Get URL search parameters
+      const searchParams = new URLSearchParams(window.location.search);
+      
+      // Check if Telegram auth data exists in URL
+      if (
+        searchParams.has('id') && 
+        searchParams.has('first_name') && 
+        searchParams.has('auth_date') && 
+        searchParams.has('hash')
+      ) {
+        setIsLoading(true);
+        setMessage({ text: 'Processing Telegram authentication...', type: 'info' });
+        
+        try {
+          // Create auth data object from URL parameters
+          const telegramAuth = {
+            id: Number(searchParams.get('id')),
+            first_name: searchParams.get('first_name') || '',
+            last_name: searchParams.get('last_name') || '',
+            username: searchParams.get('username') || undefined,
+            photo_url: searchParams.get('photo_url') || undefined,
+            auth_date: Number(searchParams.get('auth_date')),
+            hash: searchParams.get('hash') || ''
+          };
+          
+          // Call the handleTelegramAuth method from socialConnectionService
+          await socialConnectionService.handleTelegramAuth(telegramAuth);
+          
+          // Update success message
+          setMessage({ text: 'Telegram account connected successfully!', type: 'success' });
+          
+          // Refresh user info to get updated data
+          await refreshUserInfo();
+          
+          // Remove the query parameters from URL without refreshing page
+          // This prevents processing the same data again if user refreshes
+          const url = new URL(window.location.href);
+          url.search = '';
+          window.history.replaceState({}, document.title, url.toString());
+        } catch (error: any) {
+          console.error('Error processing Telegram auth:', error);
+          setMessage({ 
+            text: error.message || 'Failed to connect Telegram account', 
+            type: 'error' 
+          });
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }
+    
+    if (isAuthenticated) {
+      processTelegramAuth();
+    }
+  }, [isAuthenticated, refreshUserInfo]);
 
   // Load user data when component mounts
   useEffect(() => {
@@ -100,6 +205,7 @@ const UserProfile: React.FC = () => {
     }
   };
 
+  // Manually trigger Telegram connection (used as backup in case URL params don't work)
   const connectTelegram = () => {
     try {
       socialConnectionService.connectTelegram();
@@ -257,13 +363,16 @@ const UserProfile: React.FC = () => {
               ) : (
                 <p className="text-xs text-gray-500 mb-2">Not connected</p>
               )}
-              <button
-                type="button"
-                onClick={connectTelegram}
-                className="mt-2 w-full py-1.5 px-3 bg-blue-500 text-white text-xs rounded-md hover:bg-blue-600 transition"
-              >
-                {userInfo?.telegramUsername ? 'Reconnect' : 'Connect'}
-              </button>
+              {/* Telegram Login Widget */}
+              <div className="mt-2">
+                  <TelegramLoginWidget 
+                    botName="BwenDaoBot"
+                    size="medium"
+                    showUserPic={false}
+                    cornerRadius={20}
+                    authUrl={window.location.origin + "/profile"}
+                  />
+                </div>
             </div>
           </div>
         </div>
