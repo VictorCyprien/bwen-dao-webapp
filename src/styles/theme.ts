@@ -34,7 +34,7 @@ export const containers = {
 // UI components
 export const ui = {
   // Headers and navigation
-  header: "w-full p-2 bg-[#0c0c0c]/80 backdrop-blur-sm border-b border-gray-800/40",
+  header: "w-full p-2",
   sidebar: "bg-[#0c0c0c] border-r border-gray-800/40",
   
   // Buttons

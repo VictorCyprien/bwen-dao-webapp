@@ -7,10 +7,8 @@ import Governance from './components/Governance';
 import Pods from './components/Pods';
 import Members from './components/Members';
 import Treasury from './components/Treasury';
-import ProfilePage from './components/ProfilePage';
 import LandingPage from './components/LandingPage';
 import { useEffectOnce } from './hooks/useEffectOnce';
-import ThemeShowcase from './components/ThemeShowcase';
 
 // Dashboard component that handles DAO-specific routing
 const Dashboard = () => {
@@ -23,17 +21,7 @@ const Dashboard = () => {
 
   // Handle section changes
   const handleSectionChange = (section: string) => {
-    // If navigating to profile, go to standalone profile page
-    if (section === 'profile') {
-      // Store the current path for context-aware navigation
-      const currentPath = window.location.pathname;
-      sessionStorage.setItem('previousPath', currentPath);
-      
-      // Navigate to profile with state containing the source path
-      navigate('/profile', { state: { from: currentPath } });
-      return;
-    }
-    
+    // We no longer need special handling for the profile section as it's now a modal
     setActiveSection(section);
   };
 
@@ -101,7 +89,7 @@ const Dashboard = () => {
         {/* Main content area */}
         <div className="flex-1 overflow-y-auto">
           <div 
-            className={`transition-opacity duration-300 ${fadeIn ? 'opacity-100' : 'opacity-0'} py-10`}
+            className={`transition-opacity duration-300 ${fadeIn ? 'opacity-100' : 'opacity-0'} my-10`}
           >
             {currentComponent}
           </div>
@@ -128,9 +116,7 @@ function App() {
     <Routes>
       <Route path="/" element={<LandingPage onEnterDashboard={handleEnterDashboard} />} />
       <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/profile" element={<ProfilePage />} />
       <Route path="/daos/:daoId" element={<Dashboard />} />
-      <Route path="/theme-showcase" element={<ThemeShowcase />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

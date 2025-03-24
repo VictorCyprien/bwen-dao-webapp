@@ -36,7 +36,7 @@ const Card: React.FC<CardProps> = ({
         </div>
       )}
       
-      <div className="text-sm text-gray-300">
+      <div className="text-sm text-gray-300 flex-1 overflow-hidden">
         {children}
       </div>
       

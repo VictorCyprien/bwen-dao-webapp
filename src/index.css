@@ -154,3 +154,23 @@ html {
 .wallet-adapter-modal-list-item:hover {
   background-color: var(--color-primary) !important;
 }
+
+/* Custom Scrollbar Style */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(15, 15, 15, 0.1);
+  border-radius: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(120, 90, 200, 0.3);
+  border-radius: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 90, 200, 0.5);
+}

@@ -39,6 +39,9 @@ const Pods = () => {
   const [membershipLoading, setMembershipLoading] = useState<boolean>(false);
   const [userIsDaoMember, setUserIsDaoMember] = useState<boolean>(false);
   const [daoMembershipLoading, setDaoMembershipLoading] = useState<boolean>(false);
+  const [podsFilter, setPodsFilter] = useState<'my' | 'available' | 'all'>('all');
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [podMembers, setPodMembers] = useState<Record<string, any[]>>({});
   
   // Get Solana wallet and transaction utilities
   const walletState = useWallet();
@@ -106,6 +109,8 @@ const Pods = () => {
         return;
       }
       
+      setCurrentUserId(currentUser.userId);
+      
       // Call the DAO-API SDK to check membership
       const members = await daosService.getDaoMembers(daoId);
       console.log('DAO members:', members);
@@ -146,6 +151,21 @@ const Pods = () => {
       setError(null);
       const podsData = await podsService.getPods(daoId);
       setPods(podsData);
+      
+      // Fetch members for each pod
+      const membersMap: Record<string, any[]> = {};
+      for (const pod of podsData) {
+        if (pod.podId) {
+          try {
+            const members = await podsService.getPodMembers(daoId, pod.podId);
+            membersMap[pod.podId] = members;
+          } catch (err) {
+            console.error(`Error fetching members for pod ${pod.podId}:`, err);
+            membersMap[pod.podId] = [];
+          }
+        }
+      }
+      setPodMembers(membersMap);
       
       // Set the first pod as selected if there are pods and no selection yet
       if (podsData.length > 0 && !selectedPod) {
@@ -526,6 +546,33 @@ const Pods = () => {
     }
   };
 
+  // Filter pods based on the user's membership
+  const getFilteredPods = (filterType: 'my' | 'available' | 'all') => {
+    if (!userIsDaoMember || !currentUserId) return pods;
+    
+    switch (filterType) {
+      case 'my':
+        return pods.filter(pod => {
+          // Check if pod has members and if current user is in them
+          return pod.podId && podMembers[pod.podId]?.some(member => member.userId === currentUserId);
+        });
+      case 'available':
+        return pods.filter(pod => {
+          // Find pods where the user is not a member
+          return pod.podId && !podMembers[pod.podId]?.some(member => member.userId === currentUserId);
+        });
+      case 'all':
+      default:
+        return pods;
+    }
+  };
+
+  // Check if user is a member of a specific pod
+  const isUserPodMember = (podId: string | undefined) => {
+    if (!podId || !currentUserId) return false;
+    return podMembers[podId]?.some(member => member.userId === currentUserId) || false;
+  };
+
   // Render a message for non-DAO members
   const renderNonMemberMessage = () => {
     // Different message if wallet is not connected
@@ -568,39 +615,66 @@ const Pods = () => {
   };
 
   return (
-    <div className="p-6">
-      <div className={containers.flexBetween + " mb-6"}>
+    <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden p-6">
+      <div className={containers.flexBetween + " mb-4 flex-shrink-0"}>
         <h1 className={typography.h1}>Pods</h1>
-        {userIsDaoMember && (
-          <Button 
-            variant="primary" 
-            leftIcon={<Plus size={16} />}
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            Create Pod
-          </Button>
-        )}
       </div>
 
       {loading ? (
-        <div className="flex justify-center items-center h-64">
+        <div className="flex justify-center items-center flex-1">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-600"></div>
         </div>
       ) : error ? (
-        <Card className="mb-6">
+        <Card className="mb-4 flex-shrink-0">
           <div className="flex items-center text-red-400">
             <AlertCircle size={20} className="mr-2" />
             <p>{error}</p>
           </div>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1 min-h-0">
           {/* Left sidebar - list of pods */}
-          <div className="lg:col-span-1">
-            <Card title="Available Pods" className="mb-6">
-              <div className={`space-y-2 ${utils.scrollHidden} max-h-[50vh] lg:max-h-[70vh] overflow-y-auto pr-2`}>
+          <div className="lg:col-span-1 min-h-0 flex flex-col">
+            <Card 
+              title="Pods" 
+              rightElement={
+                userIsDaoMember && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    leftIcon={<Plus size={14} />}
+                    onClick={() => setIsCreateModalOpen(true)}
+                  >
+                    Create
+                  </Button>
+                )
+              }
+              className="flex flex-col h-full overflow-hidden"
+            >
+              <div className="flex mb-4 border-b border-gray-800 pb-2">
+                <button
+                  className={`mr-3 text-sm px-3 py-1 rounded-md transition-colors ${podsFilter === 'my' ? 'bg-purple-600/40 text-white' : 'hover:bg-surface-200 text-gray-400'}`}
+                  onClick={() => setPodsFilter('my')}
+                >
+                  My Pods
+                </button>
+                <button
+                  className={`mr-3 text-sm px-3 py-1 rounded-md transition-colors ${podsFilter === 'available' ? 'bg-purple-600/40 text-white' : 'hover:bg-surface-200 text-gray-400'}`}
+                  onClick={() => setPodsFilter('available')}
+                >
+                  Available Pods
+                </button>
+                <button
+                  className={`text-sm px-3 py-1 rounded-md transition-colors ${podsFilter === 'all' ? 'bg-purple-600/40 text-white' : 'hover:bg-surface-200 text-gray-400'}`}
+                  onClick={() => setPodsFilter('all')}
+                >
+                  All
+                </button>
+              </div>
+              
+              <div className={`space-y-2 ${utils.scrollHidden} overflow-y-auto flex-1 pr-2`}>
                 {pods.length === 0 ? (
-                  <div className="text-center py-10 text-gray-400">
+                  <div className="text-center py-8 text-gray-400">
                     <Layers size={32} className="mx-auto mb-2 opacity-50" />
                     <p>No pods have been created yet.</p>
                     {userIsDaoMember && (
@@ -616,36 +690,103 @@ const Pods = () => {
                     )}
                   </div>
                 ) : (
-                  pods.map((pod) => (
-                    <div 
-                      key={pod.podId}
-                      className={`p-3 rounded-lg cursor-pointer transition-all ${selectedPod?.podId === pod.podId ? 'bg-[#222]/90 border border-purple-800/60' : 'border border-gray-800/20 hover:border-gray-700/40'}`}
-                      onClick={() => setSelectedPod(pod)}
-                    >
-                      <div className={containers.flexBetween}>
-                        <h3 className={typography.h4}>{pod.name}</h3>
-                        <Badge variant={selectedPod?.podId === pod.podId ? "primary" : "neutral"} className="text-xs">
-                          {pod.memberCount || 0} {pod.memberCount === 1 ? 'member' : 'members'}
-                        </Badge>
+                  <>
+                    {podsFilter === 'my' && (
+                      <div>
+                        {getFilteredPods('my').length === 0 ? (
+                          <div className="text-center p-4 bg-[#1a1a1a] rounded-lg">
+                            <p className="text-gray-400 text-sm">You haven't joined any pods yet.</p>
+                          </div>
+                        ) : (
+                          getFilteredPods('my').map((pod) => (
+                            <div 
+                              key={pod.podId}
+                              className={`p-3 rounded-lg cursor-pointer transition-all mb-2 ${selectedPod?.podId === pod.podId ? 'bg-[#222]/90 border border-purple-800/60' : 'border border-gray-800/20 hover:border-gray-700/40'}`}
+                              onClick={() => setSelectedPod(pod)}
+                            >
+                              <div className={containers.flexBetween}>
+                                <h3 className={typography.h4}>{pod.name}</h3>
+                                <Badge variant={selectedPod?.podId === pod.podId ? "primary" : "success"} className="text-xs">
+                                  {pod.podId && podMembers[pod.podId]?.length || 0} 
+                                  {pod.podId && podMembers[pod.podId]?.length === 1 ? ' member' : ' members'}
+                                </Badge>
+                              </div>
+                              <p className={`${typography.small} mt-1 line-clamp-2`}>{pod.description}</p>
+                            </div>
+                          ))
+                        )}
                       </div>
-                      <p className={`${typography.small} mt-1 line-clamp-2`}>{pod.description}</p>
-                    </div>
-                  ))
+                    )}
+
+                    {podsFilter === 'available' && (
+                      <div>
+                        {getFilteredPods('available').length === 0 ? (
+                          <div className="text-center p-4 bg-[#1a1a1a] rounded-lg">
+                            <p className="text-gray-400 text-sm">No other pods available.</p>
+                          </div>
+                        ) : (
+                          getFilteredPods('available').map((pod) => (
+                            <div 
+                              key={pod.podId}
+                              className={`p-3 rounded-lg cursor-pointer transition-all mb-2 ${selectedPod?.podId === pod.podId ? 'bg-[#222]/90 border border-purple-800/60' : 'border border-gray-800/20 hover:border-gray-700/40'}`}
+                              onClick={() => setSelectedPod(pod)}
+                            >
+                              <div className={containers.flexBetween}>
+                                <h3 className={typography.h4}>{pod.name}</h3>
+                                <Badge variant={selectedPod?.podId === pod.podId ? "primary" : "neutral"} className="text-xs">
+                                  {pod.podId && podMembers[pod.podId]?.length || 0}
+                                  {pod.podId && podMembers[pod.podId]?.length === 1 ? ' member' : ' members'}
+                                </Badge>
+                              </div>
+                              <p className={`${typography.small} mt-1 line-clamp-2`}>{pod.description}</p>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+
+                    {podsFilter === 'all' && pods.map((pod) => (
+                      <div 
+                        key={pod.podId}
+                        className={`p-3 rounded-lg cursor-pointer transition-all mb-2 ${selectedPod?.podId === pod.podId ? 'bg-[#222]/90 border border-purple-800/60' : 'border border-gray-800/20 hover:border-gray-700/40'}`}
+                        onClick={() => setSelectedPod(pod)}
+                      >
+                        <div className={containers.flexBetween}>
+                          <h3 className={typography.h4}>{pod.name}</h3>
+                          <Badge 
+                            variant={
+                              selectedPod?.podId === pod.podId 
+                                ? "primary" 
+                                : pod.podId && isUserPodMember(pod.podId)
+                                  ? "success"
+                                  : "neutral"
+                            } 
+                            className="text-xs"
+                          >
+                            {pod.podId && podMembers[pod.podId]?.length || 0}
+                            {pod.podId && podMembers[pod.podId]?.length === 1 ? ' member' : ' members'}
+                          </Badge>
+                        </div>
+                        <p className={`${typography.small} mt-1 line-clamp-2`}>{pod.description}</p>
+                      </div>
+                    ))}
+                  </>
                 )}
               </div>
             </Card>
           </div>
 
           {/* Right content area - selected pod */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-3 min-h-0 flex flex-col">
             {selectedPod ? (
-              <div className="space-y-6">
+              <div className="flex flex-col h-full min-h-0">
                 <Card 
                   title={
                     <div className="flex items-center">
                       <h2 className={typography.h2}>{selectedPod.name}</h2>
                       <Badge variant="primary" className="ml-3">
-                        {selectedPod.memberCount || 0} {selectedPod.memberCount === 1 ? 'member' : 'members'}
+                        {selectedPod.podId && podMembers[selectedPod.podId]?.length || 0}
+                        {selectedPod.podId && podMembers[selectedPod.podId]?.length === 1 ? ' member' : ' members'}
                       </Badge>
                     </div>
                   }
@@ -686,7 +827,7 @@ const Pods = () => {
                       </div>
                     )
                   }
-                  className="mb-6"
+                  className="mb-4 flex-shrink-0"
                 >
                   <div className="space-y-4">
                     <p className={typography.body}>{selectedPod.description}</p>
@@ -715,131 +856,133 @@ const Pods = () => {
                   </div>
                 </Card>
 
-                {/* Keep existing sections for Discord feed and proposals, but update their Card wrappers */}
-                <div className="flex flex-col space-y-6">
-                  <Card 
-                    title="Discord Feed" 
-                    rightElement={
-                      <Button 
-                        variant="icon" 
-                        onClick={() => fetchFeedMessages(daoId || '', selectedPod.podId || '')} 
-                        isLoading={feedLoading}
-                      >
-                        <RefreshCw size={14} />
-                      </Button>
-                    }
-                  >
-                    {feedLoading ? (
-                      <div className="h-64 flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-600"></div>
-                      </div>
-                    ) : feedMessages.length > 0 ? (
-                      <div className="space-y-4">
-                        {feedMessages.map((message) => (
-                          <div key={message.messageId} className="bg-surface-200 p-3 rounded-md">
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="flex items-center">
-                                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-text font-bold mr-2">
-                                  {message.username.charAt(0).toUpperCase()}
+                {/* Discord feed and proposals in a 2-column layout */}
+                <div className="grid grid-cols-1 md:grid-cols-10 gap-6 flex-1 min-h-0">
+                  {/* Discord Feed (70% width) */}
+                  <div className="md:col-span-7 min-h-0 flex flex-col">
+                    <Card 
+                      title="Discord Feed" 
+                      rightElement={
+                        <Button 
+                          variant="icon" 
+                          onClick={() => fetchFeedMessages(daoId || '', selectedPod.podId || '')} 
+                          isLoading={feedLoading}
+                        >
+                          <RefreshCw size={14} />
+                        </Button>
+                      }
+                      className="flex flex-col h-full overflow-hidden"
+                    >
+                      {feedLoading ? (
+                        <div className="flex-1 flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-600"></div>
+                        </div>
+                      ) : feedMessages.length > 0 ? (
+                        <div className="space-y-4 overflow-y-auto flex-1 pr-2">
+                          {feedMessages.map((message) => (
+                            <div key={message.messageId} className="bg-[#191919] p-3 rounded-md">
+                              <div className="flex justify-between items-start mb-2">
+                                <div className="flex items-center">
+                                  <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white font-bold mr-2">
+                                    {message.username.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-white">{message.username}</div>
+                                    <div className="text-gray-400 text-xs">{formatDate(message.createdAt)}</div>
+                                  </div>
                                 </div>
-                                <div>
-                                  <div className="text-text font-medium">{message.username}</div>
-                                  <div className="text-surface-500 text-xs">{formatDate(message.createdAt)}</div>
-                                </div>
+                                <a 
+                                  href={`https://discord.com/users/${message.userId}`} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer" 
+                                  className="text-blue-400 hover:text-blue-300"
+                                >
+                                  <ExternalLink size={14} />
+                                </a>
                               </div>
-                              <a 
-                                href={`https://discord.com/users/${message.userId}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary hover:text-primary text-xs flex items-center"
-                              >
-                                Discord <ExternalLink size={12} className="ml-1" />
-                              </a>
+                              <div className="break-words text-sm text-gray-300">{message.text}</div>
                             </div>
-                            <p className="text-text text-sm">{message.text}</p>
-                            {message.hasMedia && message.mediaUrls && (
-                              <div className="mt-2">
-                                {Array.isArray(message.mediaUrls) ? (
-                                  message.mediaUrls.map((url: string, index: number) => (
-                                    <a 
-                                      key={index} 
-                                      href={url} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      className="text-primary hover:underline text-xs inline-block mr-2"
-                                    >
-                                      Attachment {index + 1}
-                                    </a>
-                                  ))
-                                ) : (
-                                  <a 
-                                    href={message.mediaUrls} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-primary hover:underline text-xs"
-                                  >
-                                    Attachment
-                                  </a>
-                                )}
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex-1 flex items-center justify-center">
+                          <div className="text-center text-gray-400">
+                            <MessageSquare size={32} className="mx-auto mb-2 opacity-50" />
+                            <p>No Discord messages found for this pod.</p>
+                            <p className="text-xs mt-2">Discord messages will appear here when synchronized.</p>
+                          </div>
+                        </div>
+                      )}
+                    </Card>
+                  </div>
+
+                  {/* Proposals (30% width) */}
+                  <div className="md:col-span-3 min-h-0 flex flex-col">
+                    <Card 
+                      title="Proposals" 
+                      rightElement={
+                        userIsMember && (
+                          <Button 
+                            variant="primary" 
+                            size="sm"
+                            leftIcon={<Plus size={14} />}
+                            onClick={() => setIsCreateProposalModalOpen(true)}
+                          >
+                            Create
+                          </Button>
+                        )
+                      }
+                      className="flex flex-col h-full overflow-hidden"
+                    >
+                      {filteredProposals.length > 0 ? (
+                        <div className="space-y-4 overflow-y-auto flex-1 pr-2">
+                          {filteredProposals.map((proposal) => (
+                            <div 
+                              key={proposal.proposalId} 
+                              className="bg-[#191919] p-3 rounded-md hover:bg-[#222] cursor-pointer transition-colors"
+                              onClick={() => setSelectedProposal(proposal)}
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <div className="font-medium text-white">{proposal.name}</div>
+                                <Badge 
+                                  variant={proposal.isActive ? "primary" : (proposal.hasPassed ? "success" : "error")}
+                                  className="text-xs"
+                                >
+                                  {proposal.isActive ? 'Active' : (proposal.hasPassed ? 'Passed' : 'Rejected')}
+                                </Badge>
                               </div>
+                              <p className="text-xs text-gray-400 mb-2">
+                                Created by {proposal.createdByUsername || 'Unknown'} on {new Date(proposal.startTime).toLocaleDateString()}
+                              </p>
+                              <p className="text-sm text-gray-300 line-clamp-2">{proposal.description}</p>
+                              <div className="flex justify-between items-center mt-3 text-xs text-gray-400">
+                                <span>Votes: {(proposal.forVotesCount || 0) + (proposal.againstVotesCount || 0)}</span>
+                                <span>Ends: {new Date(proposal.endTime).toLocaleDateString()}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex-1 flex items-center justify-center">
+                          <div className="text-center text-gray-400">
+                            <Calendar size={32} className="mx-auto mb-2 opacity-50" />
+                            <p>No proposals found</p>
+                            {userIsMember && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                className="mt-4"
+                                leftIcon={<Plus size={14} />}
+                                onClick={() => setIsCreateProposalModalOpen(true)}
+                              >
+                                Create First Proposal
+                              </Button>
                             )}
                           </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="h-64 flex items-center justify-center text-[#555555]">
-                        <p>No messages in this pod yet. Be the first to post!</p>
-                      </div>
-                    )}
-                  </Card>
-
-                  <Card 
-                    title="Proposals" 
-                    rightElement={
-                      userIsMember && (
-                        <Button 
-                          variant="primary" 
-                          size="sm"
-                          leftIcon={<Plus size={14} />}
-                          onClick={() => setIsCreateProposalModalOpen(true)}
-                        >
-                          Create Proposal
-                        </Button>
-                      )
-                    }
-                  >
-                    {filteredProposals.length > 0 ? (
-                      <div className="space-y-4">
-                        {filteredProposals.map((proposal) => (
-                          <div 
-                            key={proposal.proposalId} 
-                            className="bg-surface-200 p-3 rounded-md cursor-pointer hover:bg-surface-300"
-                            onClick={() => setSelectedProposal(proposal)}
-                          >
-                            <h3 className="text-text font-medium mb-1">{proposal.name}</h3>
-                            <p className="text-text opacity-80 text-sm mb-2">{proposal.description}</p>
-                            <div className="flex justify-between items-center text-xs">
-                              <span className="text-surface-500">
-                                By {proposal.createdByUsername || 'Unknown'} on {
-                                  proposal.startTime instanceof Date 
-                                  ? proposal.startTime.toLocaleString() 
-                                  : new Date(proposal.startTime).toLocaleString()
-                                }
-                              </span>
-                              <div className="flex items-center">
-                                <span className="text-primary mr-1">{proposal.forVotesCount || 0}</span>
-                                <span className="text-surface-500">votes</span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="h-64 flex items-center justify-center text-[#555555]">
-                        <p>No proposals in this pod yet. Create one!</p>
-                      </div>
-                    )}
-                  </Card>
+                        </div>
+                      )}
+                    </Card>
+                  </div>
                 </div>
               </div>
             ) : (
@@ -862,7 +1005,7 @@ const Pods = () => {
         <CreatePodModal
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
-          onPodCreated={fetchPods}
+          onSuccess={handlePodUpdated}
           daoId={daoId || ''}
         />
       )}
@@ -871,7 +1014,7 @@ const Pods = () => {
         <UpdatePodModal
           isOpen={isUpdateModalOpen}
           onClose={() => setIsUpdateModalOpen(false)}
-          onPodUpdated={handlePodUpdated}
+          onSuccess={handlePodUpdated}
           daoId={daoId || ''}
           pod={selectedPod}
         />

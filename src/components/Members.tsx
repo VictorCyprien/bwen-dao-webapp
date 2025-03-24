@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ExternalLink, Check, Calendar, Users, Search, X, Filter } from 'lucide-react';
+import { ChevronDown, ExternalLink, Check, Calendar, Users, Search, X, Filter, Clock } from 'lucide-react';
 import type { User } from '../core/modules/dao-api';
 import { useEffectOnce } from '../hooks/useEffectOnce';
 import { useParams } from 'react-router-dom';
@@ -8,6 +8,7 @@ import { containers, typography, ui, utils } from '../styles/theme';
 import Card from './common/Card';
 import Button from './common/Button';
 import Badge from './common/Badge';
+import UserProfileModal, { UserProfileData } from './UserProfileModal';
 
 interface MemberData {
   id: string | number | undefined;
@@ -32,12 +33,17 @@ const Members = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [daoMembers, setDaoMembers] = useState<MemberData[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   
   // Date range filters
   const [activitySince, setActivitySince] = useState<string>('');
   const [activityUntil, setActivityUntil] = useState<string>('');
   const [loginSince, setLoginSince] = useState<string>('');
   const [loginUntil, setLoginUntil] = useState<string>('');
+  
+  // Selected member for profile modal
+  const [selectedMember, setSelectedMember] = useState<UserProfileData | null>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   
   // Fetch DAO members using the DaosService
   useEffectOnce(() => {
@@ -95,6 +101,16 @@ const Members = () => {
   useEffect(() => {
     let result = [...daoMembers];
     
+    // Apply search query filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(member => 
+        member.name.toLowerCase().includes(query) || 
+        member.username.toLowerCase().includes(query) ||
+        member.wallet.toLowerCase().includes(query)
+      );
+    }
+    
     // Apply pod filter
     if (podFilter.length > 0) {
       result = result.filter(member => 
@@ -144,16 +160,19 @@ const Members = () => {
       case 'Z-A':
         result.sort((a, b) => b.name.localeCompare(a.name));
         break;
-      case 'Recent':
+      case 'Recent Activity':
+        result.sort((a, b) => new Date(b.lastInteraction).getTime() - new Date(a.lastInteraction).getTime());
+        break;
+      case 'Recent Login':
         result.sort((a, b) => new Date(b.lastLogin).getTime() - new Date(a.lastLogin).getTime());
         break;
-      case 'Oldest':
+      case 'Oldest Login':
         result.sort((a, b) => new Date(a.lastLogin).getTime() - new Date(b.lastLogin).getTime());
         break;
     }
     
     setFilteredMembers(result);
-  }, [daoMembers, sortOrder, podFilter, activitySince, activityUntil, loginSince, loginUntil]);
+  }, [daoMembers, sortOrder, podFilter, activitySince, activityUntil, loginSince, loginUntil, searchQuery]);
 
   // Reset all activity filters
   const resetActivityFilters = () => {
@@ -211,26 +230,39 @@ const Members = () => {
     ? [...daoMembers].sort((a, b) => new Date(b.lastLogin).getTime() - new Date(a.lastLogin).getTime())[0]
     : null;
 
+  // Get the most recently active member
+  const lastActiveMember = daoMembers.length > 0 
+    ? [...daoMembers].sort((a, b) => new Date(b.lastInteraction).getTime() - new Date(a.lastInteraction).getTime())[0]
+    : null;
+
+  // Handle member click to show profile
+  const handleMemberClick = (member: MemberData) => {
+    // Transform MemberData to UserProfileData
+    const profileData: UserProfileData = {
+      id: member.id?.toString() || '',
+      username: member.username,
+      name: member.name,
+      walletAddress: member.wallet,
+      socials: [
+        ...(member.discordId ? [{ platform: 'discord', username: member.discordId }] : []),
+        ...(member.twitter ? [{ platform: 'twitter', username: member.twitter }] : []),
+        ...(member.telegram ? [{ platform: 'telegram', username: member.telegram }] : [])
+      ],
+      pods: member.pods.map(podName => ({ id: podName, name: podName })),
+      daos: [{ id: daoId || '', name: 'Current DAO', joinedAt: new Date() }],
+      lastActivity: member.lastInteraction,
+      lastLogin: member.lastLogin,
+      joinedAt: member.lastLogin, // Using last login as a fallback for join date
+    };
+    
+    setSelectedMember(profileData);
+    setIsProfileModalOpen(true);
+  };
+
   return (
-    <div className="p-6">
+    <div className="p-6 h-screen overflow-hidden flex flex-col">
       <div className={containers.flexBetween + " mb-6"}>
         <h1 className={typography.h1}>Members</h1>
-        <div className="flex space-x-3">
-          <Button
-            variant="outline"
-            leftIcon={<Search size={16} />}
-            onClick={() => {}}
-          >
-            Search
-          </Button>
-          <Button
-            variant={isActivityFilterActive ? "primary" : "outline"}
-            leftIcon={<Filter size={16} />}
-            onClick={() => toggleDropdown('activity')}
-          >
-            Filter
-          </Button>
-        </div>
       </div>
       
       {loading ? (
@@ -246,7 +278,7 @@ const Members = () => {
         </Card>
       ) : (
         <>
-          <div className={containers.grid + " mb-6"}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <Card className="flex items-center">
               <div className="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 mr-4">
                 <Users size={24} className="text-white" />
@@ -269,65 +301,20 @@ const Members = () => {
                 </div>
               </Card>
             )}
+            
+            {lastActiveMember && (
+              <Card className="flex items-center">
+                <div className="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 mr-4">
+                  <Clock size={24} className="text-white" />
+                </div>
+                <div>
+                  <div className={ui.stat.label}>Last Active</div>
+                  <div className={ui.stat.value}>{lastActiveMember.name}</div>
+                  <div className={typography.small}>{getTimeAgo(lastActiveMember.lastInteraction)}</div>
+                </div>
+              </Card>
+            )}
           </div>
-          
-          {/* Filter dropdown */}
-          {activeDropdown === 'activity' && (
-            <Card className="mb-6">
-              <div className="space-y-4">
-                <div className={containers.flexBetween}>
-                  <h3 className={typography.h3}>Activity Filters</h3>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={resetActivityFilters}
-                    leftIcon={<X size={14} />}
-                  >
-                    Reset
-                  </Button>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className={typography.label + " block mb-1"}>Last Activity Since</label>
-                    <input
-                      type="date"
-                      value={activitySince}
-                      onChange={(e) => setActivitySince(e.target.value)}
-                      className={ui.input + " w-full"}
-                    />
-                  </div>
-                  <div>
-                    <label className={typography.label + " block mb-1"}>Last Activity Until</label>
-                    <input
-                      type="date"
-                      value={activityUntil}
-                      onChange={(e) => setActivityUntil(e.target.value)}
-                      className={ui.input + " w-full"}
-                    />
-                  </div>
-                  <div>
-                    <label className={typography.label + " block mb-1"}>Last Login Since</label>
-                    <input
-                      type="date"
-                      value={loginSince}
-                      onChange={(e) => setLoginSince(e.target.value)}
-                      className={ui.input + " w-full"}
-                    />
-                  </div>
-                  <div>
-                    <label className={typography.label + " block mb-1"}>Last Login Until</label>
-                    <input
-                      type="date"
-                      value={loginUntil}
-                      onChange={(e) => setLoginUntil(e.target.value)}
-                      className={ui.input + " w-full"}
-                    />
-                  </div>
-                </div>
-              </div>
-            </Card>
-          )}
           
           {/* Sort and filter toolbar */}
           <div className={containers.flexBetween + " mb-4"}>
@@ -344,9 +331,9 @@ const Members = () => {
                 </Button>
                 
                 {activeDropdown === 'sort' && (
-                  <div className={utils.glassmorphism + " absolute left-0 mt-2 w-40 rounded-md shadow-lg z-10"}>
+                  <div className={utils.glassmorphism + " absolute left-0 mt-2 w-48 rounded-md shadow-lg z-10"}>
                     <div className="py-2">
-                      {['A-Z', 'Z-A', 'Recent', 'Oldest'].map(option => (
+                      {['A-Z', 'Z-A', 'Recent Activity', 'Recent Login', 'Oldest Login'].map(option => (
                         <button
                           key={option}
                           className={`flex items-center w-full px-4 py-2 text-sm ${sortOrder === option ? 'text-purple-500' : 'text-gray-200'} hover:bg-[#222]/60`}
@@ -364,22 +351,75 @@ const Members = () => {
                 )}
               </div>
               
+              {/* Activity Date Filter Dropdown */}
+              <div className="relative">
+                <Button 
+                  variant={isActivityFilterActive ? "primary" : "outline"} 
+                  size="sm" 
+                  onClick={() => toggleDropdown('activity')}
+                  rightIcon={<ChevronDown size={16} />}
+                >
+                  Activity Date
+                </Button>
+                
+                {activeDropdown === 'activity' && (
+                  <div className={utils.glassmorphism + " absolute left-0 mt-2 w-64 rounded-md shadow-lg z-10"}>
+                    <div className="p-4 space-y-4">
+                      <div>
+                        <label className="block text-sm text-gray-300 mb-1">Last Activity Since</label>
+                        <input
+                          type="date"
+                          value={activitySince}
+                          onChange={(e) => setActivitySince(e.target.value)}
+                          className="w-full bg-[#191919] border border-gray-800 rounded-md p-2 text-white text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-300 mb-1">Last Login Since</label>
+                        <input
+                          type="date"
+                          value={loginSince}
+                          onChange={(e) => setLoginSince(e.target.value)}
+                          className="w-full bg-[#191919] border border-gray-800 rounded-md p-2 text-white text-sm"
+                        />
+                      </div>
+                      <div className="flex justify-between">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={resetActivityFilters}
+                        >
+                          Reset
+                        </Button>
+                        <Button 
+                          variant="primary" 
+                          size="sm" 
+                          onClick={() => setActiveDropdown(null)}
+                        >
+                          Apply
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
               {/* Pods Filter Dropdown */}
-              {uniquePods.length > 0 && (
-                <div className="relative">
-                  <Button 
-                    variant={podFilter.length > 0 ? "primary" : "outline"} 
-                    size="sm" 
-                    onClick={() => toggleDropdown('pods')}
-                    rightIcon={<ChevronDown size={16} />}
-                  >
-                    Pods {podFilter.length > 0 ? `(${podFilter.length})` : ''}
-                  </Button>
-                  
-                  {activeDropdown === 'pods' && (
-                    <div className={utils.glassmorphism + " absolute left-0 mt-2 w-48 rounded-md shadow-lg z-10"}>
-                      <div className="py-2">
-                        {uniquePods.map(pod => (
+              <div className="relative">
+                <Button 
+                  variant={podFilter.length > 0 ? "primary" : "outline"} 
+                  size="sm" 
+                  onClick={() => toggleDropdown('pods')}
+                  rightIcon={<ChevronDown size={16} />}
+                >
+                  Pods {podFilter.length > 0 ? `(${podFilter.length})` : ''}
+                </Button>
+                
+                {activeDropdown === 'pods' && (
+                  <div className={utils.glassmorphism + " absolute left-0 mt-2 w-48 rounded-md shadow-lg z-10"}>
+                    <div className="py-2">
+                      {uniquePods.length > 0 ? (
+                        uniquePods.map(pod => (
                           <button
                             key={pod}
                             className={`flex items-center w-full px-4 py-2 text-sm ${podFilter.includes(pod) ? 'text-purple-500' : 'text-gray-200'} hover:bg-[#222]/60`}
@@ -390,27 +430,48 @@ const Members = () => {
                             </div>
                             <span>{pod}</span>
                           </button>
-                        ))}
-                      </div>
+                        ))
+                      ) : (
+                        <div className="px-4 py-2 text-sm text-gray-400">No pods available</div>
+                      )}
                     </div>
-                  )}
-                </div>
-              )}
+                  </div>
+                )}
+              </div>
             </div>
             
-            <div className={typography.small}>
-              {filteredMembers.length} {filteredMembers.length === 1 ? 'member' : 'members'} found
+            {/* Search Bar - now aligned with the dropdowns */}
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search members..."
+                className="pl-10 pr-3 py-2 bg-[#191919] border border-gray-800 rounded-md text-white w-64 focus:outline-none focus:border-purple-600"
+              />
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                <Search size={16} />
+              </div>
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
           </div>
           
           {/* Members list */}
-          <Card>
-            <div className="overflow-x-auto">
+          <Card className="overflow-hidden flex-1">
+            <div className="overflow-auto h-full custom-scrollbar">
               <table className={ui.table.container}>
                 <thead>
                   <tr>
                     <th className={ui.table.header}>Member</th>
                     <th className={ui.table.header}>Wallet</th>
+                    <th className={ui.table.header}>Pods</th>
                     <th className={ui.table.header}>Social</th>
                     <th className={ui.table.header}>Last Activity</th>
                     <th className={ui.table.header}>Last Login</th>
@@ -418,7 +479,11 @@ const Members = () => {
                 </thead>
                 <tbody>
                   {filteredMembers.map((member) => (
-                    <tr key={member.id?.toString()} className={ui.table.row}>
+                    <tr 
+                      key={member.id?.toString()} 
+                      className={`${ui.table.row} cursor-pointer hover:bg-[#191919]`}
+                      onClick={() => handleMemberClick(member)}
+                    >
                       <td className={ui.table.cell}>
                         <div className="flex items-center">
                           <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mr-3 text-white font-medium">
@@ -436,6 +501,19 @@ const Members = () => {
                           <a href={`https://explorer.solana.com/address/${member.wallet}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
                             <ExternalLink size={14} />
                           </a>
+                        </div>
+                      </td>
+                      <td className={ui.table.cell}>
+                        <div className="flex flex-wrap gap-1">
+                          {member.pods.length > 0 ? (
+                            member.pods.map((pod, index) => (
+                              <Badge key={index} variant="primary" className="text-xs whitespace-nowrap">
+                                {pod}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="text-gray-400 text-xs">No pods</span>
+                          )}
                         </div>
                       </td>
                       <td className={ui.table.cell}>
@@ -471,6 +549,13 @@ const Members = () => {
           </Card>
         </>
       )}
+      
+      {/* User Profile Modal */}
+      <UserProfileModal 
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        user={selectedMember}
+      />
     </div>
   );
 };

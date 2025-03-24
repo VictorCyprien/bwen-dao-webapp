@@ -1061,122 +1061,10 @@ const Governance = () => {
     setSelectedProposal(null);
   };
 
-  // This function renders the proposals list using our new components
-  const renderProposalsList = () => {
-    if (isLoading) {
-      return (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin h-8 w-8 border-4 border-purple-500 rounded-full border-t-transparent"></div>
-        </div>
-      );
-    }
-
-    if (proposals.length === 0) {
-      return (
-        <Card className="mt-6">
-          <div className="text-center py-10">
-            <p className="text-gray-400 mb-4">No proposals have been created yet.</p>
-            {userIsDaoMember && (
-              <Button 
-                variant="primary" 
-                onClick={() => setShowProposalForm(true)}
-                leftIcon={<Plus size={16} />}
-              >
-                Create New Proposal
-              </Button>
-            )}
-          </div>
-        </Card>
-      );
-    }
-
-    return (
-      <div className="mt-6 space-y-4">
-        {proposals.map(proposal => (
-          <Card 
-            key={proposal.id} 
-            className="hover:border-purple-800/40 cursor-pointer transition-all"
-            onClick={() => handleViewProposal(proposal.id)}
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <h3 className={typography.h3}>{proposal.name}</h3>
-                <p className={`${typography.small} mt-1 line-clamp-2`}>
-                  {proposal.description}
-                </p>
-              </div>
-              <div>
-                {proposal.status === 'active' && (
-                  <Badge variant="primary">Active</Badge>
-                )}
-                {proposal.status === 'pending' && (
-                  <Badge variant="warning">Pending</Badge>
-                )}
-                {proposal.status === 'completed' && (
-                  <Badge variant="success">Completed</Badge>
-                )}
-                {proposal.status === 'rejected' && (
-                  <Badge variant="error">Rejected</Badge>
-                )}
-              </div>
-            </div>
-            
-            <div className="mt-4 pt-4 border-t border-gray-800/40 flex justify-between items-center">
-              <div className="flex items-center space-x-4">
-                <div className="flex flex-col">
-                  <span className={typography.small}>For</span>
-                  <span className="text-green-400">{proposal.votes.for}</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className={typography.small}>Against</span>
-                  <span className="text-red-400">{proposal.votes.against}</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className={typography.small}>Created</span>
-                  <span className="text-gray-300">{formatDate(proposal.createdAt)}</span>
-                </div>
-              </div>
-              <ChevronRight size={16} className="text-gray-400" />
-            </div>
-          </Card>
-        ))}
-      </div>
-    );
-  };
-
   return (
-    <div className="p-6">
+    <div className="p-6 h-screen overflow-hidden flex flex-col">
       <div className={containers.flexBetween}>
         <h1 className={typography.h1}>Governance</h1>
-        {userIsDaoMember ? (
-          <Button 
-            variant="primary" 
-            onClick={() => setShowProposalForm(true)}
-            leftIcon={<Plus size={16} />}
-          >
-            Create Proposal
-          </Button>
-        ) : membershipLoading ? (
-          <div className="animate-pulse h-10 w-32 bg-gray-700 rounded-lg"></div>
-        ) : (
-          <div className="relative">
-            <Button 
-              variant="secondary" 
-              disabled={true}
-              onClick={() => setShowMembershipTooltip(!showMembershipTooltip)}
-              leftIcon={<AlertCircle size={16} />}
-            >
-              Members Only
-            </Button>
-            {showMembershipTooltip && (
-              <div className={`${utils.glassmorphism} absolute right-0 mt-2 p-3 rounded-lg z-10 w-64`}>
-                <p className={typography.small}>
-                  Only DAO members can create proposals. Join this DAO to participate in governance.
-                </p>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       <div className="mt-6">
@@ -1198,7 +1086,137 @@ const Governance = () => {
         </Card>
       </div>
 
-      {renderProposalsList()}
+      <div className="mt-6 grid grid-cols-10 gap-6 flex-1 overflow-hidden">
+        {/* Active Proposals Column - 70% */}
+        <div className="col-span-7 flex flex-col h-full overflow-hidden">
+          <Card title="Active Proposals" className="flex-1 flex flex-col h-full">
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin h-8 w-8 border-4 border-purple-500 rounded-full border-t-transparent"></div>
+              </div>
+            ) : proposals.filter(p => p.status === 'Active' || p.status === 'active').length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-gray-400">No active proposals at the moment.</p>
+              </div>
+            ) : (
+              <div className="space-y-4 overflow-y-auto flex-1 custom-scrollbar pr-1">
+                {proposals
+                  .filter(p => p.status === 'Active' || p.status === 'active')
+                  .map(proposal => (
+                    <div 
+                      key={proposal.id} 
+                      className="border border-gray-800 hover:border-purple-800/40 rounded-lg p-4 cursor-pointer transition-all"
+                      onClick={() => handleViewProposal(proposal.id)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className={typography.h3}>{proposal.name}</h3>
+                          <p className={`${typography.small} mt-1 line-clamp-2`}>
+                            {proposal.description}
+                          </p>
+                        </div>
+                        <Badge variant="primary">Active</Badge>
+                      </div>
+                      
+                      <div className="mt-4 pt-4 border-t border-gray-800/40 flex justify-between items-center">
+                        <div className="flex items-center space-x-4">
+                          <div className="flex flex-col">
+                            <span className={typography.small}>For</span>
+                            <span className="text-green-400">{proposal.votes.for}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className={typography.small}>Against</span>
+                            <span className="text-red-400">{proposal.votes.against}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className={typography.small}>Created</span>
+                            <span className="text-gray-300">{formatDate(proposal.createdAt)}</span>
+                          </div>
+                        </div>
+                        <ChevronRight size={16} className="text-gray-400" />
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </Card>
+        </div>
+
+        {/* Right Column - 30% */}
+        <div className="col-span-3 space-y-6 flex flex-col h-full">
+          {/* Create Proposal Card */}
+          <Card title="Actions" className="flex-shrink-0">
+            <div className="flex justify-center">
+              {userIsDaoMember ? (
+                <Button 
+                  variant="primary" 
+                  onClick={() => setShowProposalForm(true)}
+                  leftIcon={<Plus size={16} />}
+                  className="w-full"
+                >
+                  Create Proposal
+                </Button>
+              ) : membershipLoading ? (
+                <div className="animate-pulse h-10 w-full bg-gray-700 rounded-lg"></div>
+              ) : (
+                <div className="relative w-full">
+                  <Button 
+                    variant="secondary" 
+                    disabled={true}
+                    onClick={() => setShowMembershipTooltip(!showMembershipTooltip)}
+                    leftIcon={<AlertCircle size={16} />}
+                    className="w-full"
+                  >
+                    Members Only
+                  </Button>
+                  {showMembershipTooltip && (
+                    <div className={`${utils.glassmorphism} absolute right-0 mt-2 p-3 rounded-lg z-10 w-64`}>
+                      <p className={typography.small}>
+                        Only DAO members can create proposals. Join this DAO to participate in governance.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Completed Proposals */}
+          <Card title="Completed Proposals" className="flex-1 flex flex-col overflow-hidden">
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin h-8 w-8 border-4 border-purple-500 rounded-full border-t-transparent"></div>
+              </div>
+            ) : proposals.filter(p => p.status === 'Passed' || p.status === 'completed' || p.status === 'Completed').length === 0 ? (
+              <div className="text-center py-6">
+                <p className="text-gray-400">No completed proposals yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-4 overflow-y-auto flex-1 custom-scrollbar pr-1">
+                {proposals
+                  .filter(p => p.status === 'Passed' || p.status === 'completed' || p.status === 'Completed')
+                  .map(proposal => (
+                    <div 
+                      key={proposal.id} 
+                      className="border border-gray-800 hover:border-purple-800/40 rounded-lg p-4 cursor-pointer transition-all"
+                      onClick={() => handleViewProposal(proposal.id)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="w-full">
+                          <h3 className={`${typography.h3} truncate`}>{proposal.name}</h3>
+                          <div className="flex justify-between mt-2 items-center">
+                            <span className="text-gray-300 text-xs">{formatDate(proposal.createdAt)}</span>
+                            <Badge variant="success">Completed</Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </Card>
+        </div>
+      </div>
 
       {selectedProposal && (
         <PopupProposal 
@@ -1209,6 +1227,25 @@ const Governance = () => {
           onVoteSubmitted={handleVoteSubmitted}
           wallet={wallet}
         />
+      )}
+      
+      {showProposalForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#111] rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            <div className="flex justify-between items-center p-6 border-b border-gray-800">
+              <h2 className="text-xl font-bold text-white">Create Proposal</h2>
+              <button 
+                onClick={() => resetForm()}
+                className="text-gray-400 hover:text-white p-1 rounded-full"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-136px)]">
+              {renderProposalForm()}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

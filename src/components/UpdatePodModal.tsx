@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
 import { podsService } from '../services/PodsService';
 import { POD } from '../core/modules/dao-api/models/POD';
+import Modal from './common/Modal';
 
 interface UpdatePodModalProps {
   isOpen: boolean;
@@ -29,7 +29,7 @@ const UpdatePodModal: React.FC<UpdatePodModalProps> = ({ isOpen, onClose, onSucc
     }
   }, [pod]);
 
-  if (!isOpen || !pod) return null;
+  if (!pod) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,89 +86,82 @@ const UpdatePodModal: React.FC<UpdatePodModalProps> = ({ isOpen, onClose, onSucc
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-surface-100 rounded-lg w-full max-w-md p-6 shadow-lg">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-text">Update POD</h2>
-          <button 
-            onClick={onClose}
-            className="text-surface-500 hover:text-text rounded-full p-1"
-          >
-            <X size={20} />
-          </button>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Update POD"
+      maxWidth="max-w-md"
+    >
+      <form onSubmit={handleSubmit}>
+        <div className="mb-4">
+          <label htmlFor="pod-name" className="block text-gray-300 mb-1">
+            POD Name*
+          </label>
+          <input
+            id="pod-name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full bg-[#191919] border border-gray-800 rounded-md p-2 text-white focus:outline-none focus:border-purple-600"
+            placeholder="Enter POD name"
+            required
+          />
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label htmlFor="pod-name" className="block text-text mb-1">
-              POD Name*
-            </label>
-            <input
-              id="pod-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full bg-surface-200 border border-surface-300 rounded-md p-2 text-text"
-              placeholder="Enter POD name"
-              required
-            />
-          </div>
+        <div className="mb-4">
+          <label htmlFor="pod-description" className="block text-gray-300 mb-1">
+            Description
+          </label>
+          <textarea
+            id="pod-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full bg-[#191919] border border-gray-800 rounded-md p-2 text-white focus:outline-none focus:border-purple-600 h-24"
+            placeholder="Enter POD description"
+          />
+        </div>
 
-          <div className="mb-4">
-            <label htmlFor="pod-description" className="block text-text mb-1">
-              Description
-            </label>
-            <textarea
-              id="pod-description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-surface-200 border border-surface-300 rounded-md p-2 text-text h-24"
-              placeholder="Enter POD description"
-            />
-          </div>
+        <div className="mb-4">
+          <label htmlFor="discord-channel-id" className="block text-gray-300 mb-1">
+            New Discord Channel ID (optional)
+          </label>
+          <input
+            id="discord-channel-id"
+            type="text"
+            value={discordChannelId}
+            onChange={(e) => setDiscordChannelId(e.target.value)}
+            className="w-full bg-[#191919] border border-gray-800 rounded-md p-2 text-white focus:outline-none focus:border-purple-600"
+            placeholder="Enter new Discord channel ID"
+          />
+          <p className="text-gray-500 text-xs mt-1">
+            If provided, this POD will be linked to the specified Discord channel.
+          </p>
+        </div>
 
-          <div className="mb-4">
-            <label htmlFor="discord-channel-id" className="block text-text mb-1">
-              New Discord Channel ID (optional)
-            </label>
-            <input
-              id="discord-channel-id"
-              type="text"
-              value={discordChannelId}
-              onChange={(e) => setDiscordChannelId(e.target.value)}
-              className="w-full bg-surface-200 border border-surface-300 rounded-md p-2 text-text"
-              placeholder="Enter new Discord channel ID"
-            />
-            <p className="text-surface-500 text-xs mt-1">
-              If provided, this POD will be linked to the specified Discord channel.
-            </p>
+        {error && (
+          <div className="mb-4 p-3 bg-red-900/30 border border-red-800 text-red-400 rounded-md text-sm">
+            {error}
           </div>
+        )}
 
-          {error && (
-            <div className="mb-4 p-2 bg-red-100 text-red-700 rounded-md">
-              {error}
-            </div>
-          )}
-
-          <div className="flex justify-end space-x-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-surface-300 text-text rounded-md hover:bg-surface-200"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-primary text-text rounded-md hover:bg-opacity-90 disabled:opacity-70"
-            >
-              {loading ? 'Updating...' : 'Update POD'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        <div className="flex justify-end space-x-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-700 text-gray-300 rounded-md hover:bg-gray-800 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-md hover:opacity-90 disabled:opacity-70 transition-all"
+          >
+            {loading ? 'Updating...' : 'Update POD'}
+          </button>
+        </div>
+      </form>
+    </Modal>
   );
 };
 
