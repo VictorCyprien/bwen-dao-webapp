@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronDown, ExternalLink, Check, Calendar } from 'lucide-react';
+import { ChevronDown, ExternalLink, Check, Calendar, Users, Search, X, Filter } from 'lucide-react';
 import type { User } from '../core/modules/dao-api';
 import { useEffectOnce } from '../hooks/useEffectOnce';
 import { useParams } from 'react-router-dom';
 import { daosService } from '../services/DaosService';
+import { containers, typography, ui, utils } from '../styles/theme';
+import Card from './common/Card';
+import Button from './common/Button';
+import Badge from './common/Badge';
 
 interface MemberData {
   id: string | number | undefined;
@@ -209,258 +213,262 @@ const Members = () => {
 
   return (
     <div className="p-6">
+      <div className={containers.flexBetween + " mb-6"}>
+        <h1 className={typography.h1}>Members</h1>
+        <div className="flex space-x-3">
+          <Button
+            variant="outline"
+            leftIcon={<Search size={16} />}
+            onClick={() => {}}
+          >
+            Search
+          </Button>
+          <Button
+            variant={isActivityFilterActive ? "primary" : "outline"}
+            leftIcon={<Filter size={16} />}
+            onClick={() => toggleDropdown('activity')}
+          >
+            Filter
+          </Button>
+        </div>
+      </div>
       
       {loading ? (
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-600"></div>
         </div>
       ) : error ? (
-        <div className="bg-error bg-opacity-10 border border-error text-error px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error!</strong>
-          <span className="block sm:inline"> {error}</span>
-        </div>
+        <Card className="mb-6">
+          <div className="flex items-center text-red-400">
+            <X size={20} className="mr-2" />
+            <p>{error}</p>
+          </div>
+        </Card>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-6 mb-6">
-            <div className="bg-primary rounded-lg p-4 text-text">
-              <h3 className="text-sm font-medium mb-2">Total Members</h3>
-              <p className="text-3xl font-bold">{daoMembers.length}</p>
-            </div>
+          <div className={containers.grid + " mb-6"}>
+            <Card className="flex items-center">
+              <div className="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 mr-4">
+                <Users size={24} className="text-white" />
+              </div>
+              <div>
+                <div className={ui.stat.label}>Total Members</div>
+                <div className={ui.stat.value}>{daoMembers.length}</div>
+              </div>
+            </Card>
             
             {lastJoinedMember && (
-              <div className="bg-primary rounded-lg p-4 text-text">
-                <h3 className="text-sm font-medium mb-2">Last Joined</h3>
-                <p className="text-lg">{lastJoinedMember.name}</p>
-                <p className="text-sm">{getTimeAgo(lastJoinedMember.lastLogin)}</p>
-              </div>
+              <Card className="flex items-center">
+                <div className="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 mr-4">
+                  <Calendar size={24} className="text-white" />
+                </div>
+                <div>
+                  <div className={ui.stat.label}>Last Joined</div>
+                  <div className={ui.stat.value}>{lastJoinedMember.name}</div>
+                  <div className={typography.small}>{getTimeAgo(lastJoinedMember.lastLogin)}</div>
+                </div>
+              </Card>
             )}
           </div>
           
-          <div className="flex justify-between items-center mb-4">
+          {/* Filter dropdown */}
+          {activeDropdown === 'activity' && (
+            <Card className="mb-6">
+              <div className="space-y-4">
+                <div className={containers.flexBetween}>
+                  <h3 className={typography.h3}>Activity Filters</h3>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={resetActivityFilters}
+                    leftIcon={<X size={14} />}
+                  >
+                    Reset
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className={typography.label + " block mb-1"}>Last Activity Since</label>
+                    <input
+                      type="date"
+                      value={activitySince}
+                      onChange={(e) => setActivitySince(e.target.value)}
+                      className={ui.input + " w-full"}
+                    />
+                  </div>
+                  <div>
+                    <label className={typography.label + " block mb-1"}>Last Activity Until</label>
+                    <input
+                      type="date"
+                      value={activityUntil}
+                      onChange={(e) => setActivityUntil(e.target.value)}
+                      className={ui.input + " w-full"}
+                    />
+                  </div>
+                  <div>
+                    <label className={typography.label + " block mb-1"}>Last Login Since</label>
+                    <input
+                      type="date"
+                      value={loginSince}
+                      onChange={(e) => setLoginSince(e.target.value)}
+                      className={ui.input + " w-full"}
+                    />
+                  </div>
+                  <div>
+                    <label className={typography.label + " block mb-1"}>Last Login Until</label>
+                    <input
+                      type="date"
+                      value={loginUntil}
+                      onChange={(e) => setLoginUntil(e.target.value)}
+                      className={ui.input + " w-full"}
+                    />
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
+          
+          {/* Sort and filter toolbar */}
+          <div className={containers.flexBetween + " mb-4"}>
             <div className="flex space-x-2">
               {/* Sort Dropdown */}
               <div className="relative">
-                <button 
-                  className={`flex items-center space-x-1 ${sortOrder !== 'A-Z' ? 'bg-white text-[#252525]' : 'bg-surface-200 text-text'} px-3 py-2 rounded-md text-sm`}
+                <Button 
+                  variant="outline" 
+                  size="sm"
                   onClick={() => toggleDropdown('sort')}
+                  rightIcon={<ChevronDown size={16} />}
                 >
-                  <span>Sort</span>
-                  <ChevronDown size={16} />
-                </button>
+                  Sort: {sortOrder}
+                </Button>
                 
                 {activeDropdown === 'sort' && (
-                  <div className="absolute z-10 mt-1 w-36 bg-surface-menu rounded-md shadow-lg">
-                    <ul className="py-1">
-                      {['A-Z', 'Z-A', 'Recent', 'Oldest First'].map((option) => (
-                        <li 
+                  <div className={utils.glassmorphism + " absolute left-0 mt-2 w-40 rounded-md shadow-lg z-10"}>
+                    <div className="py-2">
+                      {['A-Z', 'Z-A', 'Recent', 'Oldest'].map(option => (
+                        <button
                           key={option}
-                          className={`px-3 py-2 text-sm ${sortOrder === option.replace(' First', '') ? 'bg-white text-[#252525]' : 'text-text hover:bg-[#444444]'} cursor-pointer`}
+                          className={`flex items-center w-full px-4 py-2 text-sm ${sortOrder === option ? 'text-purple-500' : 'text-gray-200'} hover:bg-[#222]/60`}
                           onClick={() => {
-                            setSortOrder(option.replace(' First', ''));
+                            setSortOrder(option);
                             setActiveDropdown(null);
                           }}
                         >
-                          {option}
-                        </li>
+                          {sortOrder === option && <Check size={16} className="mr-2" />}
+                          <span>{option}</span>
+                        </button>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 )}
               </div>
               
-              {/* Pods Dropdown */}
-              <div className="relative">
-                <button 
-                  className={`flex items-center space-x-1 ${podFilter.length > 0 ? 'bg-white text-[#252525]' : 'bg-surface-200 text-text'} px-3 py-2 rounded-md text-sm`}
-                  onClick={() => toggleDropdown('pods')}
-                >
-                  <span>Pods</span>
-                  <ChevronDown size={16} />
-                </button>
-                
-                {activeDropdown === 'pods' && (
-                  <div className="absolute z-10 mt-1 w-48 bg-surface-menu rounded-md shadow-lg">
-                    <ul className="py-1 max-h-60 overflow-y-auto">
-                      {uniquePods.map((pod) => (
-                        <li 
-                          key={pod}
-                          className="px-3 py-2 text-sm text-text hover:bg-[#444444] cursor-pointer flex items-center justify-between"
-                          onClick={() => togglePodFilter(pod)}
-                        >
-                          <span className={podFilter.includes(pod) ? "font-bold" : ""}>
-                            {pod}
-                          </span>
-                          {podFilter.includes(pod) && <Check size={18} strokeWidth={2.5} className="text-text" />}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-              
-              {/* Activity Dropdown */}
-              <div className="relative">
-                <button 
-                  className={`flex items-center space-x-1 ${isActivityFilterActive ? 'bg-white text-[#252525]' : 'bg-surface-200 text-text'} px-3 py-2 rounded-md text-sm`}
-                  onClick={() => toggleDropdown('activity')}
-                >
-                  <span>Activity</span>
-                  <ChevronDown size={16} />
-                </button>
-                
-                {activeDropdown === 'activity' && (
-                  <div className="absolute z-10 mt-1 w-80 bg-surface-menu  rounded-md shadow-lg p-4">
-                    <div className="mb-4">
-                      <h3 className="text-text text-sm font-medium mb-2 flex items-center">
-                        <Calendar size={16} className="mr-2 text-text" />
-                        Last Activity
-                      </h3>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-surface-500 text-xs mb-1">Since</label>
-                          <input 
-                            type="date" 
-                            className="w-full bg-surface-200 text-text text-sm rounded-md px-3 py-2"
-                            value={activitySince}
-                            onChange={(e) => setActivitySince(e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-surface-500 text-xs mb-1">Until</label>
-                          <input 
-                            type="date" 
-                            className="w-full bg-surface-200 text-text text-sm rounded-md px-3 py-2"
-                            value={activityUntil}
-                            onChange={(e) => setActivityUntil(e.target.value)}
-                          />
-                        </div>
+              {/* Pods Filter Dropdown */}
+              {uniquePods.length > 0 && (
+                <div className="relative">
+                  <Button 
+                    variant={podFilter.length > 0 ? "primary" : "outline"} 
+                    size="sm" 
+                    onClick={() => toggleDropdown('pods')}
+                    rightIcon={<ChevronDown size={16} />}
+                  >
+                    Pods {podFilter.length > 0 ? `(${podFilter.length})` : ''}
+                  </Button>
+                  
+                  {activeDropdown === 'pods' && (
+                    <div className={utils.glassmorphism + " absolute left-0 mt-2 w-48 rounded-md shadow-lg z-10"}>
+                      <div className="py-2">
+                        {uniquePods.map(pod => (
+                          <button
+                            key={pod}
+                            className={`flex items-center w-full px-4 py-2 text-sm ${podFilter.includes(pod) ? 'text-purple-500' : 'text-gray-200'} hover:bg-[#222]/60`}
+                            onClick={() => togglePodFilter(pod)}
+                          >
+                            <div className="flex-shrink-0 w-4 h-4 border rounded-sm mr-2 flex items-center justify-center border-gray-500">
+                              {podFilter.includes(pod) && <Check size={12} className="text-purple-500" />}
+                            </div>
+                            <span>{pod}</span>
+                          </button>
+                        ))}
                       </div>
                     </div>
-                    
-                    <div className="mb-4">
-                      <h3 className="text-text text-sm font-medium mb-2 flex items-center">
-                        <Calendar size={16} className="mr-2 text-text" />
-                        Last Login
-                      </h3>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-surface-500 text-xs mb-1">Since</label>
-                          <input 
-                            type="date" 
-                            className="w-full bg-surface-200 text-text text-sm rounded-md px-3 py-2"
-                            value={loginSince}
-                            onChange={(e) => setLoginSince(e.target.value)}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-surface-500 text-xs mb-1">Until</label>
-                          <input 
-                            type="date" 
-                            className="w-full bg-surface-200 text-text text-sm rounded-md px-3 py-2"
-                            value={loginUntil}
-                            onChange={(e) => setLoginUntil(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex justify-between">
-                      <button 
-                        className="text-xs text-surface-500 hover:text-text"
-                        onClick={resetActivityFilters}
-                      >
-                        Reset
-                      </button>
-                      <button 
-                        className="bg-primary text-text px-4 py-2 rounded-md text-xs"
-                        onClick={() => setActiveDropdown(null)}
-                      >
-                        Apply
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            <div className={typography.small}>
+              {filteredMembers.length} {filteredMembers.length === 1 ? 'member' : 'members'} found
             </div>
           </div>
           
-          <div className="bg-surface-200 rounded-lg overflow-hidden">
+          {/* Members list */}
+          <Card>
             <div className="overflow-x-auto">
-              <table className="w-full text-text">
+              <table className={ui.table.container}>
                 <thead>
-                  <tr className="border-b border-[#333333]">
-                    <th className="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wider">Member</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wider">Wallet</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wider">Username</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wider">Pods</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wider">Discord ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wider">Twitter</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wider">Telegram</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wider">Last Login</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-surface-500 uppercase tracking-wider">Last Interaction</th>
+                  <tr>
+                    <th className={ui.table.header}>Member</th>
+                    <th className={ui.table.header}>Wallet</th>
+                    <th className={ui.table.header}>Social</th>
+                    <th className={ui.table.header}>Last Activity</th>
+                    <th className={ui.table.header}>Last Login</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#333333]">
-                  {filteredMembers.length > 0 ? (
-                    filteredMembers.map((member) => (
-                      <tr key={member.id} className="hover:bg-surface-200">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="h-10 w-10 rounded-full overflow-hidden mr-3">
-                              <img src={member.avatar} alt={member.name} className="h-full w-full object-cover" />
-                            </div>
-                            <div>
-                              <div className="text-sm font-medium">{member.name}</div>
-                            </div>
+                <tbody>
+                  {filteredMembers.map((member) => (
+                    <tr key={member.id?.toString()} className={ui.table.row}>
+                      <td className={ui.table.cell}>
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mr-3 text-white font-medium">
+                            {member.name.substring(0, 1)}
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span className="font-mono">{truncateWallet(member.wallet)}</span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{member.username}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <div className="flex flex-wrap gap-1">
-                            {member.pods.map((pod: string, index: number) => (
-                              <span key={index} className="px-2 py-1 bg-primary rounded-full text-xs">
-                                {pod}
-                              </span>
-                            ))}
+                          <div>
+                            <div className="font-medium text-white">{member.name}</div>
+                            <div className="text-xs text-gray-400">@{member.username}</div>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{member.discordId}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <a href={`https://twitter.com/${member.twitter.replace('@', '')}`} 
-                             target="_blank" 
-                             rel="noopener noreferrer"
-                             className="text-primary hover:text-primary flex items-center">
-                            {member.twitter}
-                            <ExternalLink size={12} className="ml-1" />
+                        </div>
+                      </td>
+                      <td className={ui.table.cell}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-300">{truncateWallet(member.wallet)}</span>
+                          <a href={`https://explorer.solana.com/address/${member.wallet}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
+                            <ExternalLink size={14} />
                           </a>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">{member.telegram}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span title={formatDate(member.lastLogin)}>
-                            {getTimeAgo(member.lastLogin)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span title={formatDate(member.lastInteraction)}>
-                            {getTimeAgo(member.lastInteraction)}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={9} className="px-6 py-4 text-center text-surface-500">
-                        No members found
+                        </div>
+                      </td>
+                      <td className={ui.table.cell}>
+                        <div className="flex gap-2">
+                          {member.discordId && (
+                            <Badge variant="primary" className="text-xs">Discord</Badge>
+                          )}
+                          {member.twitter && (
+                            <Badge variant="primary" className="text-xs">Twitter</Badge>
+                          )}
+                          {member.telegram && (
+                            <Badge variant="primary" className="text-xs">Telegram</Badge>
+                          )}
+                        </div>
+                      </td>
+                      <td className={ui.table.cell}>
+                        <div>
+                          <div className="text-gray-300">{getTimeAgo(member.lastInteraction)}</div>
+                          <div className="text-xs text-gray-400">{formatDate(member.lastInteraction)}</div>
+                        </div>
+                      </td>
+                      <td className={ui.table.cell}>
+                        <div>
+                          <div className="text-gray-300">{getTimeAgo(member.lastLogin)}</div>
+                          <div className="text-xs text-gray-400">{formatDate(member.lastLogin)}</div>
+                        </div>
                       </td>
                     </tr>
-                  )}
+                  ))}
                 </tbody>
               </table>
             </div>
-          </div>
+          </Card>
         </>
       )}
     </div>

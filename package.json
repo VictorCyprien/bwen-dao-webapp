@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "oja": "rm -rf node_modules/.vite dist .vite_cache && vite --force && pnpm run dev"
   },
   "dependencies": {
     "@solana/wallet-adapter-base": "^0.9.23",

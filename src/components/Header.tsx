@@ -1,5 +1,3 @@
-import { Search } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import NotificationIcon from './common/NotificationIcon';
 import { ui } from '../styles/theme';
 import ApiAuthStatus from './common/ApiAuthStatus';
@@ -18,7 +16,6 @@ const Header = ({
   showNotifications, 
   setShowNotifications,
 }: HeaderProps) => {
-  const navigate = useNavigate();
   const { apiStatus, userDisplayInfo } = useApiAndWallet();
   
   const getSectionDisplayName = () => {
@@ -63,17 +60,6 @@ const Header = ({
           <span className="text-surface-500 select-none ml-2">DAO</span>
           <span className="mx-2 text-surface-500">/</span>
           <span className="text-text select-none min-w-[100px]">{getSectionDisplayName()}</span>
-        </div>
-        
-        <div className="flex-1 flex justify-center mx-4">
-          <div className="relative w-64">
-            <input
-              type="text"
-              placeholder="Search"
-              className="bg-surface-300 rounded-full py-2 pl-10 pr-4 text-sm w-full focus:outline-none focus:ring-1 focus:ring-primary text-text"
-            />
-            <Search size={16} className="absolute left-3 top-2.5 text-surface-500" />
-          </div>
         </div>
         
         <div className="flex items-center gap-4">

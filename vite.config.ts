@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
@@ -9,8 +8,14 @@ export default defineConfig({
   },
   server: {
     port: 5000,
+    strictPort: false, // Si 5010 est occupé, il prend le suivant disponible
+    watch: {
+      usePolling: true, // Améliore la détection des changements
+    },
+    hmr: {
+      overlay: false, // Évite l'écran blanc en cas d'erreur HMR
+    },
     proxy: {
-      // Proxy all requests starting with /api to the backend server
       '/api': {
         target: 'http://localhost:8081',
         changeOrigin: true,
@@ -20,4 +25,5 @@ export default defineConfig({
       }
     }
   },
+  cacheDir: '.vite_cache', // Utiliser un cache dédié pour éviter les corruptions
 });

@@ -6,11 +6,17 @@ import {
   ArrowUp, 
   ArrowDown, 
   RefreshCw, 
-  Loader 
+  Loader,
+  AlertCircle,
+  ExternalLink
 } from 'lucide-react';
 import { treasuryService } from '../services/TreasuryService';
 import { Treasury as TreasuryType, Token, Transfer } from '../core/modules/dao-api';
 import { useEffectOnce } from '../hooks/useEffectOnce';
+import { containers, typography, ui, utils } from '../styles/theme';
+import Card from './common/Card';
+import Button from './common/Button';
+import Badge from './common/Badge';
 
 // Define refresh interval (5 minutes)
 const REFRESH_INTERVAL = 300000;
@@ -148,49 +154,44 @@ const Treasury = () => {
     <div className="p-6">
       {/* Error message display */}
       {error && (
-        <div className="bg-red-100 text-red-700 p-3 rounded-md mb-4">
-          {error}
-        </div>
+        <Card className="mb-6">
+          <div className="flex items-center text-red-400">
+            <AlertCircle size={20} className="mr-2" />
+            <p>{error}</p>
+          </div>
+        </Card>
       )}
       
       {/* Treasury overview header with refresh button */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-text">Treasury</h1>
-        <div className="flex items-center text-sm text-surface-500">
-          <span className="mr-2">Last updated: {formatLastUpdated()}</span>
-          <button 
-            onClick={handleRefresh} 
-            className="flex items-center text-primary hover:text-primary-dark transition-colors ml-4"
-            disabled={refreshing}
-          >
-            {refreshing ? (
-              <Loader className="animate-spin h-5 w-5 mr-1" />
-            ) : (
-              <RefreshCw className="h-5 w-5 mr-1" />
-            )}
-            <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
-          </button>
-        </div>
+      <div className={containers.flexBetween + " mb-6"}>
+        <h1 className={typography.h1}>Treasury</h1>
+        <Button 
+          variant="secondary" 
+          onClick={handleRefresh} 
+          disabled={refreshing}
+          leftIcon={refreshing ? <Loader className="animate-spin" size={16} /> : <RefreshCw size={16} />}
+        >
+          {refreshing ? 'Refreshing...' : 'Refresh'}
+        </Button>
       </div>
       
+      <p className={typography.small + " mb-6"}>
+        Last updated: {formatLastUpdated()}
+      </p>
+      
       {/* Treasury total value card */}
-      <div className="bg-surface-300 rounded-xl p-6 shadow-md mb-8">
-        <div className="flex items-center mb-4">
-          <CircleDollarSign className="text-primary mr-2" size={24} />
-          <h2 className="text-xl font-semibold text-text">Total Balance</h2>
-        </div>
-        
+      <Card title="Total Balance" className="mb-6">
         {loading ? (
           <div className="flex items-center justify-center h-20">
-            <Loader className="animate-spin text-primary" size={24} />
+            <Loader className="animate-spin text-purple-500" size={24} />
           </div>
         ) : (
           <div className="flex flex-col md:flex-row md:items-end">
-            <div className="text-4xl font-bold text-text mb-2 md:mb-0">
+            <div className={ui.stat.value + " text-4xl mb-2 md:mb-0"}>
               {formatCurrency(treasury?.totalValue)}
             </div>
             {treasury?.dailyChange !== undefined && treasury?.dailyChange !== null && (
-              <div className={`flex items-center md:ml-4 ${treasury.dailyChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              <div className={`flex items-center md:ml-4 ${treasury.dailyChange >= 0 ? ui.stat.positive : ui.stat.negative}`}>
                 {treasury.dailyChange >= 0 ? (
                   <ArrowUp className="h-5 w-5 mr-1" />
                 ) : (
@@ -206,144 +207,145 @@ const Treasury = () => {
             )}
           </div>
         )}
-      </div>
+      </Card>
       
       {/* Tokens section */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold text-text mb-4">Assets</h2>
-        
+      <Card title="Assets" className="mb-6">
         {loading ? (
-          <div className="flex items-center justify-center h-40 bg-surface-300 rounded-xl">
-            <Loader className="animate-spin text-primary" size={24} />
+          <div className="flex items-center justify-center h-40">
+            <Loader className="animate-spin text-purple-500" size={24} />
           </div>
         ) : tokens.length === 0 ? (
-          <div className="bg-surface-300 rounded-xl p-6 text-center text-surface-500">
+          <div className="text-center text-gray-400 py-8">
             No tokens found in this treasury.
           </div>
         ) : (
-          <div className="bg-surface-300 rounded-xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-surface-200">
-                <thead className="bg-surface-200">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text uppercase tracking-wider">
-                      Token
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-text uppercase tracking-wider">
-                      Balance
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-text uppercase tracking-wider">
-                      Price
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-text uppercase tracking-wider">
-                      Value
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-text uppercase tracking-wider">
-                      % of Treasury
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-surface-200">
-                  {tokens.map((token) => (
-                    <tr key={token.tokenId} className="hover:bg-surface-200 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-text text-xs mr-3">
-                            {token.symbol?.substring(0, 2)}
-                          </div>
-                          <div>
-                            <div className="text-sm font-medium text-text">{token.name}</div>
-                            <div className="text-xs text-surface-500">{token.symbol}</div>
-                          </div>
+          <div className="overflow-x-auto">
+            <table className={ui.table.container}>
+              <thead>
+                <tr>
+                  <th className={ui.table.header}>Token</th>
+                  <th className={ui.table.header + " text-right"}>Balance</th>
+                  <th className={ui.table.header + " text-right"}>Price</th>
+                  <th className={ui.table.header + " text-right"}>Value</th>
+                  <th className={ui.table.header + " text-right"}>% of Treasury</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tokens.map((token) => (
+                  <tr key={token.tokenId} className={ui.table.row}>
+                    <td className={ui.table.cell}>
+                      <div className="flex items-center">
+                        <div className="h-8 w-8 rounded-full bg-gray-700 flex items-center justify-center mr-3">
+                          {token.symbol ? token.symbol.substring(0, 1) : 'T'}
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-text">
-                        {formatTokenAmount(token.amount)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-text">
-                        {token.price !== undefined ? formatCurrency(token.price) : 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-text">
-                        {formatCurrency(token.value)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-text">
-                        {formatPercentage(token.percentage)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        <div>
+                          <div className="font-medium">{token.name || token.symbol}</div>
+                          <div className="text-gray-400 text-xs">{token.symbol}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className={ui.table.cell + " text-right"}>
+                      {formatTokenAmount(token.amount)}
+                    </td>
+                    <td className={ui.table.cell + " text-right"}>
+                      {formatCurrency(token.price)}
+                    </td>
+                    <td className={ui.table.cell + " text-right"}>
+                      {formatCurrency(token.value)}
+                    </td>
+                    <td className={ui.table.cell + " text-right"}>
+                      {formatPercentage(token.percentage)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-      </div>
+      </Card>
       
       {/* Transactions section */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold text-text mb-4">Recent Transactions</h2>
-        
+      <Card title="Recent Transactions" className="mb-6">
         {loading ? (
-          <div className="flex items-center justify-center h-40 bg-surface-300 rounded-xl">
-            <Loader className="animate-spin text-primary" size={24} />
+          <div className="flex items-center justify-center h-40">
+            <Loader className="animate-spin text-purple-500" size={24} />
           </div>
         ) : transfers.length === 0 ? (
-          <div className="bg-surface-300 rounded-xl p-6 text-center text-surface-500">
-            No transactions found for this treasury.
+          <div className="text-center text-gray-400 py-8">
+            No transactions found.
           </div>
         ) : (
-          <div className="bg-surface-300 rounded-xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-surface-200">
-                <thead className="bg-surface-200">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text uppercase tracking-wider">
-                      Token
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text uppercase tracking-wider">
-                      From
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-text uppercase tracking-wider">
-                      To
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-text uppercase tracking-wider">
-                      Amount
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-surface-200">
-                  {transfers.map((transfer) => (
-                    <tr key={transfer.transferId} className="hover:bg-surface-200 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text">
-                        {formatDate(transfer.timestamp)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-text text-xs mr-2">
-                            {transfer.token?.symbol?.substring(0, 2) || 'UN'}
-                          </div>
-                          <span className="text-sm text-text">{transfer.token?.symbol || 'Unknown'}</span>
+          <div className="overflow-x-auto">
+            <table className={ui.table.container}>
+              <thead>
+                <tr>
+                  <th className={ui.table.header}>Transaction</th>
+                  <th className={ui.table.header}>Token</th>
+                  <th className={ui.table.header + " text-right"}>Amount</th>
+                  <th className={ui.table.header + " text-right"}>Date</th>
+                  <th className={ui.table.header + " text-right"}>Explorer</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transfers.map((transfer, index) => (
+                  <tr key={transfer.transferId || index} className={ui.table.row}>
+                    <td className={ui.table.cell}>
+                      <div className="flex items-center">
+                        <div className={`p-2 rounded-full mr-3 ${transfer.direction === 'in' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+                          <ArrowDownUp 
+                            size={16} 
+                            className={transfer.direction === 'in' ? 'text-green-400' : 'text-red-400'} 
+                          />
                         </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text">
-                        {shortenAddress(transfer.fromAddress)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-text">
-                        {shortenAddress(transfer.toAddress)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-text">
-                        {formatTokenAmount(transfer.amount)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        <div>
+                          <div className="font-medium">
+                            {transfer.direction === 'in' ? 'Deposit' : 'Withdrawal'}
+                          </div>
+                          <div className="text-gray-400 text-xs">
+                            {transfer.direction === 'in' 
+                              ? `From: ${shortenAddress(transfer.fromAddress || '')}` 
+                              : `To: ${shortenAddress(transfer.toAddress || '')}`
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className={ui.table.cell}>
+                      <div className="flex items-center">
+                        <div className="h-6 w-6 rounded-full bg-gray-700 flex items-center justify-center mr-2 text-xs">
+                          {transfer.token?.symbol ? transfer.token.symbol.substring(0, 1) : 'T'}
+                        </div>
+                        <span>{transfer.token?.symbol || 'Unknown'}</span>
+                      </div>
+                    </td>
+                    <td className={ui.table.cell + " text-right font-medium"}>
+                      <span className={transfer.direction === 'in' ? 'text-green-400' : 'text-red-400'}>
+                        {transfer.direction === 'in' ? '+' : '-'}{formatTokenAmount(transfer.amount)}
+                      </span>
+                    </td>
+                    <td className={ui.table.cell + " text-right text-gray-400"}>
+                      {formatDate(transfer.timestamp)}
+                    </td>
+                    <td className={ui.table.cell + " text-right"}>
+                      {transfer.explorerUrl && (
+                        <a 
+                          href={transfer.explorerUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="text-blue-400 hover:text-blue-300 inline-flex items-center"
+                        >
+                          <ExternalLink size={14} />
+                        </a>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 };

@@ -519,6 +519,95 @@ const Dashboard = () => {
   const { publicKey, connected } = useWallet();
   const { sendTransaction } = useSolanaTransaction();
 
+  // Add these mock data arrays near the top of the file, with other state/data declarations
+  const mockRegions = [
+    { region: "Asia", members: 320, percentage: 25, color: "#7B5CFF" },
+    { region: "Europe", members: 280, percentage: 22, color: "#9C5CFF" },
+    { region: "North America", members: 250, percentage: 20, color: "#4E78FF" },
+    { region: "South America", members: 180, percentage: 14, color: "#8C45FF" },
+    { region: "Africa", members: 160, percentage: 12, color: "#7D45FF" },
+    { region: "Oceania", members: 90, percentage: 7, color: "#4EA0FF" }
+  ];
+
+  const mockTokens = [
+    { name: "USD Coin", symbol: "USDC", amount: 4250.8, percentage: 25, color: "#7B5CFF" },
+    { name: "Cardano", symbol: "ADA", amount: 3400.2, percentage: 20, color: "#9C5CFF" },
+    { name: "Solana", symbol: "SOL", amount: 2550.5, percentage: 15, color: "#4E78FF" },
+    { name: "Polkadot", symbol: "DOT", amount: 1700.9, percentage: 10, color: "#4EA0FF" },
+    { name: "Avalanche", symbol: "AVAX", amount: 1360.4, percentage: 8, color: "#8C45FF" }
+  ];
+
+  // Chart helper functions
+  const createDonutChartData = (items: any[], colorKey: string = 'color') => {
+    return {
+      labels: items.map(item => item.region || item.name),
+      datasets: [
+        {
+          data: items.map(item => item.percentage),
+          backgroundColor: items.map(item => item[colorKey]),
+          borderWidth: 0,
+          borderRadius: 0,
+          hoverOffset: 5,
+          cutout: '70%'
+        }
+      ]
+    };
+  };
+
+  const donutChartOptions: ChartOptions<'pie'> = {
+    responsive: true,
+    maintainAspectRatio: true,
+    plugins: {
+      legend: {
+        display: false
+      },
+      tooltip: {
+        enabled: true,
+        displayColors: false,
+        backgroundColor: 'rgba(17, 17, 17, 0.9)',
+        titleColor: '#fff',
+        bodyColor: '#6B7280',
+        padding: 12,
+        cornerRadius: 8,
+        titleFont: {
+          size: 14,
+          weight: 'bold' as const
+        },
+        bodyFont: {
+          size: 12
+        },
+        callbacks: {
+          title: (context: any) => context[0].label,
+          label: (context: any) => {
+            const item = context.dataset.data[context.dataIndex];
+            return `${item}%`;
+          },
+          afterLabel: (context: any) => {
+            // Get the corresponding mock data item
+            const index = context.dataIndex;
+            const dataset = context.dataset;
+            
+            if (dataset.label === 'Members') {
+              const regionData = mockRegions[index];
+              return regionData ? `${regionData.members} members` : '';
+            } else if (dataset.label === 'Tokens') {
+              const tokenData = mockTokens[index];
+              return tokenData ? `${tokenData.amount.toFixed(1)} ${tokenData.symbol}` : '';
+            }
+            return '';
+          }
+        }
+      }
+    },
+    elements: {
+      arc: {
+        borderWidth: 0,
+        borderRadius: 0
+      }
+    },
+    rotation: -0.5 * Math.PI
+  };
+
   // Function to fetch treasury data
   const fetchTreasuryData = async (showRefreshIndicator = true) => {
     if (!daoId) {
@@ -876,34 +965,6 @@ const Dashboard = () => {
     ],
   };
 
-  // Chart options for pie chart
-  const chartOptions: ChartOptions<'pie'> = {
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: {
-          color: '#fff',
-          padding: 15,
-          font: {
-            size: 12
-          }
-        }
-      },
-      tooltip: {
-        callbacks: {
-          label: function(context: TooltipItem<'pie'>) {
-            const label = context.label || '';
-            const value = context.raw as number || 0;
-            const total = (context.dataset.data as number[]).reduce((acc, data) => acc + data, 0);
-            const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0';
-            return `${label}: ${value} (${percentage}%)`;
-          }
-        }
-      }
-    }
-  };
-
   // Format currency value
   const formatCurrency = (value: any): string => {
     if (value === null || value === undefined) return '$0';
@@ -947,194 +1008,308 @@ const Dashboard = () => {
 
   return (
     <div className="p-6">
+      <h1 className="text-3xl font-bold mb-4">Home</h1>
+      
       {error && (
         <div className="bg-red-100 text-red-700 p-3 rounded-md mb-4">
           {error}
         </div>
       )}
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <div className="bg-primary text-text rounded-lg shadow p-4">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-medium">Treasury Balance</h3>
-            <CircleDollarSign className="text-text" size={20} />
-          </div>
-          {loading ? (
-            <div className="flex items-center justify-center h-16">
-              <Loader className="animate-spin text-text" size={24} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column: DAO Portfolio + News + Proposals */}
+        <div className="col-span-2 space-y-4">
+          {/* Overall DAO Portfolio */}
+          <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
+            <div className="mb-3">
+              <h2 className="text-xl font-medium text-white">Overall DAO Stats</h2>
             </div>
-          ) : (
-            <>
-              <p className="text-2xl font-bold">{formatCurrency(treasury?.totalValue)}</p>
-              <p className="text-text text-sm">
-                {calculatePercentageChange(treasury?.totalValue, treasury?.totalValue - treasury?.dailyChange)} from yesterday
-              </p>
-              {tokens.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium mb-2">Top 5 Tokens:</p>
-                  <ul className="text-sm">
-                    {tokens.map((token, index) => (
-                      <li key={token.tokenId || index} className="flex justify-between mb-1">
-                        <span>{token.name}</span>
-                        <span>{token.amount?.toFixed(4) || 0} {token.symbol}</span>
-                      </li>
-                    ))}
-                  </ul>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex flex-col">
+                <div className="text-sm text-gray-400 flex items-center">
+                  <span>DAO Balance</span>
+                  <span className="ml-2 px-2 py-0.5 bg-primary/20 text-primary text-xs rounded-full">+24%</span>
                 </div>
-              )}
-            </>
-          )}
-        </div>
-        
-        <div className="bg-primary text-text rounded-lg shadow p-4">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-medium">Active Proposals</h3>
-            <Vote className="text-text" size={20} />
-          </div>
-          {proposalsLoading ? (
-            <div className="flex items-center justify-center h-16">
-              <Loader className="animate-spin text-text" size={24} />
-            </div>
-          ) : (
-            <>
-              <p className="text-2xl font-bold">{proposals.length}</p>
-              <p className="text-text text-sm">{proposals.filter(p => p.closingDate.getTime() - Date.now() < 48 * 60 * 60 * 1000).length} closing soon</p>
-              {proposals.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium mb-2">Recent Proposals:</p>
-                  <ul className="text-sm">
-                    {proposals.map((proposal) => (
-                      <li key={proposal.id} className="mb-2 pb-2 border-b border-gray-700 last:border-0">
-                        <div className="flex justify-between">
-                          <span className="font-medium">{proposal.title}</span>
-                          <span className="text-xs">Closes in {formatDate(proposal.closingDate)}</span>
-                        </div>
-                        <div className="flex justify-between mt-1">
-                          <span className="text-green-400">For: {proposal.votesFor}</span>
-                          <span className="text-red-400">Against: {proposal.votesAgainst}</span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-        
-        <div className="bg-primary text-text rounded-lg shadow p-4 relative overflow-hidden border border-indigo-500/30">
-          {/* Add decorative background effects */}
-          <div className="absolute -top-10 -left-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-xl"></div>
-          <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-purple-500/10 rounded-full blur-xl"></div>
-          
-          <div className="relative z-10">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium text-lg flex items-center bg-gradient-to-r from-indigo-200 to-purple-200 bg-clip-text text-transparent">
-                <Users className="text-indigo-400 mr-2" size={20} />
-                Member Distribution
-              </h3>
-              <div className="flex items-center space-x-2">
-                <div className="px-2 py-1 rounded-full bg-indigo-500/20 text-xs">
-                  {members.length || 1342} Members
-                </div>
-                <div className="px-2 py-1 rounded-full bg-green-500/20 text-xs text-green-400">
-                  +12 this week
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {membersLoading ? (
-            <div className="flex items-center justify-center h-16">
-              <Loader className="animate-spin text-text" size={24} />
-            </div>
-          ) : (
-            <>
-              <div className="h-[400px] relative rounded-lg overflow-hidden border border-indigo-500/20 bg-[#0d0f1e]">
-                {Object.keys(memberLocations).length > 0 && (
-                  <NetworkVisualization memberLocations={memberLocations} />
-                )}
+                <div className="text-2xl font-bold text-white mt-1">{formatCurrency(treasury?.totalValue)}</div>
               </div>
               
-              {connected && (
-                <div className="mt-4 flex justify-center">
-                  {membershipLoading ? (
-                    <button className="bg-surface-200 text-text px-4 py-2 rounded-full text-sm flex items-center opacity-70 cursor-not-allowed">
-                      <RefreshCw size={16} className="mr-1 animate-spin" />
-                      Loading...
-                    </button>
-                  ) : userIsDaoMember ? (
-                    <button 
-                      className="bg-red-500 text-white px-4 py-2 rounded-full text-sm flex items-center hover:bg-red-600"
-                      onClick={handleLeaveDao}
-                    >
-                      <LogOut size={16} className="mr-1" />
-                      Leave this DAO
-                    </button>
-                  ) : (
-                    <button 
-                      className="bg-green-500 text-white px-4 py-2 rounded-full text-sm flex items-center hover:bg-green-600"
-                      onClick={handleJoinDao}
-                    >
-                      <LogIn size={16} className="mr-1" />
-                      Join this DAO
-                    </button>
-                  )}
+              <div className="flex flex-col">
+                <div className="text-sm text-gray-400 flex items-center">
+                  <span>DAO Members</span>
+                  <span className="ml-2 px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-xs rounded-full">+12 this week</span>
                 </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-surface-300 text-text rounded-lg shadow p-4">
-          <h3 className="font-medium mb-4">Activity Overview</h3>
-          <div className="h-64 flex items-center justify-center">
-            <Activity className="text-text" size={100} />
-          </div>
-        </div>
-        
-        <div className="bg-surface-300 text-text rounded-lg shadow p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-medium">Token Distribution</h3>
-            <div className="flex items-center">
-              {refreshing && (
-                <RefreshCw className="animate-spin text-text mr-2" size={16} />
-              )}
-              <button 
-                onClick={updateTokenPercentages}
-                disabled={refreshing || loading}
-                //disabled={true}
-                className="bg-primary text-text py-1 px-3 rounded-md text-sm flex items-center hover:bg-opacity-90 disabled:opacity-50"
-              >
-                <RefreshCw size={14} className="mr-1" />
-                Refresh
-              </button>
+                <div className="text-2xl font-bold text-white mt-1">{members.length || 1342}</div>
+              </div>
+              
+              <div className="flex flex-col">
+                <div className="text-sm text-gray-400 flex items-center">
+                  <span>Active Proposals</span>
+                  <span className="ml-2 px-2 py-0.5 bg-purple-500/20 text-purple-400 text-xs rounded-full">{proposals.filter(p => p.closingDate.getTime() - Date.now() < 48 * 60 * 60 * 1000).length} closing soon</span>
+                </div>
+                <div className="text-2xl font-bold text-white mt-1">{proposals.length}</div>
+              </div>
             </div>
           </div>
           
-          {loading ? (
-            <div className="h-64 flex items-center justify-center">
-              <Loader className="animate-spin text-text" size={24} />
+          {/* DAO News */}
+          <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-medium text-white">DAO News</h3>
+              <span className="bg-primary/20 text-primary px-3 py-1 rounded-full text-xs">Latest updates</span>
             </div>
-          ) : tokens.length > 0 ? (
-            <>
-              <div className="h-64 flex items-center justify-center">
-                <div className="w-full h-full max-w-md">
-                  <Pie data={tokenChartData} options={chartOptions} />
+            
+            <div className="space-y-3">
+              <div className="p-3 bg-[#1A1A1A]/70 rounded-lg border-l-4 border-l-indigo-500">
+                <div className="flex justify-between mb-1">
+                  <span className="font-medium text-white">Treasury growth surpasses expectations</span>
+                  <span className="text-xs text-gray-400">2 days ago</span>
+                </div>
+                <p className="text-gray-400 text-sm">The DAO's treasury has grown by 24% this month, exceeding our target of 15%. This positions us well for upcoming project funding.</p>
+              </div>
+              
+              <div className="p-3 bg-[#1A1A1A]/70 rounded-lg border-l-4 border-l-purple-500">
+                <div className="flex justify-between mb-1">
+                  <span className="font-medium text-white">New partnership announcement</span>
+                  <span className="text-xs text-gray-400">4 days ago</span>
+                </div>
+                <p className="text-gray-400 text-sm">We've established a strategic partnership with DecentralFi to expand our DeFi capabilities and provide additional yield opportunities.</p>
+              </div>
+              
+              <div className="p-3 bg-[#1A1A1A]/70 rounded-lg border-l-4 border-l-blue-500">
+                <div className="flex justify-between mb-1">
+                  <span className="font-medium text-white">Community call scheduled</span>
+                  <span className="text-xs text-gray-400">1 week ago</span>
+                </div>
+                <p className="text-gray-400 text-sm">Our next community call is scheduled for June 15th. We'll be discussing Q3 plans and voting on new governance proposals.</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Proposals Activity */}
+          <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-medium text-white">Active Proposals</h3>
+              <span className="bg-primary/20 text-primary px-3 py-1 rounded-full text-xs">{proposals.length} Total</span>
+            </div>
+            
+            {proposalsLoading ? (
+              <div className="flex items-center justify-center h-32">
+                <Loader className="animate-spin text-primary" size={30} />
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {proposals.map((proposal, index) => (
+                  <div key={proposal.id} className="p-3 bg-[#1A1A1A]/70 rounded-lg hover:bg-[#222]/90 transition-colors">
+                    <div className="flex justify-between mb-1">
+                      <span className="font-medium text-white">{proposal.title}</span>
+                      <span className="text-xs text-gray-400">Closes in {formatDate(proposal.closingDate)}</span>
+                    </div>
+                    <div className="flex justify-between items-center mt-2">
+                      <div className="flex space-x-4">
+                        <span className="text-green-400 text-sm">For: {proposal.votesFor}</span>
+                        <span className="text-red-400 text-sm">Against: {proposal.votesAgainst}</span>
+                      </div>
+                      <button className="bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1 rounded-full text-xs transition-colors">
+                        Vote Now
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Right Column: Share Holders + Token Distribution */}
+        <div className="space-y-4">
+          {/* DAO Token */}
+          <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-medium text-white">DAO Token</h3>
+              <span className="text-green-400 text-sm">+5.2%</span>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center">
+                <CircleDollarSign className="text-white" size={20} />
+              </div>
+              <div>
+                <div className="text-2xl font-bold text-white">$2.87</div>
+                <div className="text-sm text-gray-400">24h: +$0.14</div>
+              </div>
+            </div>
+            
+            <div className="mt-4">
+              <div className="bg-[#1A1A1A]/70 p-3 rounded-lg">
+                <div className="flex justify-between mb-1">
+                  <span className="text-xs text-gray-400">Market Cap</span>
+                  <span className="text-xs text-white">$28.7M</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-xs text-gray-400">Volume (24h)</span>
+                  <span className="text-xs text-white">$1.2M</span>
                 </div>
               </div>
-              <div className="text-center text-xs text-text-secondary mt-4">
-                Last updated: {formatLastUpdated()}
-                <span className="text-xs text-text-secondary ml-2">(Updates automatically every 30 minutes)</span>
-              </div>
-            </>
-          ) : (
-            <div className="h-64 flex items-center justify-center text-text">
-              <p>No tokens found for this DAO</p>
             </div>
-          )}
+          </div>
+          
+          {/* DAO Socials */}
+          <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
+            <div className="flex justify-between items-center mb-5">
+              <h3 className="font-medium text-white">DAO Community</h3>
+            </div>
+            
+            <div className="flex justify-between items-center px-2 py-4">
+              <a href="#" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
+                <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                    <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" />
+                  </svg>
+                </div>
+                <span className="text-xs text-gray-400">X</span>
+              </a>
+              
+              <a href="#" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
+                <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 127.14 96.36" fill="#fff">
+                    <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z" />
+                  </svg>
+                </div>
+                <span className="text-xs text-gray-400">Discord</span>
+              </a>
+              
+              <a href="#" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
+                <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#fff">
+                    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+                  </svg>
+                </div>
+                <span className="text-xs text-gray-400">Telegram</span>
+              </a>
+              
+              <a href="#" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
+                <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#fff">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.072-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                  </svg>
+                </div>
+                <span className="text-xs text-gray-400">Instagram</span>
+              </a>
+              
+              <a href="#" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
+                <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#fff">
+                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                  </svg>
+                </div>
+                <span className="text-xs text-gray-400">TikTok</span>
+              </a>
+            </div>
+          </div>
+          
+          {/* Member Distribution */}
+          <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-medium text-white">Share Holders</h3>
+              <div className="text-xs text-gray-500">
+                Last updated: {formatLastUpdated()}
+              </div>
+            </div>
+            
+            {membersLoading ? (
+              <div className="flex items-center justify-center h-40">
+                <Loader className="animate-spin text-primary" size={24} />
+              </div>
+            ) : (
+              <div className="flex gap-4 items-center">
+                {/* Left column - Chart */}
+                <div className="w-2/5">
+                  <div className="relative w-full aspect-square" style={{ maxWidth: "120px", margin: "0 auto" }}>
+                    <Pie 
+                      data={{
+                        ...createDonutChartData(mockRegions),
+                        datasets: [
+                          {
+                            ...createDonutChartData(mockRegions).datasets[0],
+                            label: 'Members'
+                          }
+                        ]
+                      }} 
+                      options={donutChartOptions} 
+                    />
+                  </div>
+                </div>
+                
+                {/* Right column - Legend */}
+                <div className="w-3/5 flex items-center">
+                  <div className="grid grid-cols-2 gap-2 w-full">
+                    {mockRegions.map(region => (
+                      <div key={region.region} className="flex items-center">
+                        <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: region.color }} />
+                        <span className="text-xs text-gray-400">{region.region}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Token Distribution */}
+          <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-medium text-white">Token Distribution</h3>
+              <div className="text-xs text-gray-500">
+                Last updated: {formatLastUpdated()}
+              </div>
+            </div>
+            
+            {loading ? (
+              <div className="flex items-center justify-center h-40">
+                <Loader className="animate-spin text-primary" size={24} />
+              </div>
+            ) : tokens.length > 0 ? (
+              <div className="flex gap-4 items-center">
+                {/* Left column - Chart */}
+                <div className="w-2/5">
+                  <div className="relative w-full aspect-square" style={{ maxWidth: "120px", margin: "0 auto" }}>
+                    <Pie 
+                      data={{
+                        ...createDonutChartData(mockTokens),
+                        datasets: [
+                          {
+                            ...createDonutChartData(mockTokens).datasets[0],
+                            label: 'Tokens'
+                          }
+                        ]
+                      }} 
+                      options={donutChartOptions}
+                    />
+                  </div>
+                </div>
+                
+                {/* Right column - Legend */}
+                <div className="w-3/5 flex items-center">
+                  <div className="grid grid-cols-2 gap-2 w-full">
+                    {mockTokens.map(token => (
+                      <div key={token.name} className="flex items-center">
+                        <div 
+                          className="w-2 h-2 rounded-full mr-2"
+                          style={{ backgroundColor: token.color }}
+                        />
+                        <span className="text-xs text-gray-400 truncate">{token.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="h-40 flex items-center justify-center text-gray-400">
+                <p>No tokens found for this DAO</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
