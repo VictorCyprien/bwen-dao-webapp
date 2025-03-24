@@ -261,7 +261,7 @@ const UserProfile: React.FC = () => {
               type="email"
               id="email"
               name="email"
-              value={formData.email}
+              value={formData.email || ''}
               onChange={handleInputChange}
               className="w-full p-2 bg-[#191919] border border-gray-800 rounded-md text-white focus:outline-none focus:border-purple-600"
               placeholder="Email address"
