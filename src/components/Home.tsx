@@ -7,7 +7,8 @@ import {
   Loader,
   RefreshCw,
   LogIn,
-  LogOut
+  LogOut,
+  Settings
 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { treasuryService } from '../services/TreasuryService';
@@ -31,6 +32,7 @@ import {
 import { useEffectOnce } from '../hooks/useEffectOnce';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useSolanaTransaction } from '../hooks/useSolanaTransaction';
+import DaoUpdateModal from './DaoUpdateModal';
 
 // Register Chart.js components
 ChartJS.register(
@@ -515,6 +517,7 @@ const Dashboard = () => {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [userIsDaoMember, setUserIsDaoMember] = useState<boolean>(false);
   const [membershipLoading, setMembershipLoading] = useState<boolean>(false);
+  const [isDaoUpdateModalOpen, setIsDaoUpdateModalOpen] = useState<boolean>(false);
   
   const { publicKey, connected } = useWallet();
   const { sendTransaction } = useSolanaTransaction();
@@ -1008,7 +1011,16 @@ const Dashboard = () => {
 
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-bold mb-4">Home</h1>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-3xl font-bold">Home</h1>
+        <button 
+          onClick={() => setIsDaoUpdateModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+        >
+          <Settings size={16} />
+          Update DAO
+        </button>
+      </div>
       
       {error && (
         <div className="bg-red-100 text-red-700 p-3 rounded-md mb-4">
@@ -1312,6 +1324,12 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* DAO Update Modal */}
+      <DaoUpdateModal 
+        isOpen={isDaoUpdateModalOpen} 
+        onClose={() => setIsDaoUpdateModalOpen(false)} 
+      />
     </div>
   );
 };
