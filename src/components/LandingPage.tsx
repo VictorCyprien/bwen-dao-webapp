@@ -8,6 +8,7 @@ import { DAO } from '../core/modules/dao-api';
 import { useEffectOnce } from '../hooks/useEffectOnce';
 import Button from './common/Button';
 import Card from './common/Card';
+import ProfileModal from './ProfileModal';
 import { 
   ArrowRight, 
   Clock, 
@@ -90,6 +91,22 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
   const [showAllDAOs, setShowAllDAOs] = useState(false);
   const [animationComplete, setAnimationComplete] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  
+  // Check for Telegram auth parameters
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const hasTelegramAuth = 
+      searchParams.has('id') && 
+      searchParams.has('first_name') && 
+      searchParams.has('auth_date') && 
+      searchParams.has('hash');
+
+    if (hasTelegramAuth) {
+      // Simply open the profile modal
+      setIsProfileModalOpen(true);
+    }
+  }, []);
   
   // Logo animation sequence
   useEffect(() => {
@@ -602,6 +619,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
             </div>
           </div>
         )}
+
+        {/* Profile Modal for Telegram auth */}
+        <ProfileModal 
+          isOpen={isProfileModalOpen} 
+          onClose={() => setIsProfileModalOpen(false)} 
+        />
       </div>
     </div>
   );

@@ -370,7 +370,7 @@ const UserProfile: React.FC = () => {
                     size="medium"
                     showUserPic={false}
                     cornerRadius={20}
-                    authUrl={window.location.origin + "/profile"}
+                    authUrl={window.location.origin}
                   />
                 </div>
             </div>
