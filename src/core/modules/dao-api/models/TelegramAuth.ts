@@ -22,6 +22,10 @@ export class TelegramAuth {
     */
     'firstName': string;
     /**
+    * User\'s last name
+    */
+    'lastName': string;
+    /**
     * Telegram username
     */
     'username': string;
@@ -52,6 +56,12 @@ export class TelegramAuth {
         {
             "name": "firstName",
             "baseName": "first_name",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "lastName",
+            "baseName": "last_name",
             "type": "string",
             "format": ""
         },
