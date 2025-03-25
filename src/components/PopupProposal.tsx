@@ -3,6 +3,8 @@ import { X, Check, AlertTriangle, ThumbsUp, ThumbsDown, Users, Calendar, Clock, 
 import { proposalService } from '../services/ProposalService';
 import { useEffectOnce } from '../hooks/useEffectOnce';
 import { useWallet, WalletContextState } from '@solana/wallet-adapter-react';
+import Modal from './common/Modal';
+import Button from './common/Button';
 
 interface ProposalVotes {
   for: number;
@@ -31,6 +33,8 @@ interface ProposalDetails {
   quorum: number;
   minApproval: number;
   daoId: string;
+  isPodProposal?: boolean;
+  podId?: string;
 }
 
 interface PopupProposalProps {
@@ -96,15 +100,15 @@ const PopupProposal: React.FC<PopupProposalProps> = ({ proposal, onClose, onVote
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'active':
-        return 'bg-green-900 text-success';
+        return 'bg-green-900/20 text-green-400 border border-green-700/30';
       case 'pending':
-        return 'bg-yellow-900 text-warning';
+        return 'bg-yellow-900/20 text-yellow-400 border border-yellow-700/30';
       case 'passed':
-        return 'bg-blue-900 text-primary';
+        return 'bg-blue-900/20 text-blue-400 border border-blue-700/30';
       case 'rejected':
-        return 'bg-red-900 text-error';
+        return 'bg-red-900/20 text-red-400 border border-red-700/30';
       default:
-        return 'bg-gray-900 text-text opacity-80';
+        return 'bg-gray-900/20 text-gray-400 border border-gray-700/30';
     }
   };
 
@@ -125,213 +129,228 @@ const PopupProposal: React.FC<PopupProposalProps> = ({ proposal, onClose, onVote
   const progress = calculateProgress();
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-      <div className="bg-surface-menu rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        <div className="flex justify-between items-center p-4 border-b border-gray-600">
-          <div className="flex items-center">
-            <h2 className="text-xl font-semibold text-text">{localProposal.name}</h2>
-            <span className={`ml-3 px-2 py-1 rounded-full text-xs ${getStatusColor(localProposal.status)}`}>
-              {localProposal.status}
-            </span>
+    <Modal
+      isOpen={true}
+      onClose={onClose}
+      title={localProposal.name}
+      maxWidth="max-w-4xl"
+    >
+      <div className="flex flex-col space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-[#151515] p-4 rounded-xl border border-gray-800">
+            <div className="flex items-center text-gray-400 mb-2">
+              <Calendar size={16} className="mr-2" />
+              <span className="text-sm font-medium">Start Date</span>
+            </div>
+            <p className="text-white">{localProposal.startTime}</p>
           </div>
-          <button 
-            onClick={onClose}
-            className="text-surface-500 hover:text-text"
-          >
-            <X size={20} />
-          </button>
+          
+          <div className="bg-[#151515] p-4 rounded-xl border border-gray-800">
+            <div className="flex items-center text-gray-400 mb-2">
+              <Clock size={16} className="mr-2" />
+              <span className="text-sm font-medium">End Date</span>
+            </div>
+            <p className="text-white">{localProposal.endTime}</p>
+          </div>
+          
+          <div className="bg-[#151515] p-4 rounded-xl border border-gray-800">
+            <div className="flex items-center text-gray-400 mb-2">
+              <Users size={16} className="mr-2" />
+              <span className="text-sm font-medium">Created By</span>
+            </div>
+            <p className="text-white truncate">{localProposal.creator}</p>
+          </div>
         </div>
         
-        <div className="overflow-y-auto flex-grow p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="bg-surface-200 p-3 rounded-md">
-              <div className="flex items-center text-surface-500 mb-1">
-                <Calendar size={14} className="mr-1" />
-                <span className="text-xs">Start Date</span>
-              </div>
-              <p className="text-text">{localProposal.startTime}</p>
-            </div>
-            
-            <div className="bg-surface-200 p-3 rounded-md">
-              <div className="flex items-center text-surface-500 mb-1">
-                <Clock size={14} className="mr-1" />
-                <span className="text-xs">End Date</span>
-              </div>
-              <p className="text-text">{localProposal.endTime}</p>
-            </div>
-            
-            <div className="bg-surface-200 p-3 rounded-md">
-              <div className="flex items-center text-surface-500 mb-1">
-                <Users size={14} className="mr-1" />
-                <span className="text-xs">Created By</span>
-              </div>
-              <p className="text-text">{localProposal.creator}</p>
-            </div>
+        <div className="bg-[#151515] p-6 rounded-xl border border-gray-800">
+          <h3 className="text-lg font-medium text-white mb-4">Description</h3>
+          <p className="text-gray-300 whitespace-pre-line">{localProposal.description}</p>
+        </div>
+        
+        {localProposal.actions.length > 0 && (
+          <div className="bg-[#151515] p-6 rounded-xl border border-gray-800">
+            <h3 className="text-lg font-medium text-white mb-4">Actions</h3>
+            <ul className="space-y-4">
+              {localProposal.actions.map((action, index) => (
+                <li key={index} className="flex items-start bg-[#1a1a1a] p-4 rounded-lg border border-gray-800">
+                  <Check size={18} className="text-purple-500 mr-3 mt-0.5" />
+                  <div>
+                    <p className="text-white">{action.description}</p>
+                    {action.walletAddress && (
+                      <p className="text-gray-400 text-sm font-mono mt-2">
+                        {action.walletAddress}
+                      </p>
+                    )}
+                    {action.amount && action.token && (
+                      <p className="text-gray-400 text-sm mt-2">
+                        Amount: {action.amount} {action.token}
+                      </p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
+        )}
+        
+        <div className="bg-[#151515] p-6 rounded-xl border border-gray-800">
+          <h3 className="text-lg font-medium text-white mb-4">Current Votes</h3>
           
-          <div className="mb-6">
-            <h3 className="text-lg font-medium text-text mb-2">Description</h3>
-            <div className="bg-surface-200 p-4 rounded-md">
-              <p className="text-text opacity-80 whitespace-pre-line">{localProposal.description}</p>
-            </div>
-          </div>
-          
-          {localProposal.actions.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-lg font-medium text-text mb-2">Actions</h3>
-              <div className="bg-surface-200 p-4 rounded-md">
-                <ul className="space-y-3">
-                  {localProposal.actions.map((action, index) => (
-                    <li key={index} className="flex items-start">
-                      <Check size={16} className="text-primary mr-2 mt-0.5" />
-                      <div>
-                        <p className="text-text">{action.description}</p>
-                        {action.walletAddress && (
-                          <p className="text-surface-500 text-sm font-mono mt-1">
-                            {action.walletAddress}
-                          </p>
-                        )}
-                        {action.amount && action.token && (
-                          <p className="text-surface-500 text-sm mt-1">
-                            Amount: {action.amount} {action.token}
-                          </p>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-          
-          <div className="mb-6">
-            <h3 className="text-lg font-medium text-text mb-2">Current Votes</h3>
-            <div className="bg-surface-200 p-4 rounded-md">
-              <div className="flex justify-between text-sm mb-1">
-                <span className="text-surface-500">Quorum: {localProposal.quorum} votes required</span>
-                <span className={progress.quorumMet ? "text-success" : "text-warning"}>
-                  {progress.quorumMet ? "Quorum met" : "Quorum not met"}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="bg-[#1a1a1a] p-4 rounded-lg border border-gray-800">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-400">Quorum</span>
+                <span className={progress.quorumMet ? "text-green-400" : "text-yellow-400"}>
+                  {progress.quorumMet ? "Met" : `${progress.total}/${localProposal.quorum} needed`}
                 </span>
               </div>
-              
-              <div className="flex justify-between text-sm mb-3">
-                <span className="text-surface-500">Approval: {localProposal.minApproval}% required</span>
-                <span className={progress.approvalMet ? "text-success" : "text-warning"}>
-                  {progress.approvalMet ? "Approval threshold met" : "Approval threshold not met"}
-                </span>
-              </div>
-              
-              <div className="w-full h-6 bg-surface-300 rounded-md overflow-hidden flex mb-2 relative">
+              <div className="w-full bg-gray-800 rounded-full h-2">
                 <div 
-                  className={`bg-primary h-full transition-all duration-300 ease-in-out ${isVoting ? 'opacity-70' : ''}`}
+                  className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min((progress.total / localProposal.quorum) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+            
+            <div className="bg-[#1a1a1a] p-4 rounded-lg border border-gray-800">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-400">Approval</span>
+                <span className={progress.approvalMet ? "text-green-400" : "text-yellow-400"}>
+                  {progress.approvalMet ? "Met" : `${progress.for.toFixed(1)}%/${localProposal.minApproval}% needed`}
+                </span>
+              </div>
+              <div className="w-full bg-gray-800 rounded-full h-2">
+                <div 
+                  className="bg-purple-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${progress.for}%` }}
-                ></div>
-                <div 
-                  className={`bg-error h-full transition-all duration-300 ease-in-out ${isVoting ? 'opacity-70' : ''}`}
-                  style={{ width: `${progress.against}%` }}
-                ></div>
-                {isVoting && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-xs text-white font-medium animate-pulse">Updating...</span>
-                  </div>
-                )}
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 text-center text-sm">
-                <div>
-                  <div className="text-primary font-medium">{localProposal.votes.for} votes</div>
-                  <div className="text-surface-500">For ({progress.for.toFixed(1)}%)</div>
-                </div>
-                <div>
-                  <div className="text-error font-medium">{localProposal.votes.against} votes</div>
-                  <div className="text-surface-500">Against ({progress.against.toFixed(1)}%)</div>
-                </div>
+                />
               </div>
             </div>
           </div>
           
-          <div className="mb-6">
-            <h3 className="text-lg font-medium text-text mb-2">Vote</h3>
-            <div className="bg-surface-200 p-4 rounded-md">
-              {!canVote && (
-                <div className="bg-red-900/20 border border-red-900/30 rounded-md p-3 mb-4">
-                  <div className="flex items-start mb-2">
-                    <AlertTriangle size={16} className="text-yellow-400 mr-2 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-text">You must be a member of this DAO to vote on proposals.</p>
-                  </div>
-                  <div className="mt-2 text-center">
-                    <p className="text-xs text-surface-400 mb-2">Please join the DAO to participate in governance</p>
-                    <button 
-                      onClick={() => window.location.href = `/daos/${localProposal.daoId}`}
-                      className="px-3 py-1.5 bg-primary text-white text-sm rounded-md hover:bg-opacity-90"
-                    >
-                      Go to DAO page to join
-                    </button>
-                  </div>
-                </div>
-              )}
-              
-              {error && (
-                <div className="bg-red-900/20 border border-red-900/30 rounded-md p-3 mb-4 flex items-start">
-                  <AlertTriangle size={16} className="text-error mr-2 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-text">{error}</p>
-                </div>
-              )}
-              
-              {!hasVoted ? (
-                <>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <button
-                      onClick={() => canVote && setVoteOption('for')}
-                      disabled={isVoting || !canVote}
-                      className={`p-3 rounded-md flex flex-col items-center justify-center transition-all
-                        ${voteOption === 'for' 
-                          ? 'bg-primary bg-opacity-20 border-2 border-primary' 
-                          : 'bg-surface-300 border-2 border-transparent hover:border-primary hover:border-opacity-50'}
-                        ${(isVoting || !canVote) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      <ThumbsUp size={24} className={`mb-2 ${voteOption === 'for' ? 'text-primary' : 'text-text'}`} />
-                      <span className={`font-medium ${voteOption === 'for' ? 'text-primary' : 'text-text'}`}>Vote For</span>
-                    </button>
-                    
-                    <button
-                      onClick={() => canVote && setVoteOption('against')}
-                      disabled={isVoting || !canVote}
-                      className={`p-3 rounded-md flex flex-col items-center justify-center transition-all
-                        ${voteOption === 'against' 
-                          ? 'bg-error bg-opacity-20 border-2 border-error' 
-                          : 'bg-surface-300 border-2 border-transparent hover:border-error hover:border-opacity-50'}
-                        ${(isVoting || !canVote) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                      <ThumbsDown size={24} className={`mb-2 ${voteOption === 'against' ? 'text-error' : 'text-text'}`} />
-                      <span className={`font-medium ${voteOption === 'against' ? 'text-error' : 'text-text'}`}>Vote Against</span>
-                    </button>
-                  </div>
-                  
-                  <button
-                    onClick={handleVote}
-                    disabled={!voteOption || isVoting || !canVote}
-                    className={`w-full p-3 rounded-md font-medium transition-all
-                      ${voteOption === 'for' ? 'bg-primary text-white' : 
-                        voteOption === 'against' ? 'bg-error text-white' : 
-                        'bg-surface-300 text-text'}
-                      ${!voteOption || isVoting || !canVote ? 'opacity-50 cursor-not-allowed' : 'hover:bg-opacity-90'}`}
-                  >
-                    {isVoting ? 'Submitting Vote...' : `Submit ${voteOption ? (voteOption === 'for' ? 'For' : 'Against') : ''} Vote`}
-                  </button>
-                </>
-              ) : (
-                <div className="text-center py-4">
-                  <Check size={48} className="text-success mx-auto mb-2" />
-                  <h4 className="text-lg font-medium text-text">Your vote has been submitted!</h4>
-                  <p className="text-surface-500 mt-1">Thank you for participating in this proposal.</p>
-                </div>
-              )}
+          <div className="bg-[#1a1a1a] p-4 rounded-lg border border-gray-800">
+            <div className="flex space-x-2 mb-2">
+              <div className="flex-1 h-3 bg-gray-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-purple-600 to-blue-600 transition-all duration-300"
+                  style={{ width: `${progress.for}%` }}
+                />
+              </div>
+              <div className="flex-1 h-3 bg-gray-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-red-600 to-pink-600 transition-all duration-300"
+                  style={{ width: `${progress.against}%` }}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 text-center">
+              <div>
+                <div className="text-lg font-medium text-purple-400">{localProposal.votes.for}</div>
+                <div className="text-sm text-gray-400">For ({progress.for.toFixed(1)}%)</div>
+              </div>
+              <div>
+                <div className="text-lg font-medium text-red-400">{localProposal.votes.against}</div>
+                <div className="text-sm text-gray-400">Against ({progress.against.toFixed(1)}%)</div>
+              </div>
             </div>
           </div>
         </div>
+        
+        {canVote && !hasVoted && (
+          <div className="bg-[#151515] p-6 rounded-xl border border-gray-800">
+            <h3 className="text-lg font-medium text-white mb-4">Cast Your Vote</h3>
+            
+            {error && (
+              <div className="flex items-start space-x-3 p-4 bg-red-900/20 border border-red-700/50 rounded-lg mb-4">
+                <AlertTriangle size={20} className="text-red-400 flex-shrink-0 mt-0.5" />
+                <span className="text-sm text-red-300">{error}</span>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <button
+                onClick={() => canVote && setVoteOption('for')}
+                disabled={isVoting}
+                className={`p-4 rounded-xl flex flex-col items-center justify-center transition-all
+                  ${voteOption === 'for' 
+                    ? 'bg-purple-900/20 border-2 border-purple-500' 
+                    : 'bg-[#1a1a1a] border-2 border-gray-800 hover:border-purple-500/50'}
+                  ${isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <ThumbsUp size={28} className={voteOption === 'for' ? 'text-purple-400' : 'text-gray-400'} />
+                <span className={`mt-2 font-medium ${voteOption === 'for' ? 'text-purple-400' : 'text-gray-400'}`}>
+                  Vote For
+                </span>
+              </button>
+              
+              <button
+                onClick={() => canVote && setVoteOption('against')}
+                disabled={isVoting}
+                className={`p-4 rounded-xl flex flex-col items-center justify-center transition-all
+                  ${voteOption === 'against' 
+                    ? 'bg-red-900/20 border-2 border-red-500' 
+                    : 'bg-[#1a1a1a] border-2 border-gray-800 hover:border-red-500/50'}
+                  ${isVoting ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <ThumbsDown size={28} className={voteOption === 'against' ? 'text-red-400' : 'text-gray-400'} />
+                <span className={`mt-2 font-medium ${voteOption === 'against' ? 'text-red-400' : 'text-gray-400'}`}>
+                  Vote Against
+                </span>
+              </button>
+            </div>
+            
+            <Button
+              variant="primary"
+              onClick={handleVote}
+              disabled={!voteOption || isVoting}
+              className={`w-full p-3 ${
+                voteOption === 'for' 
+                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' 
+                  : voteOption === 'against'
+                    ? 'bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700'
+                    : 'bg-gray-700'
+              }`}
+            >
+              {isVoting ? 'Submitting Vote...' : `Submit ${voteOption ? (voteOption === 'for' ? 'For' : 'Against') : ''} Vote`}
+            </Button>
+          </div>
+        )}
+        
+        {hasVoted && (
+          <div className="bg-[#151515] p-6 rounded-xl border border-gray-800 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-900/20 border-2 border-green-500 mb-4">
+              <Check size={32} className="text-green-400" />
+            </div>
+            <h4 className="text-xl font-medium text-white mb-2">Vote Submitted Successfully!</h4>
+            <p className="text-gray-400">Thank you for participating in this proposal.</p>
+          </div>
+        )}
+        
+        {!canVote && (
+          <div className="bg-[#151515] p-6 rounded-xl border border-gray-800">
+            <div className="flex flex-col items-center w-full">
+              <p className="text-gray-400 mb-4 text-center">
+                {localProposal.isPodProposal 
+                  ? "You must be a member of this pod to vote on proposals."
+                  : "You must be a member of this DAO to vote on proposals."
+                }
+              </p>
+              <Button
+                variant="primary"
+                onClick={() => window.location.href = localProposal.isPodProposal 
+                  ? `/daos/${localProposal.daoId}/pods/${localProposal.podId}`
+                  : `/daos/${localProposal.daoId}`
+                }
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+              >
+                {localProposal.isPodProposal ? "Join Pod to Participate" : "Join DAO to Participate"}
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </Modal>
   );
 };
 

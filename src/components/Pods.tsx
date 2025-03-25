@@ -634,7 +634,9 @@ const Pods = () => {
       actions: [],
       quorum: 1, // Default quorum
       minApproval: 50, // Default approval threshold (50%)
-      daoId: proposal.daoId || ''
+      daoId: proposal.daoId || '',
+      isPodProposal: true, // Since we're in the Pods component, all proposals here are pod proposals
+      podId: proposal.podId || selectedPod?.podId || '' // Get podId from the proposal or selected pod
     };
   };
 

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, AlertTriangle } from 'lucide-react';
+import { Calendar, AlertTriangle, Clock } from 'lucide-react';
 import { proposalService } from '../services/ProposalService';
 import { useWallet, WalletContextState } from '@solana/wallet-adapter-react';
 import Modal from './common/Modal';
+import Button from './common/Button';
 
 interface CreateProposalModalProps {
   isOpen: boolean;
@@ -126,91 +127,97 @@ const CreateProposalModal: React.FC<CreateProposalModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={`Create a Proposal for ${podName}`}
-      maxWidth="max-w-md"
+      maxWidth="max-w-xl"
     >
-      <form onSubmit={handleSubmit} className="flex flex-col">
-        <div className="mb-4">
-          <label htmlFor="proposal-title" className="block text-gray-300 mb-1">
-            Title*
-          </label>
-          <input
-            id="proposal-title"
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full bg-[#191919] border border-gray-800 rounded-md p-2 text-white focus:outline-none focus:border-purple-600"
-            placeholder="Enter proposal title"
-            required
-          />
-        </div>
-
-        <div className="mb-4">
-          <label htmlFor="proposal-description" className="block text-gray-300 mb-1">
-            Description*
-          </label>
-          <textarea
-            id="proposal-description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full bg-[#191919] border border-gray-800 rounded-md p-2 text-white focus:outline-none focus:border-purple-600 h-32"
-            placeholder="Enter proposal description"
-            required
-          />
-        </div>
-
-        <div className="mb-4">
-          <label htmlFor="proposal-end-date" className="block text-gray-300 mb-1">
-            End Date*
-          </label>
-          <div className="flex">
-            <div className="relative flex-grow">
-              <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
-                <Calendar size={16} className="text-gray-500" />
-              </div>
+      <form onSubmit={handleSubmit} className="flex flex-col space-y-6">
+        <div className="bg-[#151515] p-6 rounded-xl border border-gray-800">
+          <div className="space-y-6">
+            <div>
+              <label htmlFor="proposal-title" className="block text-sm font-medium text-gray-300 mb-2">
+                Title*
+              </label>
               <input
-                id="proposal-end-date"
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                min={minDate()}
-                className="w-full bg-[#191919] border border-gray-800 rounded-md p-2 pl-8 text-white focus:outline-none focus:border-purple-600"
+                id="proposal-title"
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full bg-[#1a1a1a] border border-gray-800 rounded-lg p-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                placeholder="Enter a clear, descriptive title"
                 required
               />
             </div>
+
+            <div>
+              <label htmlFor="proposal-description" className="block text-sm font-medium text-gray-300 mb-2">
+                Description*
+              </label>
+              <textarea
+                id="proposal-description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full bg-[#1a1a1a] border border-gray-800 rounded-lg p-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all min-h-[160px]"
+                placeholder="Provide detailed information about your proposal"
+                required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="proposal-end-date" className="block text-sm font-medium text-gray-300 mb-2">
+                End Date*
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Clock size={18} className="text-gray-500" />
+                </div>
+                <input
+                  id="proposal-end-date"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  min={minDate()}
+                  className="w-full bg-[#1a1a1a] border border-gray-800 rounded-lg p-3 pl-10 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  required
+                />
+              </div>
+              <p className="mt-2 text-sm text-gray-500">
+                The proposal will start immediately upon creation
+              </p>
+            </div>
           </div>
-          <p className="text-gray-500 text-xs mt-1">
-            The proposal will start immediately upon creation and end on this date.
-          </p>
         </div>
 
         {!wallet?.connected && (
-          <div className="p-3 bg-yellow-900/30 border border-yellow-800 text-yellow-300 rounded-md mb-4 text-sm flex items-start">
-            <AlertTriangle size={16} className="mr-2 mt-0.5 flex-shrink-0" />
-            <span>Please connect your wallet to create a proposal.</span>
+          <div className="flex items-start space-x-3 p-4 bg-yellow-900/20 border border-yellow-700/50 rounded-lg">
+            <AlertTriangle size={20} className="text-yellow-500 flex-shrink-0 mt-0.5" />
+            <span className="text-sm text-yellow-300">
+              Please connect your wallet to create a proposal
+            </span>
           </div>
         )}
 
         {error && (
-          <div className="p-3 bg-red-900/30 border border-red-800 text-red-400 rounded-md mb-4 text-sm">
-            {error}
+          <div className="flex items-start space-x-3 p-4 bg-red-900/20 border border-red-700/50 rounded-lg">
+            <AlertTriangle size={20} className="text-red-500 flex-shrink-0 mt-0.5" />
+            <span className="text-sm text-red-300">{error}</span>
           </div>
         )}
         
-        <div className="flex justify-end space-x-3 mt-4">
-          <button
-            type="button"
+        <div className="flex justify-end space-x-3 pt-4">
+          <Button
+            variant="outline"
             onClick={onClose}
-            className="px-4 py-2 border border-gray-700 text-gray-300 rounded-md hover:bg-gray-800 transition-colors"
+            className="px-6"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="primary"
             type="submit"
             disabled={loading || !wallet?.connected}
-            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-md hover:opacity-90 disabled:opacity-70 transition-all"
+            className="px-6 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Creating...' : 'Create Proposal'}
-          </button>
+          </Button>
         </div>
       </form>
     </Modal>

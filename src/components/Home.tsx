@@ -34,6 +34,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useSolanaTransaction } from '../hooks/useSolanaTransaction';
 import DaoUpdateModal from './DaoUpdateModal';
 import { useAuth } from '../context/AuthContext';
+import Button from './common/Button';
 
 // Register Chart.js components
 ChartJS.register(
@@ -1065,43 +1066,45 @@ const Dashboard = () => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-3xl font-bold">Home</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           {connected && (
-            <button 
+            <Button 
+              variant={userIsDaoMember ? "outline" : "primary"}
               onClick={userIsDaoMember ? handleLeaveDao : handleJoinDao}
               disabled={membershipLoading}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+              className={`flex items-center gap-2 ${
                 userIsDaoMember 
-                  ? 'bg-red-500/80 hover:bg-red-500 text-white' 
-                  : 'bg-green-500/80 hover:bg-green-500 text-white'
+                  ? 'border-2 border-red-500/50 hover:border-red-500 bg-transparent hover:bg-red-500/10' 
+                  : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700'
               }`}
             >
               {membershipLoading ? (
                 <>
                   <Loader size={16} className="animate-spin" />
-                  Loading...
+                  <span>Loading...</span>
                 </>
               ) : userIsDaoMember ? (
                 <>
-                  <LogOut size={16} />
-                  Leave DAO
+                  <LogOut size={16} className="text-red-500" />
+                  <span className="text-red-500">Leave DAO</span>
                 </>
               ) : (
                 <>
                   <LogIn size={16} />
-                  Join DAO
+                  <span>Join DAO</span>
                 </>
               )}
-            </button>
+            </Button>
           )}
           {hasUpdatePermission && (
-            <button 
+            <Button 
+              variant="outline"
               onClick={() => setIsDaoUpdateModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+              className="flex items-center gap-2 border-2 border-gray-800 hover:border-purple-500/50 bg-[#151515]"
             >
               <Settings size={16} />
-              Update DAO
-            </button>
+              <span>Update DAO</span>
+            </Button>
           )}
         </div>
       </div>
