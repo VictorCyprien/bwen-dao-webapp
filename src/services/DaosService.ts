@@ -201,15 +201,41 @@ export class DaosService {
     description?: string;
     name?: string;
     isActive?: boolean;
+    discordServer?: string;
+    twitter?: string;
+    telegram?: string;
+    instagram?: string;
+    tiktok?: string;
+    website?: string;
+    profilePicture?: File;
+    bannerPicture?: File;
   }): Promise<DAO | null> {
     try {
       const apiClient = this.createAuthenticatedApiClient();
       if (!apiClient) return null;
 
       const daoUpdate = new DAOUpdate();
-      if (daoData.description !== undefined) daoUpdate.description = daoData.description;
+      
+      // Required fields
       if (daoData.name !== undefined) daoUpdate.name = daoData.name;
+      if (daoData.description !== undefined) daoUpdate.description = daoData.description;
       if (daoData.isActive !== undefined) daoUpdate.isActive = daoData.isActive;
+
+      daoUpdate.discordServer = daoData.discordServer;
+      daoUpdate.twitter = daoData.twitter;
+      daoUpdate.telegram = daoData.telegram;
+      daoUpdate.instagram = daoData.instagram;
+      daoUpdate.tiktok = daoData.tiktok;
+      daoUpdate.website = daoData.website;
+      
+      // Process image fields if provided
+      if (daoData.profilePicture) {
+        daoUpdate.profile = await this.fileToMinioStorage(daoData.profilePicture);
+      }
+      
+      if (daoData.bannerPicture) {
+        daoUpdate.banner = await this.fileToMinioStorage(daoData.bannerPicture);
+      }
 
       const response = await apiClient.updateDAO(daoId, daoUpdate);
       return response?.dao || null;
