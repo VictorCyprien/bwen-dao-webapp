@@ -3,7 +3,7 @@
  * Handles all API interactions related to DAOs
  */
 
-import { createConfiguration, DaosApi, DAO, DAOUpdate, DAOMembership } from '../core/modules/dao-api';
+import { createConfiguration, DaosApi, DAO, DAOUpdate, DAOMembership, InputCreateDAO } from '../core/modules/dao-api';
 import { ServerConfiguration } from '../core/modules/dao-api/servers';
 import { walletAuthService } from './WalletAuthService';
 
@@ -28,6 +28,31 @@ export class DaosService {
     
     // Initialize API client
     this.daosApi = new DaosApi(configuration);
+  }
+
+  /**
+   * Convert a File to a FileStorage-like object for Minio
+   * @private
+   */
+  private async fileToMinioStorage(file: File): Promise<any> {
+    // Convert file to base64 string
+    const arrayBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64Data = window.btoa(binary);
+    
+    // Create a FileStorage-like object with all the required attributes
+    return {
+      name: file.name,
+      filename: file.name,
+      content_type: file.type,
+      content_length: file.size,
+      headers: {},
+      stream: base64Data, // Send as base64 encoded string
+    };
   }
 
   /**
@@ -127,18 +152,41 @@ export class DaosService {
     name: string;
     description?: string;
     userId: string;
+    discordServer?: string;
+    twitter?: string;
+    telegram?: string;
+    instagram?: string;
+    tiktok?: string;
+    website?: string;
+    profilePicture?: File;
+    bannerPicture?: File;
   }): Promise<DAO | null> {
     try {
       const apiClient = this.createAuthenticatedApiClient();
       if (!apiClient) return null;
 
-      const daoInput = new DAO();
+      const daoInput = new InputCreateDAO();
       daoInput.name = daoData.name;
-      daoInput.description = daoData.description || '';
+      daoInput.description = daoData.description?.trim() || '';
       daoInput.ownerId = daoData.userId;
+      daoInput.discordServer = daoData.discordServer;
+      daoInput.twitter = daoData.twitter;
+      daoInput.telegram = daoData.telegram;
+      daoInput.instagram = daoData.instagram;
+      daoInput.tiktok = daoData.tiktok;
+      daoInput.website = daoData.website;
+      
+      // Convert File objects to FileStorage objects for Minio
+      if (daoData.profilePicture != undefined) {
+        daoInput.profile = await this.fileToMinioStorage(daoData.profilePicture);
+      }
+      
+      if (daoData.bannerPicture != undefined) {
+        daoInput.banner = await this.fileToMinioStorage(daoData.bannerPicture);
+      }
 
       const response = await apiClient.createDAO(daoInput);
-      console.log(response);
+      console.log('DAO creation response:', response);
       return response.dao || null;
     } catch (error) {
       console.error('Error creating DAO:', error);
@@ -164,7 +212,7 @@ export class DaosService {
       if (daoData.isActive !== undefined) daoUpdate.isActive = daoData.isActive;
 
       const response = await apiClient.updateDAO(daoId, daoUpdate);
-      return response || null;
+      return response?.dao || null;
     } catch (error) {
       console.error(`Error updating DAO ${daoId}:`, error);
       return null;
@@ -200,7 +248,7 @@ export class DaosService {
       // Note: userWhoMadeRequest is handled by the server
 
       const response = await apiClient.removeMemberFromDAO(daoId, membership);
-      return response || null;
+      return response?.dao || null;
     } catch (error) {
       console.error(`Error removing member from DAO ${daoId}:`, error);
       return null;
