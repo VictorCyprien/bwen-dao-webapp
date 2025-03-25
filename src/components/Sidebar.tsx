@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Home, 
@@ -29,30 +29,58 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
   const [dao, setDao] = useState<DAO | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [profileImgError, setProfileImgError] = useState<boolean>(false);
+  const [refreshTimestamp, setRefreshTimestamp] = useState<number>(Date.now());
+  const [retryCount, setRetryCount] = useState<number>(0);
+  const maxRetries = 3;
   
   // Fetch the DAO data when the daoId changes
-  useEffectOnce(() => {
-    const fetchDaoData = async () => {
-      if (!daoId) {
-        setDao(null);
-        return;
-      }
+  const fetchDaoData = async () => {
+    if (!daoId) {
+      setDao(null);
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      setError(null);
+      setProfileImgError(false); // Reset image error state when refreshing
+      setRefreshTimestamp(Date.now()); // Update timestamp for cache busting
+      setRetryCount(0); // Reset retry count when fetching new data
       
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        const daoData = await daosService.getDaoById(daoId);
-        setDao(daoData);
-      } catch (err) {
-        console.error("Error fetching DAO data:", err);
-        setError("Failed to load DAO information");
-      } finally {
-        setIsLoading(false);
+      // Add 1 second delay to allow server to process updates
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const daoData = await daosService.getDaoById(daoId);
+      setDao(daoData);
+    } catch (err) {
+      console.error("Error fetching DAO data:", err);
+      setError("Failed to load DAO information");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Call fetchDaoData when the component mounts or daoId changes
+  useEffectOnce(() => {
+    fetchDaoData();
+  }, [daoId]);
+  
+  // Listen for dao-updated events
+  useEffect(() => {
+    const handleDaoUpdated = (event: CustomEvent<{ daoId: string }>) => {
+      if (event.detail.daoId === daoId) {
+        fetchDaoData();
       }
     };
     
-    fetchDaoData();
+    // Add event listener
+    window.addEventListener('dao-updated', handleDaoUpdated as EventListener);
+    
+    // Clean up the event listener when the component unmounts
+    return () => {
+      window.removeEventListener('dao-updated', handleDaoUpdated as EventListener);
+    };
   }, [daoId]);
 
   // Handle return to landing page
@@ -60,6 +88,25 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
     navigate('/');
   };
   
+  // Handle image loading error with retries
+  const handleImageError = () => {
+    if (retryCount < maxRetries) {
+      // Try again after a short delay (increasing with each retry)
+      const delay = 1000 * (retryCount + 1); // 1s, 2s, 3s...
+      
+      console.log(`Image load failed, retrying in ${delay}ms (attempt ${retryCount + 1} of ${maxRetries})`);
+      
+      setTimeout(() => {
+        setRefreshTimestamp(Date.now()); // Update timestamp to force a fresh load
+        setRetryCount(prevCount => prevCount + 1);
+      }, delay);
+    } else {
+      // After all retries, set the error flag
+      console.log('Image load failed after all retries, showing placeholder');
+      setProfileImgError(true);
+    }
+  };
+
   const navItems = [
     {
       section: 'DAO',
@@ -116,7 +163,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
       {/* DAO Profile */}
       <div className="p-4 flex flex-col items-center">
         <div className="w-20 h-20 rounded-full bg-primary mb-2 overflow-hidden">
-          <img src="https://i.imgur.com/PeLdfS1.png" alt="DAO Logo" className="w-full h-full object-cover" />
+          <img 
+            src={!profileImgError && dao?.profilePicture 
+              ? `http://localhost:9000/daos/${dao.profilePicture}?t=${refreshTimestamp}` 
+              : "https://i.imgur.com/PeLdfS1.png"}
+            alt="DAO Logo" 
+            className="w-full h-full object-cover" 
+            onError={handleImageError}
+            key={`profile-image-${refreshTimestamp}-${retryCount}`} // Force react to recreate the element
+          />
         </div>
         <div className="text-center">
           <p className="text-sm text-text font-normal">

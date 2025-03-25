@@ -117,6 +117,10 @@ const DaoUpdateModal: React.FC<DaoUpdateModalProps> = ({ isOpen, onClose }) => {
       
       setSaving(false);
       
+      // Dispatch a custom event to notify other components
+      const event = new CustomEvent('dao-updated', { detail: { daoId } });
+      window.dispatchEvent(event);
+      
       // Close the modal after successful update
       onClose();
     } catch (err) {
