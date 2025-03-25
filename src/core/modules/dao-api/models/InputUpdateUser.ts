@@ -29,6 +29,10 @@ export class InputUpdateUser {
     */
     'memberName'?: string;
     /**
+    * New profile picture of the user
+    */
+    'profilePicture'?: string;
+    /**
     * New Discord username of the user
     */
     'discordUsername'?: string;
@@ -61,6 +65,12 @@ export class InputUpdateUser {
         {
             "name": "memberName",
             "baseName": "member_name",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "profilePicture",
+            "baseName": "profile_picture",
             "type": "string",
             "format": ""
         },

@@ -1245,8 +1245,8 @@ const request: DaosApiUpdateDAORequest = {
     instagram: "instagram_example",
     tiktok: "tiktok_example",
     website: "website_example",
-    profile: null,
-    banner: null,
+    profile: { data: Buffer.from(fs.readFileSync('/path/to/file', 'utf-8')), name: '/path/to/file' },
+    banner: { data: Buffer.from(fs.readFileSync('/path/to/file', 'utf-8')), name: '/path/to/file' },
   },
 };
 

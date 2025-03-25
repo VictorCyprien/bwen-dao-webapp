@@ -16,6 +16,7 @@ interface UserInfo {
   discordUsername?: string;
   twitterUsername?: string;
   telegramUsername?: string;
+  profilePicture?: string;
 }
 
 interface AuthContextType {
@@ -125,7 +126,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
           memberName: user.displayName || user.display_name || user.memberName || user.member_name || user.username || user.name || '',
           discordUsername: user.discordUsername || user.discord_username || user.discord || '',
           twitterUsername: user.twitterUsername || user.twitter_username || user.twitter || '',
-          telegramUsername: user.telegramUsername || user.telegram_username || user.telegram || ''
+          telegramUsername: user.telegramUsername || user.telegram_username || user.telegram || '',
+          profilePicture: user.profilePicture || user.profile_picture || user.profile || user.avatar || user.profileUrl || ''
         };
         
         setUserInfo(userDataToStore);
@@ -139,7 +141,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
         
         setUserInfo({
           username: shortenedAddress,
-          walletAddress
+          walletAddress,
+          profilePicture: ''
         });
       } else {
         setUserInfo(null);
@@ -358,7 +361,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       
       // Create the user with the wallet address and form data
       console.log('Creating user with wallet address:', pendingWalletAddress);
-      const result = await walletAuthService.createUser(pendingWalletAddress, userData);
+      const result = await userService.createUser(pendingWalletAddress, userData);
       
       if (!result.success) {
         throw new Error(result.error || 'Failed to create user');
