@@ -16,6 +16,14 @@ export class DAOUpdate {
     'name'?: string;
     'description'?: string;
     'isActive'?: boolean;
+    'discordServer'?: string;
+    'twitter'?: string;
+    'telegram'?: string;
+    'instagram'?: string;
+    'tiktok'?: string;
+    'website'?: string;
+    'profile'?: any | null;
+    'banner'?: any | null;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -38,6 +46,54 @@ export class DAOUpdate {
             "name": "isActive",
             "baseName": "is_active",
             "type": "boolean",
+            "format": ""
+        },
+        {
+            "name": "discordServer",
+            "baseName": "discord_server",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "twitter",
+            "baseName": "twitter",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "telegram",
+            "baseName": "telegram",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "instagram",
+            "baseName": "instagram",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "tiktok",
+            "baseName": "tiktok",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "website",
+            "baseName": "website",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "profile",
+            "baseName": "profile",
+            "type": "any",
+            "format": ""
+        },
+        {
+            "name": "banner",
+            "baseName": "banner",
+            "type": "any",
             "format": ""
         }    ];
 
