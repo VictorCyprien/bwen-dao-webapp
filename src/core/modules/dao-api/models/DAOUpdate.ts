@@ -22,8 +22,8 @@ export class DAOUpdate {
     'instagram'?: string;
     'tiktok'?: string;
     'website'?: string;
-    'profile'?: any | null;
-    'banner'?: any | null;
+    'profile'?: HttpFile;
+    'banner'?: HttpFile;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -87,14 +87,14 @@ export class DAOUpdate {
         {
             "name": "profile",
             "baseName": "profile",
-            "type": "any",
-            "format": ""
+            "type": "HttpFile",
+            "format": "binary"
         },
         {
             "name": "banner",
             "baseName": "banner",
-            "type": "any",
-            "format": ""
+            "type": "HttpFile",
+            "format": "binary"
         }    ];
 
     static getAttributeTypeMap() {

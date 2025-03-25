@@ -33,6 +33,10 @@ export class InputCreateUser {
     */
     'memberName'?: string;
     /**
+    * Profile picture of the user
+    */
+    'profilePicture'?: string;
+    /**
     * Discord username of the user
     */
     'discordUsername'?: string;
@@ -71,6 +75,12 @@ export class InputCreateUser {
         {
             "name": "memberName",
             "baseName": "member_name",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "profilePicture",
+            "baseName": "profile_picture",
             "type": "string",
             "format": ""
         },
