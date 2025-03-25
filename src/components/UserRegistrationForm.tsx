@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Upload } from 'lucide-react';
+import { validateImageFile } from '../utils/fileUtils';
 
 interface UserRegistrationFormProps {
   walletAddress: string;
@@ -8,9 +9,7 @@ interface UserRegistrationFormProps {
     username: string;
     email: string;
     memberName: string;  // Display name
-    discordUsername: string;
-    twitterUsername: string;
-    telegramUsername: string;
+    profilePicture?: File;
   }) => void;
   onCancel: () => void;
   apiError?: string; // API error message
@@ -18,9 +17,6 @@ interface UserRegistrationFormProps {
   username?: string;
   email?: string;
   memberName?: string;
-  discordUsername?: string;
-  twitterUsername?: string;
-  telegramUsername?: string;
 }
 
 const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({
@@ -32,17 +28,15 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({
   username: defaultUsername = '',
   email: defaultEmail = '',
   memberName: defaultMemberName = '',
-  discordUsername: defaultDiscordUsername = '',
-  twitterUsername: defaultTwitterUsername = '',
-  telegramUsername: defaultTelegramUsername = ''
 }) => {
   const [username, setUsername] = useState(defaultUsername);
   const [email, setEmail] = useState(defaultEmail);
   const [memberName, setMemberName] = useState(defaultMemberName);
-  const [discordUsername, setDiscordUsername] = useState(defaultDiscordUsername);
-  const [twitterUsername, setTwitterUsername] = useState(defaultTwitterUsername);
-  const [telegramUsername, setTelegramUsername] = useState(defaultTelegramUsername);
+  const [profilePicture, setProfilePicture] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
   
+  const profileInputRef = useRef<HTMLInputElement>(null);
+
   const [errors, setErrors] = useState<{
     username?: string;
     email?: string;
@@ -70,6 +64,21 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Use the utility function for validation
+    const errorMessage = validateImageFile(file);
+    if (errorMessage) {
+      setError(errorMessage);
+      return;
+    }
+
+    setProfilePicture(file);
+    setError(null);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -78,9 +87,7 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({
         username,
         email,
         memberName,
-        discordUsername,
-        twitterUsername,
-        telegramUsername
+        profilePicture: profilePicture || undefined
       });
     }
   };
@@ -102,6 +109,14 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({
           <div className="mb-4 p-3 bg-red-900 bg-opacity-30 border border-red-700 rounded text-error flex items-start">
             <AlertCircle size={18} className="mr-2 mt-0.5 flex-shrink-0" />
             <span className="text-sm">{apiError}</span>
+          </div>
+        )}
+
+        {/* Upload Error Message */}
+        {error && (
+          <div className="mb-4 p-3 bg-red-900 bg-opacity-30 border border-red-700 rounded text-error flex items-start">
+            <AlertCircle size={18} className="mr-2 mt-0.5 flex-shrink-0" />
+            <span className="text-sm">{error}</span>
           </div>
         )}
         
@@ -157,50 +172,28 @@ const UserRegistrationForm: React.FC<UserRegistrationFormProps> = ({
                 <p className="text-error text-xs mt-1">{errors.email}</p>
               )}
             </div>
-            
-            {/* Discord Username */}
-            <div className="col-span-1">
-              <label className="block text-text opacity-80 text-sm font-bold mb-2" htmlFor="discord">
-                Discord Username
+
+            {/* Profile Picture Upload */}
+            <div className="col-span-2">
+              <label className="block text-text opacity-80 text-sm font-bold mb-2" htmlFor="profilePicture">
+                Profile Picture
               </label>
               <input
-                id="discord"
-                type="text"
-                className="w-full px-3 py-2 bg-surface-300 border border-[#444444] rounded focus:outline-none focus:ring-1 focus:ring-primary text-text"
-                value={discordUsername}
-                onChange={e => setDiscordUsername(e.target.value)}
-                placeholder="Your Discord username"
+                type="file"
+                id="profilePicture"
+                ref={profileInputRef}
+                onChange={handleImageUpload}
+                accept="image/jpeg,image/png,image/gif"
+                className="hidden"
               />
-            </div>
-            
-            {/* Twitter Username */}
-            <div className="col-span-1">
-              <label className="block text-text opacity-80 text-sm font-bold mb-2" htmlFor="twitter">
-                Twitter Username
-              </label>
-              <input
-                id="twitter"
-                type="text"
-                className="w-full px-3 py-2 bg-surface-300 border border-[#444444] rounded focus:outline-none focus:ring-1 focus:ring-primary text-text"
-                value={twitterUsername}
-                onChange={e => setTwitterUsername(e.target.value)}
-                placeholder="Your Twitter username"
-              />
-            </div>
-            
-            {/* Telegram Username */}
-            <div className="col-span-1">
-              <label className="block text-text opacity-80 text-sm font-bold mb-2" htmlFor="telegram">
-                Telegram Username
-              </label>
-              <input
-                id="telegram"
-                type="text"
-                className="w-full px-3 py-2 bg-surface-300 border border-[#444444] rounded focus:outline-none focus:ring-1 focus:ring-primary text-text"
-                value={telegramUsername}
-                onChange={e => setTelegramUsername(e.target.value)}
-                placeholder="Your Telegram username"
-              />
+              <button
+                type="button"
+                onClick={() => profileInputRef.current?.click()}
+                className="w-full px-3 py-2 bg-surface-300 border border-[#444444] rounded focus:outline-none focus:ring-1 focus:ring-primary text-text flex items-center justify-center"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                {profilePicture ? profilePicture.name : 'Upload Profile Picture'}
+              </button>
             </div>
           </div>
           

@@ -6,7 +6,7 @@
 import { createConfiguration, AuthApi, UsersApi, InputCreateUser, ChallengeRequest, VerifySignature } from '../core/modules/dao-api';
 import { ServerConfiguration } from '../core/modules/dao-api/servers';
 import { userService } from '../services/UserService';
-
+import { fileToMinioStorage } from '../utils/fileUtils';
 // Default API endpoint - now using the proxy URL
 const DEFAULT_API_ENDPOINT = '/api';
 
@@ -32,6 +32,7 @@ export class WalletAuthService {
     this.authApi = new AuthApi(configuration);
     this.usersApi = new UsersApi(configuration);
   }
+
 
   /**
    * Set the API endpoint and reinitialize API client
@@ -64,79 +65,6 @@ export class WalletAuthService {
   }
 
   /**
-   * Create a new user with the wallet address and additional user info
-   */
-  async createUser(walletAddress: string, userInfo?: {
-    username?: string;
-    email?: string;
-    memberName?: string;
-    discordUsername?: string;
-    twitterUsername?: string;
-    telegramUsername?: string;
-  }): Promise<{ success: boolean; error?: string }> {
-    try {
-      const userInput = new InputCreateUser();
-      userInput.walletAddress = walletAddress;
-      
-      // Generate a username based on the wallet address if not provided
-      if (userInfo?.username) {
-        userInput.username = userInfo.username;
-      } else {
-        const shortenedWallet = walletAddress.substring(0, 6) + '...' + walletAddress.substring(walletAddress.length - 4);
-        userInput.username = `user_${shortenedWallet}`;
-      }
-      
-      // Add optional user information if provided
-      if (userInfo?.email) {
-        userInput.email = userInfo.email;
-      }
-      
-      if (userInfo?.discordUsername) {
-        userInput.discordUsername = userInfo.discordUsername;
-      }
-
-      // Map the additional fields to the fields in the API model
-      if (userInfo?.memberName) {
-        // If your API has a member_name field, map it here
-        userInput.memberName = userInfo.memberName;
-      }
-
-      if (userInfo?.twitterUsername) {
-        // If your API has a twitter_username field, map it here
-        userInput.twitterUsername = userInfo.twitterUsername;
-      }
-
-      if (userInfo?.telegramUsername) {
-        // If your API has a telegram_username field, map it here
-        userInput.telegramUsername = userInfo.telegramUsername;
-      }
-
-      console.log('Creating user with input:', userInput);
-      
-      await this.usersApi.createUser(userInput);
-      return { success: true };
-    } catch (error) {
-      console.error('Error creating user:', error);
-      
-      // Extract error message from the API response if available
-      let errorMessage = 'Failed to create user';
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === 'object' && error !== null) {
-        // Try to extract API error message
-        const anyError = error as any;
-        if (anyError.body?.message) {
-          errorMessage = anyError.body.message;
-        } else if (anyError.message) {
-          errorMessage = anyError.message;
-        }
-      }
-      
-      return { success: false, error: errorMessage };
-    }
-  }
-
-  /**
    * Request a challenge message from the server for wallet authentication
    */
   async requestChallenge(walletAddress: string): Promise<string | null> {
@@ -155,7 +83,6 @@ export class WalletAuthService {
       console.error('Error requesting challenge:', error);
       
       // Extract and return more detailed error information
-      let errorMessage = null;
       if (error instanceof Error) {
         console.error('Challenge request error details:', error.message);
       }

@@ -4,6 +4,8 @@ import { userService } from '../services/UserService';
 import { socialConnectionService } from '../services/SocialConnectionService';
 import { ui } from '../styles/theme';
 import { useEffectOnce } from '../hooks/useEffectOnce';
+import { Upload } from 'lucide-react';
+import { validateImageFile } from '../utils/fileUtils';
 
 // Telegram Login Widget component
 const TelegramLoginWidget: React.FC<{
@@ -54,6 +56,9 @@ const UserProfile: React.FC = () => {
   const { userInfo, refreshUserInfo, isAuthenticated } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
+  const [profilePicture, setProfilePicture] = useState<File | null>(null);
+  const [profilePictureError, setProfilePictureError] = useState<string | null>(null);
+  const profileInputRef = useRef<HTMLInputElement>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -146,6 +151,22 @@ const UserProfile: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Handle profile picture upload
+  const handleProfilePictureUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const error = validateImageFile(file);
+    if (error) {
+      setProfilePictureError(error);
+      return;
+    }
+
+    setProfilePicture(file);
+    setProfilePictureError(null);
+    setMessage({ text: '', type: '' });
+  };
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,11 +191,14 @@ const UserProfile: React.FC = () => {
         memberName: formData.memberName,
         discordUsername: formData.discordUsername || undefined,
         twitterUsername: formData.twitterUsername || undefined,
-        telegramUsername: formData.telegramUsername || undefined
+        telegramUsername: formData.telegramUsername || undefined,
+        profilePicture: profilePicture || undefined
       });
 
       if (result) {
         setMessage({ text: 'Profile updated successfully!', type: 'success' });
+        // Reset the profile picture file state after successful update
+        setProfilePicture(null);
         // Refresh user info to get the updated data
         await refreshUserInfo();
       } else {
@@ -228,11 +252,60 @@ const UserProfile: React.FC = () => {
         <div className={`p-3 mb-4 rounded-md text-sm ${
           message.type === 'success' 
             ? 'bg-green-900/30 border border-green-800 text-green-400' 
-            : 'bg-red-900/30 border border-red-800 text-red-400'
+            : message.type === 'info'
+              ? 'bg-blue-900/30 border border-blue-800 text-blue-400'
+              : 'bg-red-900/30 border border-red-800 text-red-400'
         }`}>
           {message.text}
         </div>
       )}
+
+      {/* Profile Picture Display */}
+      <div className="flex items-center mb-6">
+        <div className="mr-6">
+          {userInfo?.profilePicture ? (
+            <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-purple-600">
+              <img 
+                src={userInfo.profilePicture} 
+                alt="Profile" 
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ) : (
+            <div className="w-24 h-24 rounded-full bg-gray-800 flex items-center justify-center border-2 border-purple-600">
+              <span className="text-2xl text-gray-400">{formData.username?.charAt(0)?.toUpperCase() || userInfo?.walletAddress?.charAt(0)?.toUpperCase() || '?'}</span>
+            </div>
+          )}
+        </div>
+        
+        <div>
+          <h2 className="text-xl font-semibold text-white mb-2">{formData.memberName || formData.username}</h2>
+          
+          {/* Profile Picture Upload */}
+          <div>
+            <input
+              type="file"
+              id="profilePicture"
+              ref={profileInputRef}
+              onChange={handleProfilePictureUpload}
+              accept="image/jpeg,image/png,image/gif"
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => profileInputRef.current?.click()}
+              className="px-3 py-1.5 bg-[#333] text-sm border border-gray-700 rounded-md text-white flex items-center hover:bg-[#444] transition-colors"
+            >
+              <Upload className="w-4 h-4 mr-1.5" />
+              {profilePicture ? profilePicture.name : 'Change Profile Picture'}
+            </button>
+            
+            {profilePictureError && (
+              <p className="text-red-400 text-xs mt-1">{profilePictureError}</p>
+            )}
+          </div>
+        </div>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

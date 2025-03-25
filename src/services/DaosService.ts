@@ -6,6 +6,7 @@
 import { createConfiguration, DaosApi, DAO, DAOUpdate, DAOMembership, InputCreateDAO } from '../core/modules/dao-api';
 import { ServerConfiguration } from '../core/modules/dao-api/servers';
 import { walletAuthService } from './WalletAuthService';
+import { fileToMinioStorage } from '../utils/fileUtils';
 
 // Default API endpoint - now using the proxy URL
 const DEFAULT_API_ENDPOINT = '/api';
@@ -28,31 +29,6 @@ export class DaosService {
     
     // Initialize API client
     this.daosApi = new DaosApi(configuration);
-  }
-
-  /**
-   * Convert a File to a FileStorage-like object for Minio
-   * @private
-   */
-  private async fileToMinioStorage(file: File): Promise<any> {
-    // Convert file to base64 string
-    const arrayBuffer = await file.arrayBuffer();
-    const bytes = new Uint8Array(arrayBuffer);
-    let binary = '';
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    const base64Data = window.btoa(binary);
-    
-    // Create a FileStorage-like object with all the required attributes
-    return {
-      name: file.name,
-      filename: file.name,
-      content_type: file.type,
-      content_length: file.size,
-      headers: {},
-      stream: base64Data, // Send as base64 encoded string
-    };
   }
 
   /**
@@ -178,11 +154,11 @@ export class DaosService {
       
       // Convert File objects to FileStorage objects for Minio
       if (daoData.profilePicture != undefined) {
-        daoInput.profile = await this.fileToMinioStorage(daoData.profilePicture);
+        daoInput.profile = await fileToMinioStorage(daoData.profilePicture);
       }
       
       if (daoData.bannerPicture != undefined) {
-        daoInput.banner = await this.fileToMinioStorage(daoData.bannerPicture);
+        daoInput.banner = await fileToMinioStorage(daoData.bannerPicture);
       }
 
       const response = await apiClient.createDAO(daoInput);
@@ -230,11 +206,11 @@ export class DaosService {
       
       // Process image fields if provided
       if (daoData.profilePicture) {
-        daoUpdate.profile = await this.fileToMinioStorage(daoData.profilePicture);
+        daoUpdate.profile = await fileToMinioStorage(daoData.profilePicture);
       }
       
       if (daoData.bannerPicture) {
-        daoUpdate.banner = await this.fileToMinioStorage(daoData.bannerPicture);
+        daoUpdate.banner = await fileToMinioStorage(daoData.bannerPicture);
       }
 
       const response = await apiClient.updateDAO(daoId, daoUpdate);
