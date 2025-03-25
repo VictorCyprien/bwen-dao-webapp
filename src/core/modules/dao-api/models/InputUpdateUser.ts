@@ -31,7 +31,7 @@ export class InputUpdateUser {
     /**
     * New profile picture of the user
     */
-    'profilePicture'?: string;
+    'profilePicture'?: HttpFile;
     /**
     * New Discord username of the user
     */
@@ -71,8 +71,8 @@ export class InputUpdateUser {
         {
             "name": "profilePicture",
             "baseName": "profile_picture",
-            "type": "string",
-            "format": ""
+            "type": "HttpFile",
+            "format": "binary"
         },
         {
             "name": "discordUsername",

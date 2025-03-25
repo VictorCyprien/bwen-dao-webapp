@@ -35,7 +35,7 @@ export class InputCreateUser {
     /**
     * Profile picture of the user
     */
-    'profilePicture'?: string;
+    'profilePicture'?: HttpFile;
     /**
     * Discord username of the user
     */
@@ -81,8 +81,8 @@ export class InputCreateUser {
         {
             "name": "profilePicture",
             "baseName": "profile_picture",
-            "type": "string",
-            "format": ""
+            "type": "HttpFile",
+            "format": "binary"
         },
         {
             "name": "discordUsername",
