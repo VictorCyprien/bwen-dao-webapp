@@ -165,7 +165,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
         <div className="w-20 h-20 rounded-full bg-primary mb-2 overflow-hidden">
           <img 
             src={!profileImgError && dao?.profilePicture 
-              ? `http://localhost:9000/daos/${dao.profilePicture}?t=${refreshTimestamp}` 
+              ? `${dao.profilePicture}` 
               : "https://i.imgur.com/PeLdfS1.png"}
             alt="DAO Logo" 
             className="w-full h-full object-cover" 
