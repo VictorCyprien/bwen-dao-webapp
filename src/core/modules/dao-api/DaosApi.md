@@ -224,6 +224,14 @@ const request: DaosApiCreateDAORequest = {
     name: "name_example",
     description: "description_example",
     ownerId: "ownerId_example",
+    discordServer: "discordServer_example",
+    twitter: "twitter_example",
+    telegram: "telegram_example",
+    instagram: "instagram_example",
+    tiktok: "tiktok_example",
+    website: "website_example",
+    profile: { data: Buffer.from(fs.readFileSync('/path/to/file', 'utf-8')), name: '/path/to/file' },
+    banner: { data: Buffer.from(fs.readFileSync('/path/to/file', 'utf-8')), name: '/path/to/file' },
   },
 };
 
@@ -1231,6 +1239,14 @@ const request: DaosApiUpdateDAORequest = {
     name: "name_example",
     description: "description_example",
     isActive: true,
+    discordServer: "discordServer_example",
+    twitter: "twitter_example",
+    telegram: "telegram_example",
+    instagram: "instagram_example",
+    tiktok: "tiktok_example",
+    website: "website_example",
+    profile: null,
+    banner: null,
   },
 };
 

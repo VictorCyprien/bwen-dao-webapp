@@ -19,6 +19,14 @@ export class DAO {
     'description': string;
     'ownerId': string;
     'isActive'?: boolean;
+    'discordServer'?: string;
+    'twitter'?: string;
+    'telegram'?: string;
+    'instagram'?: string;
+    'tiktok'?: string;
+    'website'?: string;
+    'profilePicture'?: string;
+    'bannerPicture'?: string;
     'admins'?: Array<UserBasic>;
     'members'?: Array<UserBasic>;
 
@@ -55,6 +63,54 @@ export class DAO {
             "name": "isActive",
             "baseName": "is_active",
             "type": "boolean",
+            "format": ""
+        },
+        {
+            "name": "discordServer",
+            "baseName": "discord_server",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "twitter",
+            "baseName": "twitter",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "telegram",
+            "baseName": "telegram",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "instagram",
+            "baseName": "instagram",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "tiktok",
+            "baseName": "tiktok",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "website",
+            "baseName": "website",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "profilePicture",
+            "baseName": "profile_picture",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "bannerPicture",
+            "baseName": "banner_picture",
+            "type": "string",
             "format": ""
         },
         {

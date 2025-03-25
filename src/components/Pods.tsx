@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Users, MessageSquare, Calendar, ExternalLink, Layers, ArrowUpRight, X, Check, PlusCircle, RefreshCw, Edit, LogIn, LogOut, AlertCircle } from 'lucide-react';
 import CreatePodModal from './CreatePodModal';
 import UpdatePodModal from './UpdatePodModal';
@@ -62,20 +62,22 @@ const Pods = () => {
     proposalService.initializeSolanaConnection(SOLANA_RPC_ENDPOINT);
   });
 
-  // Fetch pods when component loads or daoId changes
+  // Consolidated membership check and data loading
   useEffectOnce(() => {
-    if (daoId) {
-      // Check DAO membership first
+    if (!daoId) return;
+    
+    // Check membership if wallet is connected
+    if (publicKey && connected) {
       checkDaoMembership();
+    } else {
+      // Reset membership status if wallet is not connected
+      setUserIsDaoMember(false);
+      setDaoMembershipLoading(false);
     }
-  }, [daoId]);
-
-  // Watch for wallet connection changes to check membership
-  useEffectOnce(() => {
-    if (daoId && publicKey && connected) {
-      checkDaoMembership();
-    }
-  }, [publicKey, connected]);
+    
+    // This will also handle loading pods when the DAO ID changes
+    fetchPods();
+  }, [daoId, publicKey, connected]);
 
   // Check if the current user is a member of the DAO
   const checkDaoMembership = async () => {
@@ -614,6 +616,28 @@ const Pods = () => {
     );
   };
 
+  // Add adapter to convert Proposal to ProposalDetails for PopupProposal
+  const convertToProposalDetails = (proposal: Proposal): any => {
+    return {
+      id: proposal.proposalId || '',
+      name: proposal.name || '',
+      description: proposal.description || '',
+      status: proposal.isActive ? 'Active' : (proposal.hasPassed ? 'Passed' : 'Rejected'),
+      creator: proposal.createdByUsername || 'Unknown',
+      createdAt: proposal.startTime?.toISOString() || new Date().toISOString(),
+      startTime: proposal.startTime?.toISOString() || new Date().toISOString(),
+      endTime: proposal.endTime?.toISOString() || new Date().toISOString(),
+      votes: {
+        for: proposal.forVotesCount || 0,
+        against: proposal.againstVotesCount || 0
+      },
+      actions: [],
+      quorum: 1, // Default quorum
+      minApproval: 50, // Default approval threshold (50%)
+      daoId: proposal.daoId || ''
+    };
+  };
+
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col overflow-hidden p-6">
       <div className={containers.flexBetween + " mb-4 flex-shrink-0"}>
@@ -1024,17 +1048,18 @@ const Pods = () => {
         <CreateProposalModal
           isOpen={isCreateProposalModalOpen}
           onClose={() => setIsCreateProposalModalOpen(false)}
-          onProposalCreated={handleProposalCreated}
+          onSuccess={handleProposalCreated}
           daoId={daoId || ''}
           podId={selectedPod.podId || ''}
           podName={selectedPod.name || ''}
-          onCreateWithTransaction={handleCreateProposalWithTransaction}
+          createWithTransaction={handleCreateProposalWithTransaction}
+          wallet={walletState}
         />
       )}
 
       {selectedProposal && (
         <PopupProposal
-          proposal={selectedProposal}
+          proposal={convertToProposalDetails(selectedProposal)}
           onClose={() => setSelectedProposal(null)}
           onVote={handleVoteWithTransaction}
           canVote={userIsMember}

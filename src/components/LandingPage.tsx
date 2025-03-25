@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import useApiAndWallet from '../hooks/useApiAndWallet';
-import CreateDaoForm from './CreateDaoForm';
+import CreateDaoModal from './CreateDaoModal';
 import { typography } from '../styles/theme';
 import ApiAuthStatus from './common/ApiAuthStatus';
 import { daosService } from '../services/DaosService';
@@ -22,6 +22,7 @@ import {
   LayoutGrid,
   Search
 } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 interface LandingPageProps {
   onEnterDashboard: (daoId?: string) => void;
@@ -83,7 +84,7 @@ const getDAOBadges = (dao: DAO, index: number): BadgeType[] => {
 
 const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
   const { apiStatus, userDisplayInfo } = useApiAndWallet();
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [isCreateDaoModalOpen, setIsCreateDaoModalOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string>('featured');
   const [daos, setDaos] = useState<DAO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -167,6 +168,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
     document.getElementById('daos-section')?.scrollIntoView({ behavior: 'smooth' });
   };
   
+  const openCreateDaoModal = () => {
+    setIsCreateDaoModalOpen(true);
+  };
+  
   return (
     <div className="bg-[#0a0a0a] min-h-screen text-white overflow-x-hidden">
       {/* Fixed background gradients */}
@@ -220,14 +225,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
                   Create, manage, and scale your decentralized autonomous organization with powerful tools designed for modern communities.
                 </p>
                 <div className="flex flex-wrap gap-4">
-                  <Button 
-                    variant="primary"
-                    size="lg"
-                    onClick={() => setShowCreateForm(true)}
-                    className="rounded-xl"
+                  <button
+                    onClick={openCreateDaoModal}
+                    className="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-opacity-90 transition-colors"
                   >
-                    Create a DAO
-                  </Button>
+                    Create DAO
+                  </button>
                   <Button 
                     variant="outline"
                     size="lg"
@@ -325,12 +328,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
               </div>
               
               <div className="mt-6 md:mt-0">
-                <Button 
-                  variant="primary"
-                  onClick={() => setShowCreateForm(true)}
+                <button
+                  onClick={openCreateDaoModal}
+                  className="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-opacity-90 transition-colors"
                 >
-                  Create a DAO
-                </Button>
+                  Create DAO
+                </button>
               </div>
             </div>
             
@@ -565,10 +568,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
                   <Button 
                     variant="primary"
                     size="lg"
-                    onClick={() => setShowCreateForm(true)}
+                    onClick={() => setIsCreateDaoModalOpen(true)}
                     className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                   >
-                    Create Your DAO
+                    Create a DAO
                   </Button>
                 </div>
               </div>
@@ -599,26 +602,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
         </footer>
         
         {/* Create DAO Form Modal */}
-        {showCreateForm && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="bg-[#151515] border border-gray-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-auto">
-              <div className="p-6 border-b border-gray-800 flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Create a New DAO</h2>
-                <button 
-                  onClick={() => setShowCreateForm(false)}
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <div className="p-6">
-                <CreateDaoForm onSuccess={handleCreateDaoSuccess} />
-              </div>
-            </div>
-          </div>
-        )}
+        <CreateDaoModal
+          isOpen={isCreateDaoModalOpen}
+          onClose={() => setIsCreateDaoModalOpen(false)}
+          onSuccess={handleCreateDaoSuccess}
+        />
 
         {/* Profile Modal for Telegram auth */}
         <ProfileModal 

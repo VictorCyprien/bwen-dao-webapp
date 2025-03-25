@@ -16,6 +16,14 @@ export class InputCreateDAO {
     'name': string;
     'description': string;
     'ownerId': string;
+    'discordServer'?: string;
+    'twitter'?: string;
+    'telegram'?: string;
+    'instagram'?: string;
+    'tiktok'?: string;
+    'website'?: string;
+    'profile'?: HttpFile;
+    'banner'?: HttpFile;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -39,6 +47,54 @@ export class InputCreateDAO {
             "baseName": "owner_id",
             "type": "string",
             "format": ""
+        },
+        {
+            "name": "discordServer",
+            "baseName": "discord_server",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "twitter",
+            "baseName": "twitter",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "telegram",
+            "baseName": "telegram",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "instagram",
+            "baseName": "instagram",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "tiktok",
+            "baseName": "tiktok",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "website",
+            "baseName": "website",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "profile",
+            "baseName": "profile",
+            "type": "HttpFile",
+            "format": "binary"
+        },
+        {
+            "name": "banner",
+            "baseName": "banner",
+            "type": "HttpFile",
+            "format": "binary"
         }    ];
 
     static getAttributeTypeMap() {
