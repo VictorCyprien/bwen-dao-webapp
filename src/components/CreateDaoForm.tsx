@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Loader } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Loader, Upload } from 'lucide-react';
 import { daosService } from '../services/DaosService';
 import { useAuth } from '../context/AuthContext';
 import { userService } from '../services/UserService';
@@ -21,6 +21,14 @@ const CreateDaoForm: React.FC<CreateDaoFormProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [discordServer, setDiscordServer] = useState('');
+  const [twitter, setTwitter] = useState('');
+  const [telegram, setTelegram] = useState('');
+  const [instagram, setInstagram] = useState('');
+  const [tiktok, setTiktok] = useState('');
+  const [website, setWebsite] = useState('');
+  const [profilePicture, setProfilePicture] = useState<File | null>(null);
+  const [bannerPicture, setBannerPicture] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -29,6 +37,9 @@ const CreateDaoForm: React.FC<CreateDaoFormProps> = ({
   
   const { userInfo } = useAuth();
   const { publicKey } = useWallet();
+  
+  const profileInputRef = useRef<HTMLInputElement>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
   
   // Fetch current user ID on component mount
   useEffectOnce(() => {
@@ -79,17 +90,32 @@ const CreateDaoForm: React.FC<CreateDaoFormProps> = ({
     setSuccess(null);
     
     try {
-      console.log(`Creating DAO with name: ${name}, description: ${description}, userId: ${userId}`);
-      
       const result = await daosService.createDao({
         name,
         description,
         userId,
+        discordServer: discordServer || undefined,
+        twitter: twitter || undefined,
+        telegram: telegram || undefined,
+        instagram: instagram || undefined,
+        tiktok: tiktok || undefined,
+        website: website || undefined,
+        profilePicture: profilePicture || undefined,
+        bannerPicture: bannerPicture || undefined,
       });
+      
       if (result) {
         setSuccess(`DAO "${name}" created successfully!`);
         setName('');
         setDescription('');
+        setDiscordServer('');
+        setTwitter('');
+        setTelegram('');
+        setInstagram('');
+        setTiktok('');
+        setWebsite('');
+        setProfilePicture(null);
+        setBannerPicture(null);
         if (onSuccess) onSuccess(result.daoId?.toString() || '');
       } else {
         throw new Error('Failed to create DAO. Please try again.');
@@ -101,6 +127,30 @@ const CreateDaoForm: React.FC<CreateDaoFormProps> = ({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'banner') => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.match(/^image\/(jpeg|jpg|png|gif)$/)) {
+      setError('Please upload an image file (JPEG, PNG)');
+      return;
+    }
+
+    // Validate file size (e.g., max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image file size must be less than 5MB');
+      return;
+    }
+
+    if (type === 'profile') {
+      setProfilePicture(file);
+    } else {
+      setBannerPicture(file);
+    }
+    setError(null);
   };
   
   const displayUsername = userInfo?.username || userInfo?.walletAddress || 'Unknown User';
@@ -177,6 +227,148 @@ const CreateDaoForm: React.FC<CreateDaoFormProps> = ({
             rows={4}
             disabled={isSubmitting}
           />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label htmlFor="discordServer" className={labelClasses}>
+              Discord Server
+            </label>
+            <input
+              type="text"
+              id="discordServer"
+              value={discordServer}
+              onChange={(e) => setDiscordServer(e.target.value)}
+              className={inputClasses}
+              placeholder="Discord server invite link"
+              disabled={isSubmitting}
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="twitter" className={labelClasses}>
+              Twitter
+            </label>
+            <input
+              type="text"
+              id="twitter"
+              value={twitter}
+              onChange={(e) => setTwitter(e.target.value)}
+              className={inputClasses}
+              placeholder="Twitter handle"
+              disabled={isSubmitting}
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="telegram" className={labelClasses}>
+              Telegram
+            </label>
+            <input
+              type="text"
+              id="telegram"
+              value={telegram}
+              onChange={(e) => setTelegram(e.target.value)}
+              className={inputClasses}
+              placeholder="Telegram group link"
+              disabled={isSubmitting}
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="instagram" className={labelClasses}>
+              Instagram
+            </label>
+            <input
+              type="text"
+              id="instagram"
+              value={instagram}
+              onChange={(e) => setInstagram(e.target.value)}
+              className={inputClasses}
+              placeholder="Instagram handle"
+              disabled={isSubmitting}
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="tiktok" className={labelClasses}>
+              TikTok
+            </label>
+            <input
+              type="text"
+              id="tiktok"
+              value={tiktok}
+              onChange={(e) => setTiktok(e.target.value)}
+              className={inputClasses}
+              placeholder="TikTok username"
+              disabled={isSubmitting}
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="website" className={labelClasses}>
+              Website
+            </label>
+            <input
+              type="text"
+              id="website"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              className={inputClasses}
+              placeholder="Website URL"
+              disabled={isSubmitting}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label htmlFor="profilePicture" className={labelClasses}>
+              Profile Picture
+            </label>
+            <input
+              type="file"
+              id="profilePicture"
+              ref={profileInputRef}
+              onChange={(e) => handleImageUpload(e, 'profile')}
+              accept="image/jpeg,image/png,image/gif"
+              className="hidden"
+              disabled={isSubmitting}
+            />
+            <button
+              type="button"
+              onClick={() => profileInputRef.current?.click()}
+              className={`${inputClasses} flex items-center justify-center`}
+              disabled={isSubmitting}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              {profilePicture ? profilePicture.name : 'Upload Profile Picture'}
+            </button>
+          </div>
+          
+          <div>
+            <label htmlFor="bannerPicture" className={labelClasses}>
+              Banner Picture
+            </label>
+            <input
+              type="file"
+              id="bannerPicture"
+              ref={bannerInputRef}
+              onChange={(e) => handleImageUpload(e, 'banner')}
+              accept="image/jpeg,image/png,image/gif"
+              className="hidden"
+              disabled={isSubmitting}
+            />
+            <button
+              type="button"
+              onClick={() => bannerInputRef.current?.click()}
+              className={`${inputClasses} flex items-center justify-center`}
+              disabled={isSubmitting}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              {bannerPicture ? bannerPicture.name : 'Upload Banner Picture'}
+            </button>
+          </div>
         </div>
         
         <div className="mb-4">
