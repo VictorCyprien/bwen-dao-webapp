@@ -40,13 +40,10 @@ export * from '../models/ProposalVoteResponse';
 export * from '../models/SocialConnection';
 export * from '../models/TelegramAuth';
 export * from '../models/Token';
-export * from '../models/TokenCreate';
-export * from '../models/TokenSchemaResponse';
 export * from '../models/Transfer';
 export * from '../models/TransferCreate';
 export * from '../models/TransferSchemaResponse';
 export * from '../models/Treasury';
-export * from '../models/TreasuryUpdatePercentages';
 export * from '../models/User';
 export * from '../models/UserBasic';
 export * from '../models/UserBasic1';
@@ -97,13 +94,10 @@ import { ProposalVoteResponse , ProposalVoteResponseVoteStatusEnum      } from '
 import { SocialConnection } from '../models/SocialConnection';
 import { TelegramAuth } from '../models/TelegramAuth';
 import { Token } from '../models/Token';
-import { TokenCreate } from '../models/TokenCreate';
-import { TokenSchemaResponse } from '../models/TokenSchemaResponse';
 import { Transfer } from '../models/Transfer';
 import { TransferCreate } from '../models/TransferCreate';
 import { TransferSchemaResponse } from '../models/TransferSchemaResponse';
 import { Treasury } from '../models/Treasury';
-import { TreasuryUpdatePercentages } from '../models/TreasuryUpdatePercentages';
 import { User } from '../models/User';
 import { UserBasic } from '../models/UserBasic';
 import { UserBasic1 } from '../models/UserBasic1';
@@ -172,13 +166,10 @@ let typeMap: {[index: string]: any} = {
     "SocialConnection": SocialConnection,
     "TelegramAuth": TelegramAuth,
     "Token": Token,
-    "TokenCreate": TokenCreate,
-    "TokenSchemaResponse": TokenSchemaResponse,
     "Transfer": Transfer,
     "TransferCreate": TransferCreate,
     "TransferSchemaResponse": TransferSchemaResponse,
     "Treasury": Treasury,
-    "TreasuryUpdatePercentages": TreasuryUpdatePercentages,
     "User": User,
     "UserBasic": UserBasic,
     "UserBasic1": UserBasic1,

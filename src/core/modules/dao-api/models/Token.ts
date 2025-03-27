@@ -14,14 +14,15 @@ import { HttpFile } from '../http/http';
 
 export class Token {
     'tokenId'?: string;
-    'daoId': string;
-    'name': string;
-    'symbol': string;
-    'contract': string;
-    'amount'?: number;
+    'walletAddress'?: string;
+    'tokenMint'?: string;
+    'balance'?: number;
+    'lastUpdated'?: Date;
+    'symbol'?: string;
+    'decimals'?: number;
     'price'?: number;
-    'percentage'?: number;
-    'value'?: any | null;
+    'priceChangePercentage'?: number;
+    'photoUrl'?: string;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -35,16 +36,28 @@ export class Token {
             "format": ""
         },
         {
-            "name": "daoId",
-            "baseName": "dao_id",
+            "name": "walletAddress",
+            "baseName": "wallet_address",
             "type": "string",
             "format": ""
         },
         {
-            "name": "name",
-            "baseName": "name",
+            "name": "tokenMint",
+            "baseName": "token_mint",
             "type": "string",
             "format": ""
+        },
+        {
+            "name": "balance",
+            "baseName": "balance",
+            "type": "number",
+            "format": ""
+        },
+        {
+            "name": "lastUpdated",
+            "baseName": "last_updated",
+            "type": "Date",
+            "format": "date-time"
         },
         {
             "name": "symbol",
@@ -53,14 +66,8 @@ export class Token {
             "format": ""
         },
         {
-            "name": "contract",
-            "baseName": "contract",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "amount",
-            "baseName": "amount",
+            "name": "decimals",
+            "baseName": "decimals",
             "type": "number",
             "format": ""
         },
@@ -71,15 +78,15 @@ export class Token {
             "format": ""
         },
         {
-            "name": "percentage",
-            "baseName": "percentage",
+            "name": "priceChangePercentage",
+            "baseName": "price_change_percentage",
             "type": "number",
             "format": ""
         },
         {
-            "name": "value",
-            "baseName": "value",
-            "type": "any",
+            "name": "photoUrl",
+            "baseName": "photo_url",
+            "type": "string",
             "format": ""
         }    ];
 

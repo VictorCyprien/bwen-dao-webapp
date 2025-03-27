@@ -71,13 +71,10 @@ models/ProposalVoteResponse.ts
 models/SocialConnection.ts
 models/TelegramAuth.ts
 models/Token.ts
-models/TokenCreate.ts
-models/TokenSchemaResponse.ts
 models/Transfer.ts
 models/TransferCreate.ts
 models/TransferSchemaResponse.ts
 models/Treasury.ts
-models/TreasuryUpdatePercentages.ts
 models/User.ts
 models/UserBasic.ts
 models/UserBasic1.ts

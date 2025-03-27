@@ -27,6 +27,7 @@ export class DAO {
     'website'?: string;
     'profilePicture'?: string;
     'bannerPicture'?: string;
+    'treasuryAddress'?: string;
     'admins'?: Array<UserBasic>;
     'members'?: Array<UserBasic>;
 
@@ -110,6 +111,12 @@ export class DAO {
         {
             "name": "bannerPicture",
             "baseName": "banner_picture",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "treasuryAddress",
+            "baseName": "treasury_address",
             "type": "string",
             "format": ""
         },

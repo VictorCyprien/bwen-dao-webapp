@@ -22,6 +22,7 @@ export class DAOUpdate {
     'instagram'?: string;
     'tiktok'?: string;
     'website'?: string;
+    'treasury'?: string;
     'profile'?: HttpFile;
     'banner'?: HttpFile;
 
@@ -81,6 +82,12 @@ export class DAOUpdate {
         {
             "name": "website",
             "baseName": "website",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "treasury",
+            "baseName": "treasury",
             "type": "string",
             "format": ""
         },
