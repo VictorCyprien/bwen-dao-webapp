@@ -128,6 +128,7 @@ export class DaosService {
     name: string;
     description?: string;
     userId: string;
+    treasury?: string;
     discordServer?: string;
     twitter?: string;
     telegram?: string;
@@ -145,6 +146,7 @@ export class DaosService {
       daoInput.name = daoData.name;
       daoInput.description = daoData.description?.trim() || '';
       daoInput.ownerId = daoData.userId;
+      daoInput.treasury = daoData.treasury;
       daoInput.discordServer = daoData.discordServer;
       daoInput.twitter = daoData.twitter;
       daoInput.telegram = daoData.telegram;
@@ -177,6 +179,7 @@ export class DaosService {
     description?: string;
     name?: string;
     isActive?: boolean;
+    treasury?: string;
     discordServer?: string;
     twitter?: string;
     telegram?: string;
@@ -197,6 +200,7 @@ export class DaosService {
       if (daoData.description !== undefined) daoUpdate.description = daoData.description;
       if (daoData.isActive !== undefined) daoUpdate.isActive = daoData.isActive;
 
+      daoUpdate.treasury = daoData.treasury;
       daoUpdate.discordServer = daoData.discordServer;
       daoUpdate.twitter = daoData.twitter;
       daoUpdate.telegram = daoData.telegram;
