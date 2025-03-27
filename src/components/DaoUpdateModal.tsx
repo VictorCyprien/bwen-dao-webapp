@@ -13,6 +13,7 @@ const DaoUpdateModal: React.FC<DaoUpdateModalProps> = ({ isOpen, onClose }) => {
   const { daoId } = useParams<{ daoId: string }>();
   const [daoName, setDaoName] = useState<string>('');
   const [daoDescription, setDaoDescription] = useState<string>('');
+  const [treasury, setTreasury] = useState<string>('');
   const [discordServer, setDiscordServer] = useState<string>('');
   const [twitter, setTwitter] = useState<string>('');
   const [telegram, setTelegram] = useState<string>('');
@@ -50,6 +51,7 @@ const DaoUpdateModal: React.FC<DaoUpdateModalProps> = ({ isOpen, onClose }) => {
       if (daoInfo) {
         setDaoName(daoInfo.name || '');
         setDaoDescription(daoInfo.description || '');
+        setTreasury(daoInfo.treasuryAddress || '');
         setDiscordServer(daoInfo.discordServer || '');
         setTwitter(daoInfo.twitter || '');
         setTelegram(daoInfo.telegram || '');
@@ -105,6 +107,7 @@ const DaoUpdateModal: React.FC<DaoUpdateModalProps> = ({ isOpen, onClose }) => {
       await daosService.updateDao(daoId, {
         name: daoName.trim(),
         description: daoDescription.trim(),
+        treasury: treasury,
         discordServer: discordServer,
         twitter: twitter,
         telegram: telegram,
@@ -174,6 +177,20 @@ const DaoUpdateModal: React.FC<DaoUpdateModalProps> = ({ isOpen, onClose }) => {
               className="w-full px-3 py-2 bg-[#222] border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary"
               placeholder="Enter DAO description"
             ></textarea>
+          </div>
+          
+          <div className="space-y-2">
+            <label htmlFor="treasury" className="block text-sm font-medium text-gray-300">
+              Treasury Wallet Address
+            </label>
+            <input
+              type="text"
+              id="treasury"
+              value={treasury}
+              onChange={(e) => setTreasury(e.target.value)}
+              className="w-full px-3 py-2 bg-[#222] border border-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="Enter wallet address for treasury"
+            />
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
