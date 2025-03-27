@@ -30,6 +30,7 @@ const Treasury = () => {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [calculatedTotalValue, setCalculatedTotalValue] = useState<number>(0);
 
   // Function to fetch all treasury data
   const fetchTreasuryData = async (showRefreshIndicator = true) => {
@@ -50,7 +51,7 @@ const Treasury = () => {
       const treasuryData = await treasuryService.getTreasury(daoId);
       setTreasury(treasuryData);
       
-      // Fetch tokens
+      // Fetch tokens from the DAO's treasury wallet
       const tokensData = await treasuryService.getTokens(daoId);
       setTokens(tokensData);
       
@@ -75,6 +76,17 @@ const Treasury = () => {
     fetchTreasuryData(true);
   };
 
+  // Function to calculate total value based on token balances and prices
+  const calculateTotalValue = (tokensData: Token[]): number => {
+    return tokensData.reduce((total, token) => {
+      // Only add to total if both balance and price are available
+      if (token.balance !== undefined && token.price !== undefined) {
+        return total + (token.balance * token.price);
+      }
+      return total;
+    }, 0);
+  };
+
   // Set up initial data load and refresh interval
   useEffectOnce(() => {
     fetchTreasuryData();
@@ -88,15 +100,34 @@ const Treasury = () => {
     return () => clearInterval(refreshInterval);
   }, [daoId]);
 
+  // Update calculated total value whenever tokens change
+  useEffect(() => {
+    const totalValue = calculateTotalValue(tokens);
+    setCalculatedTotalValue(totalValue);
+  }, [tokens]);
+
   // Format currency value with appropriate symbols and decimals
   const formatCurrency = (value: any): string => {
     if (value === null || value === undefined) return '$0';
+    
+    const numValue = Number(value);
+    
+    // Handle very small values with appropriate precision
+    if (numValue > 0 && numValue < 0.000001) {
+      return '$' + numValue.toExponential(4);
+    } else if (numValue > 0 && numValue < 0.0001) {
+      return '$' + numValue.toFixed(8);
+    } else if (numValue > 0 && numValue < 0.01) {
+      return '$' + numValue.toFixed(6);
+    } else if (numValue > 0 && numValue < 1) {
+      return '$' + numValue.toFixed(4);
+    }
     
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       maximumFractionDigits: 2
-    }).format(Number(value));
+    }).format(numValue);
   };
 
   // Format the last updated time
@@ -188,7 +219,7 @@ const Treasury = () => {
         ) : (
           <div className="flex flex-col md:flex-row md:items-end">
             <div className={ui.stat.value + " text-4xl mb-2 md:mb-0"}>
-              {formatCurrency(treasury?.totalValue)}
+              {formatCurrency(calculatedTotalValue)}
             </div>
             {treasury?.dailyChange !== undefined && treasury?.dailyChange !== null && (
               <div className={`flex items-center md:ml-4 ${treasury.dailyChange >= 0 ? ui.stat.positive : ui.stat.negative}`}>
@@ -227,8 +258,9 @@ const Treasury = () => {
                   <th className={ui.table.header}>Token</th>
                   <th className={ui.table.header + " text-right"}>Balance</th>
                   <th className={ui.table.header + " text-right"}>Price</th>
+                  <th className={ui.table.header + " text-right"}>24h</th>
                   <th className={ui.table.header + " text-right"}>Value</th>
-                  <th className={ui.table.header + " text-right"}>% of Treasury</th>
+                  <th className={ui.table.header + " text-right"}>Last Updated</th>
                 </tr>
               </thead>
               <tbody>
@@ -236,26 +268,56 @@ const Treasury = () => {
                   <tr key={token.tokenId} className={ui.table.row}>
                     <td className={ui.table.cell}>
                       <div className="flex items-center">
-                        <div className="h-8 w-8 rounded-full bg-gray-700 flex items-center justify-center mr-3">
-                          {token.symbol ? token.symbol.substring(0, 1) : 'T'}
-                        </div>
+                        {token.photoUrl ? (
+                          <img 
+                            src={token.photoUrl} 
+                            alt={token.symbol || 'Token'} 
+                            className="h-8 w-8 rounded-full mr-3 object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.onerror = null;
+                              target.src = ''; // Remove src to prevent further errors
+                              // Replace with fallback div
+                              target.style.display = 'none';
+                              const parent = target.parentNode as HTMLElement;
+                              const fallback = document.createElement('div');
+                              fallback.className = 'h-8 w-8 rounded-full bg-gray-700 flex items-center justify-center mr-3';
+                              fallback.innerHTML = token.symbol ? token.symbol.substring(0, 1) : 'T';
+                              parent.insertBefore(fallback, target);
+                            }}
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded-full bg-gray-700 flex items-center justify-center mr-3">
+                            {token.symbol ? token.symbol.substring(0, 1) : 'T'}
+                          </div>
+                        )}
                         <div>
-                          <div className="font-medium">{token.name || token.symbol}</div>
-                          <div className="text-gray-400 text-xs">{token.symbol}</div>
+                          <div className="font-medium">{token.symbol || 'Unknown Token'}</div>
+                          <div className="text-gray-400 text-xs"><a href={`http://dexscreener.com/solana/${token.tokenMint}`} target="_blank" rel="noopener noreferrer">{token.tokenMint || ''}</a></div>
                         </div>
                       </div>
                     </td>
                     <td className={ui.table.cell + " text-right"}>
-                      {formatTokenAmount(token.amount)}
+                      {formatTokenAmount(token.balance)}
                     </td>
                     <td className={ui.table.cell + " text-right"}>
-                      {formatCurrency(token.price)}
+                      {token.price !== undefined ? formatCurrency(token.price) : 'N/A'}
                     </td>
                     <td className={ui.table.cell + " text-right"}>
-                      {formatCurrency(token.value)}
+                      {token.priceChangePercentage !== undefined ? (
+                        <span className={token.priceChangePercentage >= 0 ? 'text-green-400' : 'text-red-400'}>
+                          {token.priceChangePercentage >= 0 ? '+' : ''}
+                          {formatPercentage(token.priceChangePercentage)}
+                        </span>
+                      ) : 'N/A'}
+                    </td>
+                    <td className={ui.table.cell + " text-right font-medium"}>
+                      {(token.balance !== undefined && token.price !== undefined) 
+                        ? formatCurrency(token.balance * token.price) 
+                        : 'N/A'}
                     </td>
                     <td className={ui.table.cell + " text-right"}>
-                      {formatPercentage(token.percentage)}
+                      {token.lastUpdated ? formatDate(token.lastUpdated) : 'N/A'}
                     </td>
                   </tr>
                 ))}
@@ -292,20 +354,20 @@ const Treasury = () => {
                   <tr key={transfer.transferId || index} className={ui.table.row}>
                     <td className={ui.table.cell}>
                       <div className="flex items-center">
-                        <div className={`p-2 rounded-full mr-3 ${transfer.direction === 'in' ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
+                        <div className={`p-2 rounded-full mr-3 ${transfer.fromAddress === daoId ? 'bg-red-500/20' : 'bg-green-500/20'}`}>
                           <ArrowDownUp 
                             size={16} 
-                            className={transfer.direction === 'in' ? 'text-green-400' : 'text-red-400'} 
+                            className={transfer.fromAddress === daoId ? 'text-red-400' : 'text-green-400'} 
                           />
                         </div>
                         <div>
                           <div className="font-medium">
-                            {transfer.direction === 'in' ? 'Deposit' : 'Withdrawal'}
+                            {transfer.fromAddress === daoId ? 'Withdrawal' : 'Deposit'}
                           </div>
                           <div className="text-gray-400 text-xs">
-                            {transfer.direction === 'in' 
-                              ? `From: ${shortenAddress(transfer.fromAddress || '')}` 
-                              : `To: ${shortenAddress(transfer.toAddress || '')}`
+                            {transfer.fromAddress === daoId
+                              ? `To: ${shortenAddress(transfer.toAddress || '')}` 
+                              : `From: ${shortenAddress(transfer.fromAddress || '')}`
                             }
                           </div>
                         </div>
@@ -320,24 +382,22 @@ const Treasury = () => {
                       </div>
                     </td>
                     <td className={ui.table.cell + " text-right font-medium"}>
-                      <span className={transfer.direction === 'in' ? 'text-green-400' : 'text-red-400'}>
-                        {transfer.direction === 'in' ? '+' : '-'}{formatTokenAmount(transfer.amount)}
+                      <span className={transfer.fromAddress === daoId ? 'text-red-400' : 'text-green-400'}>
+                        {transfer.fromAddress === daoId ? '-' : '+'}{formatTokenAmount(transfer.amount)}
                       </span>
                     </td>
                     <td className={ui.table.cell + " text-right text-gray-400"}>
                       {formatDate(transfer.timestamp)}
                     </td>
                     <td className={ui.table.cell + " text-right"}>
-                      {transfer.explorerUrl && (
-                        <a 
-                          href={transfer.explorerUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="text-blue-400 hover:text-blue-300 inline-flex items-center"
-                        >
-                          <ExternalLink size={14} />
-                        </a>
-                      )}
+                      <a 
+                        href={`https://explorer.solana.com/tx/${transfer.transferId}`} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="text-blue-400 hover:text-blue-300 inline-flex items-center"
+                      >
+                        <ExternalLink size={14} />
+                      </a>
                     </td>
                   </tr>
                 ))}
