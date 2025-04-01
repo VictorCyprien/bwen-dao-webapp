@@ -34,3 +34,5 @@ dao-treasury-package.json
 setup-treasury-cli.sh
 node_modules/.vite/
 .vite_cache/
+program_docs.md
+dao-webapp.service
