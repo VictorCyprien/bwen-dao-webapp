@@ -103,6 +103,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       console.log('Already fetching user info, skipping duplicate call');
       return;
     }
+    
+    // Add a small delay to ensure any previous operations have completed
+    // NOTE : This is a stupid hack to prevent getting previous user's data when changing wallets
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     try {
       isFetchingUserInfo.current = true;
@@ -325,6 +329,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       setToken(result.token);
       setChallengeMessage(null);
       
+      // Store the authenticated wallet address in localStorage
+      if (publicKey) {
+        const walletAddress = publicKey.toString();
+        localStorage.setItem('authenticatedWalletAddress', walletAddress);
+        console.log('Stored authenticated wallet address after successful signature:', walletAddress);
+      }
+      
       // Fetch user info from API
       await fetchUserInfo();
       
@@ -494,8 +505,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       setChallengeMessage(null);
       setApiError(null);
       setUserInfo(null); // Clear user info
-      localStorage.removeItem('userInfo'); // Remove stored user info
-      localStorage.removeItem('walletAddress'); // Remove stored wallet address
+      localStorage.removeItem('authenticatedWalletAddress');
     } catch (error) {
       console.error('Error during logout:', error);
     }
@@ -504,31 +514,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
   // Handle wallet connection changes
   const handleWalletConnection = async () => {
     if (connected && publicKey) {
-      const walletAddress = publicKey.toString();
-      console.log(`Connected with wallet: ${walletAddress}`);
+      const currentWalletAddress = publicKey.toString();
+      console.log(`Connected with wallet: ${currentWalletAddress}`);
       
-      // Store wallet address in localStorage
-      localStorage.setItem('walletAddress', walletAddress);
+      // Get the authenticated wallet address (only stored after successful authentication)
+      const authenticatedWalletAddress = localStorage.getItem('authenticatedWalletAddress');
+      console.log('Authenticated wallet address:', authenticatedWalletAddress);
       
       // Check if we have a token
       if (walletAuthService.hasAccessToken()) {
-        // We have a token, set authenticated state
-        if (!isAuthenticated) {
+        // We have a token, check if the current wallet matches the authenticated wallet
+        if (authenticatedWalletAddress && authenticatedWalletAddress !== currentWalletAddress) {
+          console.log('Wallet address mismatch! Connected:', currentWalletAddress, 'Authenticated wallet:', authenticatedWalletAddress);
+          console.log('Logging out current user and authenticating with new wallet...');
+
+          // First logout the current user
+          await logout();
+          // Immediately clear user info to prevent showing previous user's data
+          setUserInfo(null);
+          
+          // Then authenticate with the new wallet address
+          await authenticateWithWallet(currentWalletAddress);
+        } else if (!isAuthenticated) {
           console.log('Found access token, setting authenticated state');
           setIsAuthenticated(true);
           setToken(walletAuthService.getAccessToken());
-          fetchUserInfo();
+          await fetchUserInfo();
         }
       } else {
         // No token, automatically start authentication process
         console.log('No token found but wallet connected. Starting authentication process.');
         // Automatically authenticate on wallet connection
-        await authenticateWithWallet(walletAddress);
+        await authenticateWithWallet(currentWalletAddress);
       }
     } else if (!connected) {
       // If wallet is disconnected, clear wallet address
-      localStorage.removeItem('walletAddress');
-      
       // If we were authenticated, log out
       if (isAuthenticated) {
         console.log('Wallet disconnected, logging out');
@@ -537,7 +557,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     }
   };
 
-  // Update the main logout function to use the helper
+  // Update the main logout function to clear the stored authenticated wallet address
   const logout = async () => {
     try {
       // Clear authentication state
@@ -551,7 +571,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       // Clear localStorage and service data
       walletAuthService.clearAccessToken();
       userService.clearUserCache(); // Clear user cache on logout
-      localStorage.removeItem('walletAddress');
+      localStorage.removeItem('authenticatedWalletAddress');
 
       // Call logout on the auth service
       await walletAuthService.logout();
