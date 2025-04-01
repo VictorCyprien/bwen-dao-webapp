@@ -8,10 +8,8 @@ import {
   TreasuryApi,
   Treasury,
   Token,
-  TokenCreate,
   Transfer,
   TransferCreate,
-  TokenSchemaResponse,
   TransferSchemaResponse
 } from '../core/modules/dao-api';
 import { ServerConfiguration } from '../core/modules/dao-api/servers';
@@ -118,34 +116,6 @@ export class TreasuryService {
   }
 
   /**
-   * Create a new token for a specific DAO
-   */
-  async createToken(daoId: string, tokenData: {
-    name: string;
-    symbol: string;
-    contract: string;
-    amount: number;
-  }): Promise<TokenSchemaResponse | null> {
-    try {
-      const apiClient = this.createAuthenticatedApiClient();
-      if (!apiClient) return null;
-
-      const token = new TokenCreate();
-      token.daoId = daoId;
-      token.name = tokenData.name;
-      token.symbol = tokenData.symbol;
-      token.contract = tokenData.contract;
-      token.amount = tokenData.amount;
-
-      const response = await apiClient.createToken(daoId, token);
-      return response || null;
-    } catch (error) {
-      console.error(`Error creating token in DAO ${daoId}:`, error);
-      return null;
-    }
-  }
-
-  /**
    * Get all transfers for a specific DAO
    */
   async getTransfers(daoId: string): Promise<Transfer[]> {
@@ -186,22 +156,6 @@ export class TreasuryService {
       return response || null;
     } catch (error) {
       console.error(`Error creating transfer in DAO ${daoId}:`, error);
-      return null;
-    }
-  }
-
-  /**
-   * Update the percentages of tokens in the DAO's treasury without changing prices
-   */
-  async updateDAOTokenPercentages(daoId: string): Promise<any | null> {
-    try {
-      const apiClient = this.createAuthenticatedApiClient();
-      if (!apiClient) return null;
-
-      const response = await apiClient.updateDAOTokenPercentages(daoId);
-      return response || null;
-    } catch (error) {
-      console.error(`Error updating token percentages for DAO ${daoId}:`, error);
       return null;
     }
   }

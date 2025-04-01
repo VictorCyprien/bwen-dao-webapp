@@ -44,13 +44,10 @@ import { ProposalVoteResponse } from '../models/ProposalVoteResponse';
 import { SocialConnection } from '../models/SocialConnection';
 import { TelegramAuth } from '../models/TelegramAuth';
 import { Token } from '../models/Token';
-import { TokenCreate } from '../models/TokenCreate';
-import { TokenSchemaResponse } from '../models/TokenSchemaResponse';
 import { Transfer } from '../models/Transfer';
 import { TransferCreate } from '../models/TransferCreate';
 import { TransferSchemaResponse } from '../models/TransferSchemaResponse';
 import { Treasury } from '../models/Treasury';
-import { TreasuryUpdatePercentages } from '../models/TreasuryUpdatePercentages';
 import { User } from '../models/User';
 import { UserBasic } from '../models/UserBasic';
 import { UserBasic1 } from '../models/UserBasic1';
@@ -1705,22 +1702,6 @@ export interface TreasuryApiCreateDAOTransferRequest {
     transferCreate: TransferCreate
 }
 
-export interface TreasuryApiCreateTokenRequest {
-    /**
-     * 
-     * Defaults to: undefined
-     * @type string
-     * @memberof TreasuryApicreateToken
-     */
-    daoId: string
-    /**
-     * 
-     * @type TokenCreate
-     * @memberof TreasuryApicreateToken
-     */
-    tokenCreate: TokenCreate
-}
-
 export interface TreasuryApiGetDAOTokensRequest {
     /**
      * 
@@ -1751,16 +1732,6 @@ export interface TreasuryApiGetDAOTreasuryRequest {
     daoId: string
 }
 
-export interface TreasuryApiUpdateDAOTokenPercentagesRequest {
-    /**
-     * 
-     * Defaults to: undefined
-     * @type string
-     * @memberof TreasuryApiupdateDAOTokenPercentages
-     */
-    daoId: string
-}
-
 export class ObjectTreasuryApi {
     private api: ObservableTreasuryApi
 
@@ -1782,22 +1753,6 @@ export class ObjectTreasuryApi {
      */
     public createDAOTransfer(param: TreasuryApiCreateDAOTransferRequest, options?: ConfigurationOptions): Promise<TransferSchemaResponse> {
         return this.api.createDAOTransfer(param.daoId, param.transferCreate,  options).toPromise();
-    }
-
-    /**
-     * Create a new token for a specific DAO
-     * @param param the request object
-     */
-    public createTokenWithHttpInfo(param: TreasuryApiCreateTokenRequest, options?: ConfigurationOptions): Promise<HttpInfo<TokenSchemaResponse>> {
-        return this.api.createTokenWithHttpInfo(param.daoId, param.tokenCreate,  options).toPromise();
-    }
-
-    /**
-     * Create a new token for a specific DAO
-     * @param param the request object
-     */
-    public createToken(param: TreasuryApiCreateTokenRequest, options?: ConfigurationOptions): Promise<TokenSchemaResponse> {
-        return this.api.createToken(param.daoId, param.tokenCreate,  options).toPromise();
     }
 
     /**
@@ -1846,22 +1801,6 @@ export class ObjectTreasuryApi {
      */
     public getDAOTreasury(param: TreasuryApiGetDAOTreasuryRequest, options?: ConfigurationOptions): Promise<Treasury> {
         return this.api.getDAOTreasury(param.daoId,  options).toPromise();
-    }
-
-    /**
-     * Update the percentages of tokens in the DAO\'s treasury without changing prices
-     * @param param the request object
-     */
-    public updateDAOTokenPercentagesWithHttpInfo(param: TreasuryApiUpdateDAOTokenPercentagesRequest, options?: ConfigurationOptions): Promise<HttpInfo<TreasuryUpdatePercentages>> {
-        return this.api.updateDAOTokenPercentagesWithHttpInfo(param.daoId,  options).toPromise();
-    }
-
-    /**
-     * Update the percentages of tokens in the DAO\'s treasury without changing prices
-     * @param param the request object
-     */
-    public updateDAOTokenPercentages(param: TreasuryApiUpdateDAOTokenPercentagesRequest, options?: ConfigurationOptions): Promise<TreasuryUpdatePercentages> {
-        return this.api.updateDAOTokenPercentages(param.daoId,  options).toPromise();
     }
 
 }

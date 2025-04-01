@@ -31,27 +31,27 @@ export class User {
     /**
     * Email of the user
     */
-    'email'?: string;
+    'email'?: any | null;
     /**
     * Display name of the user
     */
-    'memberName'?: string;
+    'memberName'?: any | null;
     /**
     * Profile picture of the user
     */
-    'profilePicture'?: string;
+    'profilePicture'?: any | null;
     /**
     * Discord username of the user
     */
-    'discordUsername'?: string;
+    'discordUsername'?: any | null;
     /**
     * Twitter username of the user
     */
-    'twitterUsername'?: string;
+    'twitterUsername'?: any | null;
     /**
     * Telegram username of the user
     */
-    'telegramUsername'?: string;
+    'telegramUsername'?: any | null;
     /**
     * Last login timestamp
     */
@@ -95,37 +95,37 @@ export class User {
         {
             "name": "email",
             "baseName": "email",
-            "type": "string",
+            "type": "any",
             "format": ""
         },
         {
             "name": "memberName",
             "baseName": "member_name",
-            "type": "string",
+            "type": "any",
             "format": ""
         },
         {
             "name": "profilePicture",
             "baseName": "profile_picture",
-            "type": "string",
+            "type": "any",
             "format": ""
         },
         {
             "name": "discordUsername",
             "baseName": "discord_username",
-            "type": "string",
+            "type": "any",
             "format": ""
         },
         {
             "name": "twitterUsername",
             "baseName": "twitter_username",
-            "type": "string",
+            "type": "any",
             "format": ""
         },
         {
             "name": "telegramUsername",
             "baseName": "telegram_username",
-            "type": "string",
+            "type": "any",
             "format": ""
         },
         {

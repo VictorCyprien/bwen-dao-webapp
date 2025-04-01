@@ -21,6 +21,7 @@ const CreateDaoForm: React.FC<CreateDaoFormProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [treasury, setTreasury] = useState('');
   const [discordServer, setDiscordServer] = useState('');
   const [twitter, setTwitter] = useState('');
   const [telegram, setTelegram] = useState('');
@@ -94,6 +95,7 @@ const CreateDaoForm: React.FC<CreateDaoFormProps> = ({
         name,
         description,
         userId,
+        treasury: treasury || undefined,
         discordServer: discordServer || undefined,
         twitter: twitter || undefined,
         telegram: telegram || undefined,
@@ -108,6 +110,7 @@ const CreateDaoForm: React.FC<CreateDaoFormProps> = ({
         setSuccess(`DAO "${name}" created successfully!`);
         setName('');
         setDescription('');
+        setTreasury('');
         setDiscordServer('');
         setTwitter('');
         setTelegram('');
@@ -225,6 +228,21 @@ const CreateDaoForm: React.FC<CreateDaoFormProps> = ({
             className={inputClasses}
             placeholder="Describe the purpose of your DAO"
             rows={4}
+            disabled={isSubmitting}
+          />
+        </div>
+
+        <div className="mb-6">
+          <label htmlFor="treasury" className={labelClasses}>
+            Treasury Wallet Address
+          </label>
+          <input
+            type="text"
+            id="treasury"
+            value={treasury}
+            onChange={(e) => setTreasury(e.target.value)}
+            className={inputClasses}
+            placeholder="Enter the wallet address for your DAO's treasury"
             disabled={isSubmitting}
           />
         </div>

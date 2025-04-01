@@ -44,13 +44,10 @@ import { ProposalVoteResponse } from '../models/ProposalVoteResponse';
 import { SocialConnection } from '../models/SocialConnection';
 import { TelegramAuth } from '../models/TelegramAuth';
 import { Token } from '../models/Token';
-import { TokenCreate } from '../models/TokenCreate';
-import { TokenSchemaResponse } from '../models/TokenSchemaResponse';
 import { Transfer } from '../models/Transfer';
 import { TransferCreate } from '../models/TransferCreate';
 import { TransferSchemaResponse } from '../models/TransferSchemaResponse';
 import { Treasury } from '../models/Treasury';
-import { TreasuryUpdatePercentages } from '../models/TreasuryUpdatePercentages';
 import { User } from '../models/User';
 import { UserBasic } from '../models/UserBasic';
 import { UserBasic1 } from '../models/UserBasic1';
@@ -2383,50 +2380,6 @@ export class PromiseTreasuryApi {
     }
 
     /**
-     * Create a new token for a specific DAO
-     * @param daoId
-     * @param tokenCreate
-     */
-    public createTokenWithHttpInfo(daoId: string, tokenCreate: TokenCreate, _options?: PromiseConfigurationOptions): Promise<HttpInfo<TokenSchemaResponse>> {
-        let observableOptions: undefined | ConfigurationOptions
-        if (_options){
-	    observableOptions = {
-                baseServer: _options.baseServer,
-                httpApi: _options.httpApi,
-                middleware: _options.middleware?.map(
-                    m => new PromiseMiddlewareWrapper(m)
-		),
-		middlewareMergeStrategy: _options.middlewareMergeStrategy,
-                authMethods: _options.authMethods
-	    }
-	}
-        const result = this.api.createTokenWithHttpInfo(daoId, tokenCreate, observableOptions);
-        return result.toPromise();
-    }
-
-    /**
-     * Create a new token for a specific DAO
-     * @param daoId
-     * @param tokenCreate
-     */
-    public createToken(daoId: string, tokenCreate: TokenCreate, _options?: PromiseConfigurationOptions): Promise<TokenSchemaResponse> {
-        let observableOptions: undefined | ConfigurationOptions
-        if (_options){
-	    observableOptions = {
-                baseServer: _options.baseServer,
-                httpApi: _options.httpApi,
-                middleware: _options.middleware?.map(
-                    m => new PromiseMiddlewareWrapper(m)
-		),
-		middlewareMergeStrategy: _options.middlewareMergeStrategy,
-                authMethods: _options.authMethods
-	    }
-	}
-        const result = this.api.createToken(daoId, tokenCreate, observableOptions);
-        return result.toPromise();
-    }
-
-    /**
      * Get all tokens for a specific DAO
      * @param daoId
      */
@@ -2549,48 +2502,6 @@ export class PromiseTreasuryApi {
 	    }
 	}
         const result = this.api.getDAOTreasury(daoId, observableOptions);
-        return result.toPromise();
-    }
-
-    /**
-     * Update the percentages of tokens in the DAO\'s treasury without changing prices
-     * @param daoId
-     */
-    public updateDAOTokenPercentagesWithHttpInfo(daoId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<TreasuryUpdatePercentages>> {
-        let observableOptions: undefined | ConfigurationOptions
-        if (_options){
-	    observableOptions = {
-                baseServer: _options.baseServer,
-                httpApi: _options.httpApi,
-                middleware: _options.middleware?.map(
-                    m => new PromiseMiddlewareWrapper(m)
-		),
-		middlewareMergeStrategy: _options.middlewareMergeStrategy,
-                authMethods: _options.authMethods
-	    }
-	}
-        const result = this.api.updateDAOTokenPercentagesWithHttpInfo(daoId, observableOptions);
-        return result.toPromise();
-    }
-
-    /**
-     * Update the percentages of tokens in the DAO\'s treasury without changing prices
-     * @param daoId
-     */
-    public updateDAOTokenPercentages(daoId: string, _options?: PromiseConfigurationOptions): Promise<TreasuryUpdatePercentages> {
-        let observableOptions: undefined | ConfigurationOptions
-        if (_options){
-	    observableOptions = {
-                baseServer: _options.baseServer,
-                httpApi: _options.httpApi,
-                middleware: _options.middleware?.map(
-                    m => new PromiseMiddlewareWrapper(m)
-		),
-		middlewareMergeStrategy: _options.middlewareMergeStrategy,
-                authMethods: _options.authMethods
-	    }
-	}
-        const result = this.api.updateDAOTokenPercentages(daoId, observableOptions);
         return result.toPromise();
     }
 
