@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown, ExternalLink, Check, Calendar, Users, Search, X, Filter, Clock } from 'lucide-react';
-import type { User } from '../core/modules/dao-api';
+import type { User, UserBasic, UserBasic1 } from '../core/modules/dao-api';
 import { useEffectOnce } from '../hooks/useEffectOnce';
 import { useParams } from 'react-router-dom';
 import { daosService } from '../services/DaosService';
@@ -56,15 +56,15 @@ const Members = () => {
         
         if (daoData && daoData.members) {
           // Transform the basic user data into the format expected by the component
-          const membersData = await Promise.all(daoData.members.map(async (member: User) => {
+          const membersData = await Promise.all(daoData.members.map(async (member: UserBasic) => {
             // You might need to fetch additional user details if needed
             return {
               id: member.userId,
               name: member.username || 'Unknown',
               username: member.username || 'Unknown',
               wallet: member.walletAddress || '0x0000000000000000000000000000000000000000',
-              avatar: `https://avatars.dicebear.com/api/identicon/${member.userId}.svg`,
-              pods: [], // This would need to be populated from another API call if needed
+              avatar: member.profilePicture || `https://avatars.dicebear.com/api/identicon/${member.userId}.svg`,
+              pods: member.pods?.map(pod => pod.name || pod.toString()) || [], // Extract the pod names
               discordId: member.discordUsername || '',
               twitter: member.twitterUsername || '',
               telegram: member.telegramUsername || '',
@@ -486,7 +486,29 @@ const Members = () => {
                     >
                       <td className={ui.table.cell}>
                         <div className="flex items-center">
-                          <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mr-3 text-white font-medium">
+                          {member.avatar ? (
+                            <img 
+                              src={member.avatar} 
+                              alt={`${member.name}'s avatar`}
+                              className="h-10 w-10 rounded-full mr-3 object-cover"
+                              onError={(e) => {
+                                // Fallback to first letter avatar if image fails to load
+                                const imgElement = e.currentTarget;
+                                imgElement.style.display = 'none';
+                                const parentDiv = imgElement.parentElement;
+                                if (parentDiv) {
+                                  const letterAvatar = parentDiv.querySelector('div.rounded-full');
+                                  if (letterAvatar && letterAvatar instanceof HTMLElement) {
+                                    letterAvatar.style.display = 'flex';
+                                  }
+                                }
+                              }}
+                            />
+                          ) : null}
+                          <div 
+                            className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mr-3 text-white font-medium"
+                            style={{display: member.avatar ? 'none' : 'flex'}}
+                          >
                             {member.name.substring(0, 1)}
                           </div>
                           <div>
@@ -519,13 +541,43 @@ const Members = () => {
                       <td className={ui.table.cell}>
                         <div className="flex gap-2">
                           {member.discordId && (
-                            <Badge variant="primary" className="text-xs">Discord</Badge>
+                            <a 
+                              href={`https://discord.com/users/${member.discordId}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex"
+                            >
+                              <Badge variant="primary" className="text-xs flex items-center gap-1">
+                                Discord <ExternalLink size={12} />
+                              </Badge>
+                            </a>
                           )}
                           {member.twitter && (
-                            <Badge variant="primary" className="text-xs">Twitter</Badge>
+                            <a 
+                              href={`https://twitter.com/${member.twitter}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex"
+                            >
+                              <Badge variant="primary" className="text-xs flex items-center gap-1">
+                                Twitter <ExternalLink size={12} />
+                              </Badge>
+                            </a>
                           )}
                           {member.telegram && (
-                            <Badge variant="primary" className="text-xs">Telegram</Badge>
+                            <a 
+                              href={`https://t.me/${member.telegram}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex"
+                            >
+                              <Badge variant="primary" className="text-xs flex items-center gap-1">
+                                Telegram <ExternalLink size={12} />
+                              </Badge>
+                            </a>
                           )}
                         </div>
                       </td>
