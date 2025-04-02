@@ -62,6 +62,7 @@ models/PODSchemaResponse.ts
 models/PODUpdate.ts
 models/PaginationMetadata.ts
 models/PagingError.ts
+models/PodBasic.ts
 models/PodProposalListResponse.ts
 models/Proposal.ts
 models/ProposalSchemaResponse.ts

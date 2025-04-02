@@ -10,11 +10,26 @@
  * Do not edit the class manually.
  */
 
+import { PodBasic } from '../models/PodBasic';
 import { HttpFile } from '../http/http';
 
 export class UserBasic {
     'userId'?: string;
     'username'?: string;
+    'profilePicture'?: string;
+    'walletAddress'?: string;
+    'pods'?: Array<PodBasic>;
+    'discordUsername'?: string;
+    'twitterUsername'?: string;
+    'telegramUsername'?: string;
+    /**
+    * Last interaction timestamp
+    */
+    'lastInteraction'?: Date;
+    /**
+    * Last login timestamp
+    */
+    'lastLogin'?: Date;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -32,6 +47,54 @@ export class UserBasic {
             "baseName": "username",
             "type": "string",
             "format": ""
+        },
+        {
+            "name": "profilePicture",
+            "baseName": "profile_picture",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "walletAddress",
+            "baseName": "wallet_address",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "pods",
+            "baseName": "pods",
+            "type": "Array<PodBasic>",
+            "format": ""
+        },
+        {
+            "name": "discordUsername",
+            "baseName": "discord_username",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "twitterUsername",
+            "baseName": "twitter_username",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "telegramUsername",
+            "baseName": "telegram_username",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "lastInteraction",
+            "baseName": "last_interaction",
+            "type": "Date",
+            "format": "date-time"
+        },
+        {
+            "name": "lastLogin",
+            "baseName": "last_login",
+            "type": "Date",
+            "format": "date-time"
         }    ];
 
     static getAttributeTypeMap() {
