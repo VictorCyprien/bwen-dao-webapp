@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import useApiAndWallet from '../hooks/useApiAndWallet';
 import CreateDaoModal from './CreateDaoModal';
+import CreateMethodModal from './CreateMethodModal';
 import { typography } from '../styles/theme';
 import ApiAuthStatus from './common/ApiAuthStatus';
 import { daosService } from '../services/DaosService';
@@ -85,6 +86,8 @@ const getDAOBadges = (dao: DAO, index: number): BadgeType[] => {
 const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
   const { apiStatus, userDisplayInfo } = useApiAndWallet();
   const [isCreateDaoModalOpen, setIsCreateDaoModalOpen] = useState(false);
+  const [isMethodSelectionOpen, setIsMethodSelectionOpen] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<'form' | 'babywen' | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('featured');
   const [daos, setDaos] = useState<DAO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -169,9 +172,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
   };
   
   const openCreateDaoModal = () => {
-    setIsCreateDaoModalOpen(true);
+    setIsMethodSelectionOpen(true);
   };
   
+  const handleMethodSelect = (method: 'form' | 'babywen') => {
+    setSelectedMethod(method);
+    setIsMethodSelectionOpen(false);
+    
+    if (method === 'form') {
+      // Open traditional form
+      setIsCreateDaoModalOpen(true);
+    } else {
+      // Open BabyWen flow (for now, just open the same form)
+      // In the future, replace with AI assistant flow
+      setIsCreateDaoModalOpen(true);
+    }
+  };
+
   return (
     <div className="bg-[#0a0a0a] min-h-screen text-white overflow-x-hidden">
       {/* Fixed background gradients */}
@@ -227,7 +244,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
                 <div className="flex flex-wrap gap-4">
                   <button
                     onClick={openCreateDaoModal}
-                    className="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-opacity-90 transition-colors"
+                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium hover:opacity-90 transition-colors"
                   >
                     Create DAO
                   </button>
@@ -330,7 +347,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
               <div className="mt-6 md:mt-0">
                 <button
                   onClick={openCreateDaoModal}
-                  className="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-opacity-90 transition-colors"
+                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium hover:opacity-90 transition-colors"
                 >
                   Create DAO
                 </button>
@@ -606,6 +623,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
           isOpen={isCreateDaoModalOpen}
           onClose={() => setIsCreateDaoModalOpen(false)}
           onSuccess={handleCreateDaoSuccess}
+        />
+        
+        {/* Method Selection Modal */}
+        <CreateMethodModal
+          isOpen={isMethodSelectionOpen}
+          onClose={() => setIsMethodSelectionOpen(false)}
+          onSelectMethod={handleMethodSelect}
         />
 
         {/* Profile Modal for Telegram auth */}
