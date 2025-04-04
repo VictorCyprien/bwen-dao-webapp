@@ -156,13 +156,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
           title="Return to landing page"
         >
           <ArrowLeft size={16} className="mr-2" />
-          <span className="text-sm">Back to DAOs</span>
+          <span className="text-sm">Back to Homepage</span>
         </button>
       </div>
       
       {/* DAO Profile */}
       <div className="p-4 flex flex-col items-center">
         <div className="w-20 h-20 rounded-full bg-primary mb-2 overflow-hidden">
+          {/* Logo normal - afficher le logo standard */}
           <img 
             src={!profileImgError && dao?.profilePicture 
               ? `${dao.profilePicture}` 

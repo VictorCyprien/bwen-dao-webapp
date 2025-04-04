@@ -1,5 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface CreateMethodModalProps {
   isOpen: boolean;
@@ -8,6 +9,8 @@ interface CreateMethodModalProps {
 }
 
 const CreateMethodModal: React.FC<CreateMethodModalProps> = ({ isOpen, onClose, onSelectMethod }) => {
+  const navigate = useNavigate();
+
   // Handle ESC key to close modal
   React.useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
@@ -30,6 +33,15 @@ const CreateMethodModal: React.FC<CreateMethodModalProps> = ({ isOpen, onClose, 
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
+
+  const handleSelectBabyWen = () => {
+    if (onSelectMethod) {
+      onSelectMethod('babywen');
+    } else {
+      navigate('/create/babywen');
+    }
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -72,7 +84,7 @@ const CreateMethodModal: React.FC<CreateMethodModalProps> = ({ isOpen, onClose, 
             </button>
             
             <button
-              onClick={() => onSelectMethod('babywen')}
+              onClick={handleSelectBabyWen}
               className="w-full p-6 bg-gradient-to-r from-purple-900/50 to-blue-900/50 hover:from-purple-900/70 hover:to-blue-900/70 border border-purple-700 hover:border-purple-500 rounded-lg transition-all"
             >
               <div className="flex flex-col items-center">

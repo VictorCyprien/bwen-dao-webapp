@@ -568,6 +568,15 @@ const Dashboard = () => {
   const [isDaoUpdateModalOpen, setIsDaoUpdateModalOpen] = useState<boolean>(false);
   const [hasUpdatePermission, setHasUpdatePermission] = useState<boolean>(false);
   const [selectedProposal, setSelectedProposal] = useState<any | null>(null);
+  const [daoProfile, setDaoProfile] = useState<{
+    name: string | null;
+    description: string | null;
+    profilePicture: string | null;
+  }>({
+    name: null,
+    description: null,
+    profilePicture: null
+  });
   const [communityLinks, setCommunityLinks] = useState<CommunityLinks>({
     twitter: null,
     discordServer: null,
@@ -1239,6 +1248,13 @@ const Dashboard = () => {
           website: daoInfo.website || null
         };
         
+        // Set DAO profile information
+        setDaoProfile({
+          name: daoInfo.name || null,
+          description: daoInfo.description || null,
+          profilePicture: daoInfo.profilePicture || null
+        });
+        
         console.log('Social links retrieved from API:', socialLinks);
         setCommunityLinks(socialLinks);
       } else {
@@ -1449,7 +1465,150 @@ const Dashboard = () => {
         
         {/* Right Column: Share Holders + Token Distribution */}
         <div className="space-y-4">
-          {/* DAO Token */}
+          {/* DAO Profile and Community Links - Moved up */}
+          <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
+            {/* DAO Profile Section */}
+            {daoProfile.name || daoProfile.description || daoProfile.profilePicture ? (
+              <div className="flex flex-row items-center mb-5 border-b border-gray-800 pb-5">
+                {/* Left column - Profile picture (30% width) */}
+                <div className="w-[30%] pr-3 flex justify-center items-center">
+                  {daoProfile.profilePicture ? (
+                    <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-indigo-600/30 to-purple-600/30 border border-gray-700/50">
+                      <img 
+                        src={daoProfile.profilePicture} 
+                        alt={`${daoProfile.name || 'DAO'} profile`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback to placeholder if image fails to load
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=DAO';
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-600/30 to-purple-600/30 flex items-center justify-center border border-gray-700/50">
+                      <Users size={40} className="text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                
+                {/* Right column - Name and description (70% width) */}
+                <div className="w-[70%] pl-2 flex flex-col justify-center">
+                  {daoProfile.name ? (
+                    <h4 className="text-lg font-medium text-white mb-1">{daoProfile.name}</h4>
+                  ) : (
+                    <h4 className="text-lg font-medium text-white mb-1">Unnamed DAO</h4>
+                  )}
+                  
+                  {daoProfile.description ? (
+                    <p className="text-sm text-gray-400 text-left">
+                      {daoProfile.description.length > 300 
+                        ? `${daoProfile.description.substring(0, 300)}...` 
+                        : daoProfile.description}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-400 text-left">
+                      No description available
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-row items-center mb-5 border-b border-gray-800 pb-5">
+                {/* Left column - Profile picture (30% width) */}
+                <div className="w-[30%] pr-3 flex justify-center items-center">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-600/30 to-purple-600/30 flex items-center justify-center border border-gray-700/50">
+                    <Users size={40} className="text-gray-400" />
+                  </div>
+                </div>
+                
+                {/* Right column - Name and description (70% width) */}
+                <div className="w-[70%] pl-2 flex flex-col justify-center">
+                  <h4 className="text-lg font-medium text-white mb-1">Loading DAO...</h4>
+                  <p className="text-sm text-gray-400 text-left">
+                    Fetching DAO information...
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {hasCommunityLinks() ? (
+              <div className="flex flex-wrap justify-center items-center gap-6 py-2">
+                {communityLinks.twitter && (
+                  <a href={communityLinks.twitter} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
+                    <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center hover:bg-[#1A1A1A]/80 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                        <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" />
+                      </svg>
+                    </div>
+                    <span className="text-xs text-gray-400">X</span>
+                  </a>
+                )}
+                
+                {communityLinks.discordServer && (
+                  <a href={communityLinks.discordServer} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
+                    <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center hover:bg-[#1A1A1A]/80 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 127.14 96.36" fill="#fff">
+                        <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z" />
+                      </svg>
+                    </div>
+                    <span className="text-xs text-gray-400">Discord</span>
+                  </a>
+                )}
+                
+                {communityLinks.telegram && (
+                  <a href={communityLinks.telegram} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
+                    <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center hover:bg-[#1A1A1A]/80 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#fff">
+                        <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                      </svg>
+                    </div>
+                    <span className="text-xs text-gray-400">Telegram</span>
+                  </a>
+                )}
+                
+                {communityLinks.instagram && (
+                  <a href={communityLinks.instagram} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
+                    <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center hover:bg-[#1A1A1A]/80 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#fff">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.072-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                      </svg>
+                    </div>
+                    <span className="text-xs text-gray-400">Instagram</span>
+                  </a>
+                )}
+                
+                {communityLinks.tiktok && (
+                  <a href={communityLinks.tiktok} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
+                    <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center hover:bg-[#1A1A1A]/80 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#fff">
+                        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                      </svg>
+                    </div>
+                    <span className="text-xs text-gray-400">TikTok</span>
+                  </a>
+                )}
+                
+                {communityLinks.website && (
+                  <a href={communityLinks.website} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
+                    <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center hover:bg-[#1A1A1A]/80 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                      </svg>
+                    </div>
+                    <span className="text-xs text-gray-400">Website</span>
+                  </a>
+                )}
+              </div>
+            ) : (
+              <div className="py-1 text-center">
+                <p className="text-xs text-gray-500 mt-2">This DAO has no community links</p>
+              </div>
+            )}
+          </div>
+          
+          {/* DAO Token - Moved down */}
           <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-medium text-white">DAO Token</h3>
@@ -1478,89 +1637,6 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
-          </div>
-          
-          {/* DAO Socials */}
-          <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
-            <div className="flex justify-between items-center mb-5">
-              <h3 className="font-medium text-white">DAO Community</h3>
-            </div>
-            
-            {hasCommunityLinks() ? (
-              <div className="flex justify-center items-center gap-6 py-4">
-                {communityLinks.twitter && (
-                  <a href={communityLinks.twitter} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
-                    <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
-                        <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" />
-                      </svg>
-                    </div>
-                    <span className="text-xs text-gray-400">X</span>
-                  </a>
-                )}
-                
-                {communityLinks.discordServer && (
-                  <a href={communityLinks.discordServer} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
-                    <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 127.14 96.36" fill="#fff">
-                        <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z" />
-                      </svg>
-                    </div>
-                    <span className="text-xs text-gray-400">Discord</span>
-                  </a>
-                )}
-                
-                {communityLinks.telegram && (
-                  <a href={communityLinks.telegram} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
-                    <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#fff">
-                        <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-                      </svg>
-                    </div>
-                    <span className="text-xs text-gray-400">Telegram</span>
-                  </a>
-                )}
-                
-                {communityLinks.instagram && (
-                  <a href={communityLinks.instagram} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
-                    <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#fff">
-                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.072-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
-                      </svg>
-                    </div>
-                    <span className="text-xs text-gray-400">Instagram</span>
-                  </a>
-                )}
-                
-                {communityLinks.tiktok && (
-                  <a href={communityLinks.tiktok} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
-                    <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#fff">
-                        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-                      </svg>
-                    </div>
-                    <span className="text-xs text-gray-400">TikTok</span>
-                  </a>
-                )}
-                
-                {communityLinks.website && (
-                  <a href={communityLinks.website} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
-                    <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <line x1="2" y1="12" x2="22" y2="12"></line>
-                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-                      </svg>
-                    </div>
-                    <span className="text-xs text-gray-400">Website</span>
-                  </a>
-                )}
-              </div>
-            ) : (
-              <div className="py-1 text-center">
-                <p className="text-xs text-gray-500 mt-2">A DAO without community links? Wtf is that</p>
-              </div>
-            )}
           </div>
           
           {/* Member Distribution */}

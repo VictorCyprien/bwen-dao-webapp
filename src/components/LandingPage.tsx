@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import useApiAndWallet from '../hooks/useApiAndWallet';
 import CreateDaoModal from './CreateDaoModal';
 import CreateMethodModal from './CreateMethodModal';
+import BabyWenOnboarding from './BabyWenOnboarding';
 import { typography } from '../styles/theme';
 import ApiAuthStatus from './common/ApiAuthStatus';
 import { daosService } from '../services/DaosService';
@@ -87,6 +88,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
   const { apiStatus, userDisplayInfo } = useApiAndWallet();
   const [isCreateDaoModalOpen, setIsCreateDaoModalOpen] = useState(false);
   const [isMethodSelectionOpen, setIsMethodSelectionOpen] = useState(false);
+  const [isBabyWenOnboardingOpen, setIsBabyWenOnboardingOpen] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<'form' | 'babywen' | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('featured');
   const [daos, setDaos] = useState<DAO[]>([]);
@@ -96,6 +98,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
   const [animationComplete, setAnimationComplete] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const navigate = useNavigate();
   
   // Check for Telegram auth parameters
   useEffect(() => {
@@ -183,10 +186,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
       // Open traditional form
       setIsCreateDaoModalOpen(true);
     } else {
-      // Open BabyWen flow (for now, just open the same form)
-      // In the future, replace with AI assistant flow
-      setIsCreateDaoModalOpen(true);
+      // Navigate to BabyWen route instead of opening modal
+      navigate('/create/babywen');
     }
+  };
+
+  const handleBabyWenSuccess = (daoId: string) => {
+    setIsBabyWenOnboardingOpen(false);
+    handleCreateDaoSuccess(daoId);
+  };
+
+  const handleOpenBabyWenCreation = () => {
+    navigate('/create/babywen');
   };
 
   return (
@@ -631,7 +642,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
           onClose={() => setIsMethodSelectionOpen(false)}
           onSelectMethod={handleMethodSelect}
         />
-
+        
         {/* Profile Modal for Telegram auth */}
         <ProfileModal 
           isOpen={isProfileModalOpen} 
