@@ -10,7 +10,7 @@ import {
   LogOut,
   Settings
 } from 'lucide-react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { treasuryService } from '../services/TreasuryService';
 import { daosService } from '../services/DaosService';
 import { userService } from '../services/UserService';
@@ -35,6 +35,9 @@ import { useSolanaTransaction } from '../hooks/useSolanaTransaction';
 import DaoUpdateModal from './DaoUpdateModal';
 import { useAuth } from '../context/AuthContext';
 import Button from './common/Button';
+import { proposalService } from '../services/ProposalService';
+import { SOLANA_RPC_ENDPOINT } from '../config/solana';
+import PopupProposal from './PopupProposal';
 
 // Register Chart.js components
 ChartJS.register(
@@ -503,6 +506,49 @@ const NetworkVisualization = ({ memberLocations }: { memberLocations: {[key: str
   );
 };
 
+// Define type for the selected proposal to solve typing issues
+interface SelectedProposal {
+  id: string;
+  title: string;
+  votesFor: number;
+  votesAgainst: number;
+  closingDate: Date;
+  fullDetails?: {
+    id: string;
+    name: string;
+    description: string;
+    status: string;
+    creator: string;
+    createdAt: string;
+    startTime: string;
+    endTime: string;
+    votes: {
+      for: number;
+      against: number;
+    };
+    actions: Array<{
+      type: string;
+      description: string;
+      walletAddress?: string;
+      amount?: string;
+      token?: string;
+    }>;
+    quorum: number;
+    minApproval: number;
+    daoId: string;
+  }
+}
+
+// Define type for community links
+interface CommunityLinks {
+  twitter: string | null;
+  discordServer: string | null;
+  telegram: string | null;
+  instagram: string | null;
+  tiktok: string | null;
+  website: string | null;
+}
+
 const Dashboard = () => {
   const { daoId } = useParams<{ daoId: string }>();
   const [treasury, setTreasury] = useState<Treasury | null>(null);
@@ -521,6 +567,24 @@ const Dashboard = () => {
   const [membershipLoading, setMembershipLoading] = useState<boolean>(false);
   const [isDaoUpdateModalOpen, setIsDaoUpdateModalOpen] = useState<boolean>(false);
   const [hasUpdatePermission, setHasUpdatePermission] = useState<boolean>(false);
+  const [selectedProposal, setSelectedProposal] = useState<any | null>(null);
+  const [daoProfile, setDaoProfile] = useState<{
+    name: string | null;
+    description: string | null;
+    profilePicture: string | null;
+  }>({
+    name: null,
+    description: null,
+    profilePicture: null
+  });
+  const [communityLinks, setCommunityLinks] = useState<CommunityLinks>({
+    twitter: null,
+    discordServer: null,
+    telegram: null,
+    instagram: null,
+    tiktok: null,
+    website: null
+  });
   
   const { publicKey, connected } = useWallet();
   const { sendTransaction } = useSolanaTransaction();
@@ -693,21 +757,22 @@ const Dashboard = () => {
     try {
       setProposalsLoading(true);
       
-      // This is a placeholder as we don't have the actual API call in the codebase
-      // In a real implementation, you would call the appropriate API
-      // Example: const proposalsData = await proposalService.getActiveProposals(daoId);
+      // Get all proposals data from the API
+      const proposalsData = await proposalService.getAllProposals(daoId);
       
-      // For now, using mock data
-      const mockProposals = [
-        { id: '1', title: 'Increase treasury allocation for development', votesFor: 123, votesAgainst: 45, closingDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000) },
-        { id: '2', title: 'Add support for new token', votesFor: 87, votesAgainst: 32, closingDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000) },
-        { id: '3', title: 'Community event planning', votesFor: 145, votesAgainst: 12, closingDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000) },
-        { id: '4', title: 'Update governance structure', votesFor: 76, votesAgainst: 54, closingDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) },
-        { id: '5', title: 'Partnership with external project', votesFor: 112, votesAgainst: 23, closingDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000) },
-      ];
+      // Transform API proposals to our component's format, filtering for active proposals only
+      const formattedProposals = proposalsData
+        .filter(p => p.isActive) // Only keep active proposals
+        .map(p => ({
+          id: p.proposalId || '',
+          title: p.name || '',
+          votesFor: p.forVotesCount || 0,
+          votesAgainst: p.againstVotesCount || 0,
+          closingDate: p.endTime ? new Date(p.endTime) : new Date()
+        }));
       
       // Sort by closing date (soonest first)
-      const sortedProposals = mockProposals.sort((a, b) => a.closingDate.getTime() - b.closingDate.getTime());
+      const sortedProposals = formattedProposals.sort((a, b) => a.closingDate.getTime() - b.closingDate.getTime());
       setProposals(sortedProposals);
       setProposalsLoading(false);
     } catch (err) {
@@ -961,6 +1026,12 @@ const Dashboard = () => {
     };
   }, [daoId]);
 
+  // Initialize Solana connection once on component mount
+  useEffectOnce(() => {
+    // Initialize the Solana connection with our configured endpoint
+    proposalService.initializeSolanaConnection(SOLANA_RPC_ENDPOINT);
+  });
+
   // Prepare data for the pie chart
   const tokenChartData: ChartData<'pie'> = {
     labels: tokens.map(token => token.name),
@@ -1023,12 +1094,17 @@ const Dashboard = () => {
   // Format date for proposals
   const formatDate = (date: Date): string => {
     const now = new Date();
-    const diffTime = date.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffMs = date.getTime() - now.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     
-    if (diffDays <= 0) return 'Today';
-    if (diffDays === 1) return 'Tomorrow';
-    return `${diffDays} days`;
+    if (diffDays > 0) {
+      return `${diffDays}d ${diffHours}h`;
+    } else if (diffHours > 0) {
+      return `${diffHours}h`;
+    } else {
+      return `< 1h`;
+    }
   };
 
   // Add a function to check if the current user is the owner or an admin of the DAO
@@ -1060,6 +1136,165 @@ const Dashboard = () => {
       console.error('Error checking update permission:', err);
       setHasUpdatePermission(false);
     }
+  };
+
+  // Handle vote on proposal
+  const handleVoteOnProposal = async (proposalId: string, vote: 'for' | 'against') => {
+    if (!daoId || !publicKey) {
+      console.error("Missing required data for voting");
+      return;
+    }
+    
+    try {
+      // Create Solana transaction for voting
+      const result = await proposalService.createVoteTransaction(
+        daoId,
+        proposalId,
+        publicKey,
+        vote
+      );
+      
+      if (!result) {
+        console.error("Failed to create vote transaction");
+        return null;
+      }
+      
+      // Send transaction to be signed and processed
+      const signature = await sendTransaction(result.transaction);
+      
+      if (!signature) {
+        console.error("Failed to sign and send transaction");
+        return null;
+      }
+      
+      // Update the API with the vote information
+      await proposalService.voteOnProposal(daoId, proposalId, vote, signature);
+      
+      // Refresh proposals data
+      await fetchProposalsData();
+      return signature;
+    } catch (err) {
+      console.error("Error voting on proposal:", err);
+      return null;
+    }
+  };
+
+  // Close proposal popup
+  const handleCloseProposal = () => {
+    setSelectedProposal(null);
+  };
+
+  // Load full proposal details when selected
+  const loadFullProposalDetails = async (proposalId: string) => {
+    if (!daoId || !proposalId) return;
+    
+    try {
+      const proposalDetails = await proposalService.getProposalById(daoId, proposalId);
+      if (proposalDetails) {
+        // Update the selected proposal with full details
+        setSelectedProposal((prevProposal: SelectedProposal | null) => {
+          if (!prevProposal) return null;
+          
+          return {
+            ...prevProposal,
+            fullDetails: {
+              id: proposalDetails.proposalId || prevProposal.id,
+              name: proposalDetails.name || prevProposal.title,
+              description: proposalDetails.description || "No description available",
+              status: proposalDetails.isActive ? "Active" : proposalDetails.hasPassed ? "Passed" : "Rejected",
+              creator: proposalDetails.createdByUsername || "Unknown",
+              createdAt: proposalDetails.createdAt ? new Date(proposalDetails.createdAt).toLocaleDateString() : "Unknown date",
+              startTime: proposalDetails.startTime ? new Date(proposalDetails.startTime).toLocaleDateString() : "Unknown",
+              endTime: proposalDetails.endTime ? new Date(proposalDetails.endTime).toLocaleDateString() : "Unknown",
+              votes: {
+                for: proposalDetails.forVotesCount || prevProposal.votesFor || 0,
+                against: proposalDetails.againstVotesCount || prevProposal.votesAgainst || 0
+              },
+              actions: proposalDetails.actions ? Object.values(proposalDetails.actions).map((action: any) => ({
+                type: action.type || "",
+                description: action.description || "",
+                walletAddress: action.wallet_address,
+                amount: action.amount,
+                token: action.token
+              })) : [],
+              quorum: 100, // Default values
+              minApproval: 51,
+              daoId: daoId
+            }
+          };
+        });
+      }
+    } catch (err) {
+      console.error("Error loading full proposal details:", err);
+    }
+  };
+
+  // Fonction pour récupérer les liens de la communauté
+  const fetchCommunityLinks = async () => {
+    if (!daoId) return;
+    
+    try {
+      // Récupérer les informations de la DAO depuis l'API
+      const daoInfo = await daosService.getDaoById(daoId);
+      
+      if (daoInfo) {
+        // Récupérer les liens sociaux depuis l'objet DAO
+        const socialLinks = {
+          twitter: daoInfo.twitter || null,
+          discordServer: daoInfo.discordServer || null,
+          telegram: daoInfo.telegram || null,
+          instagram: daoInfo.instagram || null,
+          tiktok: daoInfo.tiktok || null,
+          website: daoInfo.website || null
+        };
+        
+        // Set DAO profile information
+        setDaoProfile({
+          name: daoInfo.name || null,
+          description: daoInfo.description || null,
+          profilePicture: daoInfo.profilePicture || null
+        });
+        
+        console.log('Social links retrieved from API:', socialLinks);
+        setCommunityLinks(socialLinks);
+      } else {
+        console.log('No DAO information found');
+        // Réinitialiser à null si aucune information n'est trouvée
+        setCommunityLinks({
+          twitter: null,
+          discordServer: null,
+          telegram: null,
+          instagram: null,
+          tiktok: null,
+          website: null
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching community links:', err);
+      // En cas d'erreur, réinitialiser à null
+      setCommunityLinks({
+        twitter: null,
+        discordServer: null,
+        telegram: null,
+        instagram: null,
+        tiktok: null,
+        website: null
+      });
+    }
+  };
+
+  // Fetch community links when component loads or when relevant data changes
+  useEffectOnce(() => {
+    // Only run checks if we have a daoId
+    if (!daoId) return;
+    
+    // Fetch community links
+    fetchCommunityLinks();
+  }, [daoId]);
+
+  // Fonction pour vérifier si des liens de communauté existent
+  const hasCommunityLinks = (): boolean => {
+    return Object.values(communityLinks).some(link => link !== null);
   };
 
   return (
@@ -1189,17 +1424,24 @@ const Dashboard = () => {
           <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-medium text-white">Active Proposals</h3>
-              <span className="bg-primary/20 text-primary px-3 py-1 rounded-full text-xs">{proposals.length} Total</span>
+              <span className="bg-primary/20 text-primary px-3 py-1 rounded-full text-xs">{proposals.length} Active</span>
             </div>
             
             {proposalsLoading ? (
               <div className="flex items-center justify-center h-32">
                 <Loader className="animate-spin text-primary" size={30} />
               </div>
-            ) : (
+            ) : proposals.length > 0 ? (
               <div className="space-y-3">
                 {proposals.map((proposal, index) => (
-                  <div key={proposal.id} className="p-3 bg-[#1A1A1A]/70 rounded-lg hover:bg-[#222]/90 transition-colors">
+                  <div 
+                    key={proposal.id} 
+                    className="p-3 bg-[#1A1A1A]/70 rounded-lg hover:bg-[#222]/90 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setSelectedProposal(proposal);
+                      loadFullProposalDetails(proposal.id);
+                    }}
+                  >
                     <div className="flex justify-between mb-1">
                       <span className="font-medium text-white">{proposal.title}</span>
                       <span className="text-xs text-gray-400">Closes in {formatDate(proposal.closingDate)}</span>
@@ -1209,12 +1451,13 @@ const Dashboard = () => {
                         <span className="text-green-400 text-sm">For: {proposal.votesFor}</span>
                         <span className="text-red-400 text-sm">Against: {proposal.votesAgainst}</span>
                       </div>
-                      <button className="bg-primary/10 hover:bg-primary/20 text-primary px-3 py-1 rounded-full text-xs transition-colors">
-                        Vote Now
-                      </button>
                     </div>
                   </div>
                 ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-32 text-gray-400">
+                <p>No active proposals at the moment</p>
               </div>
             )}
           </div>
@@ -1222,7 +1465,150 @@ const Dashboard = () => {
         
         {/* Right Column: Share Holders + Token Distribution */}
         <div className="space-y-4">
-          {/* DAO Token */}
+          {/* DAO Profile and Community Links - Moved up */}
+          <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
+            {/* DAO Profile Section */}
+            {daoProfile.name || daoProfile.description || daoProfile.profilePicture ? (
+              <div className="flex flex-row items-center mb-5 border-b border-gray-800 pb-5">
+                {/* Left column - Profile picture (30% width) */}
+                <div className="w-[30%] pr-3 flex justify-center items-center">
+                  {daoProfile.profilePicture ? (
+                    <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-indigo-600/30 to-purple-600/30 border border-gray-700/50">
+                      <img 
+                        src={daoProfile.profilePicture} 
+                        alt={`${daoProfile.name || 'DAO'} profile`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback to placeholder if image fails to load
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=DAO';
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-600/30 to-purple-600/30 flex items-center justify-center border border-gray-700/50">
+                      <Users size={40} className="text-gray-400" />
+                    </div>
+                  )}
+                </div>
+                
+                {/* Right column - Name and description (70% width) */}
+                <div className="w-[70%] pl-2 flex flex-col justify-center">
+                  {daoProfile.name ? (
+                    <h4 className="text-lg font-medium text-white mb-1">{daoProfile.name}</h4>
+                  ) : (
+                    <h4 className="text-lg font-medium text-white mb-1">Unnamed DAO</h4>
+                  )}
+                  
+                  {daoProfile.description ? (
+                    <p className="text-sm text-gray-400 text-left">
+                      {daoProfile.description.length > 300 
+                        ? `${daoProfile.description.substring(0, 300)}...` 
+                        : daoProfile.description}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-400 text-left">
+                      No description available
+                    </p>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-row items-center mb-5 border-b border-gray-800 pb-5">
+                {/* Left column - Profile picture (30% width) */}
+                <div className="w-[30%] pr-3 flex justify-center items-center">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-600/30 to-purple-600/30 flex items-center justify-center border border-gray-700/50">
+                    <Users size={40} className="text-gray-400" />
+                  </div>
+                </div>
+                
+                {/* Right column - Name and description (70% width) */}
+                <div className="w-[70%] pl-2 flex flex-col justify-center">
+                  <h4 className="text-lg font-medium text-white mb-1">Loading DAO...</h4>
+                  <p className="text-sm text-gray-400 text-left">
+                    Fetching DAO information...
+                  </p>
+                </div>
+              </div>
+            )}
+            
+            {hasCommunityLinks() ? (
+              <div className="flex flex-wrap justify-center items-center gap-6 py-2">
+                {communityLinks.twitter && (
+                  <a href={communityLinks.twitter} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
+                    <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center hover:bg-[#1A1A1A]/80 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                        <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" />
+                      </svg>
+                    </div>
+                    <span className="text-xs text-gray-400">X</span>
+                  </a>
+                )}
+                
+                {communityLinks.discordServer && (
+                  <a href={communityLinks.discordServer} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
+                    <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center hover:bg-[#1A1A1A]/80 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 127.14 96.36" fill="#fff">
+                        <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z" />
+                      </svg>
+                    </div>
+                    <span className="text-xs text-gray-400">Discord</span>
+                  </a>
+                )}
+                
+                {communityLinks.telegram && (
+                  <a href={communityLinks.telegram} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
+                    <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center hover:bg-[#1A1A1A]/80 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#fff">
+                        <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                      </svg>
+                    </div>
+                    <span className="text-xs text-gray-400">Telegram</span>
+                  </a>
+                )}
+                
+                {communityLinks.instagram && (
+                  <a href={communityLinks.instagram} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
+                    <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center hover:bg-[#1A1A1A]/80 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#fff">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.072-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                      </svg>
+                    </div>
+                    <span className="text-xs text-gray-400">Instagram</span>
+                  </a>
+                )}
+                
+                {communityLinks.tiktok && (
+                  <a href={communityLinks.tiktok} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
+                    <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center hover:bg-[#1A1A1A]/80 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#fff">
+                        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+                      </svg>
+                    </div>
+                    <span className="text-xs text-gray-400">TikTok</span>
+                  </a>
+                )}
+                
+                {communityLinks.website && (
+                  <a href={communityLinks.website} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
+                    <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center hover:bg-[#1A1A1A]/80 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                      </svg>
+                    </div>
+                    <span className="text-xs text-gray-400">Website</span>
+                  </a>
+                )}
+              </div>
+            ) : (
+              <div className="py-1 text-center">
+                <p className="text-xs text-gray-500 mt-2">This DAO has no community links</p>
+              </div>
+            )}
+          </div>
+          
+          {/* DAO Token - Moved down */}
           <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-medium text-white">DAO Token</h3>
@@ -1250,60 +1636,6 @@ const Dashboard = () => {
                   <span className="text-xs text-white">$1.2M</span>
                 </div>
               </div>
-            </div>
-          </div>
-          
-          {/* DAO Socials */}
-          <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
-            <div className="flex justify-between items-center mb-5">
-              <h3 className="font-medium text-white">DAO Community</h3>
-            </div>
-            
-            <div className="flex justify-between items-center px-2 py-4">
-              <a href="#" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
-                <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
-                    <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z" />
-                  </svg>
-                </div>
-                <span className="text-xs text-gray-400">X</span>
-              </a>
-              
-              <a href="#" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
-                <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 127.14 96.36" fill="#fff">
-                    <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z" />
-                  </svg>
-                </div>
-                <span className="text-xs text-gray-400">Discord</span>
-              </a>
-              
-              <a href="#" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
-                <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#fff">
-                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.072-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
-                  </svg>
-                </div>
-                <span className="text-xs text-gray-400">Telegram</span>
-              </a>
-              
-              <a href="#" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
-                <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#fff">
-                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.072-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
-                  </svg>
-                </div>
-                <span className="text-xs text-gray-400">Instagram</span>
-              </a>
-              
-              <a href="#" className="flex flex-col items-center gap-2 hover:opacity-80 transition-opacity">
-                <div className="w-12 h-12 bg-[#1A1A1A] rounded-full flex items-center justify-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#fff">
-                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-                  </svg>
-                </div>
-                <span className="text-xs text-gray-400">TikTok</span>
-              </a>
             </div>
           </div>
           
@@ -1417,6 +1749,33 @@ const Dashboard = () => {
         isOpen={isDaoUpdateModalOpen} 
         onClose={() => setIsDaoUpdateModalOpen(false)} 
       />
+      
+      {/* Proposal Modal */}
+      {selectedProposal && (
+        <PopupProposal
+          proposal={selectedProposal.fullDetails || {
+            id: selectedProposal.id,
+            name: selectedProposal.title,
+            description: "Loading proposal details...",
+            status: "Active",
+            creator: "Loading...",
+            createdAt: "Loading...",
+            startTime: "Loading...",
+            endTime: formatDate(selectedProposal.closingDate),
+            votes: {
+              for: selectedProposal.votesFor,
+              against: selectedProposal.votesAgainst
+            },
+            actions: [],
+            quorum: 100,
+            minApproval: 51,
+            daoId: daoId || ""
+          }}
+          onClose={handleCloseProposal}
+          onVote={handleVoteOnProposal}
+          onVoteSubmitted={fetchProposalsData}
+        />
+      )}
     </div>
   );
 };

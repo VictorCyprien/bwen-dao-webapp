@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import useApiAndWallet from '../hooks/useApiAndWallet';
 import CreateDaoModal from './CreateDaoModal';
+import CreateMethodModal from './CreateMethodModal';
+import BabyWenOnboarding from './BabyWenOnboarding';
 import { typography } from '../styles/theme';
 import ApiAuthStatus from './common/ApiAuthStatus';
 import { daosService } from '../services/DaosService';
@@ -85,6 +87,9 @@ const getDAOBadges = (dao: DAO, index: number): BadgeType[] => {
 const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
   const { apiStatus, userDisplayInfo } = useApiAndWallet();
   const [isCreateDaoModalOpen, setIsCreateDaoModalOpen] = useState(false);
+  const [isMethodSelectionOpen, setIsMethodSelectionOpen] = useState(false);
+  const [isBabyWenOnboardingOpen, setIsBabyWenOnboardingOpen] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState<'form' | 'babywen' | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('featured');
   const [daos, setDaos] = useState<DAO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -93,6 +98,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
   const [animationComplete, setAnimationComplete] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const navigate = useNavigate();
   
   // Check for Telegram auth parameters
   useEffect(() => {
@@ -169,9 +175,31 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
   };
   
   const openCreateDaoModal = () => {
-    setIsCreateDaoModalOpen(true);
+    setIsMethodSelectionOpen(true);
   };
   
+  const handleMethodSelect = (method: 'form' | 'babywen') => {
+    setSelectedMethod(method);
+    setIsMethodSelectionOpen(false);
+    
+    if (method === 'form') {
+      // Open traditional form
+      setIsCreateDaoModalOpen(true);
+    } else {
+      // Navigate to BabyWen route instead of opening modal
+      navigate('/create/babywen');
+    }
+  };
+
+  const handleBabyWenSuccess = (daoId: string) => {
+    setIsBabyWenOnboardingOpen(false);
+    handleCreateDaoSuccess(daoId);
+  };
+
+  const handleOpenBabyWenCreation = () => {
+    navigate('/create/babywen');
+  };
+
   return (
     <div className="bg-[#0a0a0a] min-h-screen text-white overflow-x-hidden">
       {/* Fixed background gradients */}
@@ -227,7 +255,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
                 <div className="flex flex-wrap gap-4">
                   <button
                     onClick={openCreateDaoModal}
-                    className="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-opacity-90 transition-colors"
+                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium hover:opacity-90 transition-colors"
                   >
                     Create DAO
                   </button>
@@ -330,7 +358,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
               <div className="mt-6 md:mt-0">
                 <button
                   onClick={openCreateDaoModal}
-                  className="px-6 py-3 bg-primary text-white rounded-lg font-medium hover:bg-opacity-90 transition-colors"
+                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium hover:opacity-90 transition-colors"
                 >
                   Create DAO
                 </button>
@@ -418,8 +446,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
                       <Card className="h-full transition-all hover:border-purple-500 overflow-hidden flex flex-col bg-[#151515] border-gray-800">
                         {/* Card Header */}
                         <div className="p-5 border-b border-[#222] flex items-center">
-                          <div className="h-12 w-12 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mr-4 text-white font-medium text-lg">
-                            {dao.name.charAt(0)}
+                          <div className="h-12 w-12 rounded-full overflow-hidden bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mr-4 text-white font-medium text-lg">
+                            {dao.profilePicture ? (
+                              <img 
+                                src={dao.profilePicture} 
+                                alt={`${dao.name} logo`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  // Fallback to first letter if image fails to load
+                                  e.currentTarget.style.display = 'none';
+                                  if (e.currentTarget.parentElement) {
+                                    e.currentTarget.parentElement.textContent = dao.name.charAt(0);
+                                  }
+                                }}
+                              />
+                            ) : (
+                              dao.name.charAt(0)
+                            )}
                           </div>
                           <div>
                             <h3 className="text-xl font-semibold text-white group-hover:text-purple-400 transition-colors">
@@ -607,7 +650,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
           onClose={() => setIsCreateDaoModalOpen(false)}
           onSuccess={handleCreateDaoSuccess}
         />
-
+        
+        {/* Method Selection Modal */}
+        <CreateMethodModal
+          isOpen={isMethodSelectionOpen}
+          onClose={() => setIsMethodSelectionOpen(false)}
+          onSelectMethod={handleMethodSelect}
+        />
+        
         {/* Profile Modal for Telegram auth */}
         <ProfileModal 
           isOpen={isProfileModalOpen} 

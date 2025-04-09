@@ -8,6 +8,8 @@ import Pods from './components/Pods';
 import Members from './components/Members';
 import Treasury from './components/Treasury';
 import LandingPage from './components/LandingPage';
+import LandingPageDev from './components/Landingpage_dev';
+import BabyWenOnboarding from './components/BabyWenOnboarding';
 import { useEffectOnce } from './hooks/useEffectOnce';
 
 // Dashboard component that handles DAO-specific routing
@@ -114,7 +116,9 @@ function App() {
 
   return (
     <Routes>
+      <Route path="/landingdemo" element={<LandingPageDev />} />
       <Route path="/" element={<LandingPage onEnterDashboard={handleEnterDashboard} />} />
+      <Route path="/create/babywen" element={<BabyWenOnboarding />} />
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/daos/:daoId" element={<Dashboard />} />
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -132,3 +136,5 @@ const AppWithRouter = () => {
 };
 
 export default AppWithRouter;
+
+

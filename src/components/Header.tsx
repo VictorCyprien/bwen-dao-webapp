@@ -15,6 +15,8 @@ const Header = ({
   activeSection, 
   showNotifications, 
   setShowNotifications,
+  setActiveSection,
+  daoId
 }: HeaderProps) => {
   const { apiStatus, userDisplayInfo } = useApiAndWallet();
   

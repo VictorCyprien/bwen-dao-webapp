@@ -17,6 +17,7 @@ export default {
       colors: {
         // COULEURS PRINCIPALES
         'primary': 'rgba(87, 123, 242, 1)',    // Couleur d'accentuation principale (boutons, liens, etc.)
+        'secondary': 'rgba(173, 33, 255, 1)',  // Couleur secondaire pour les gradients
         'background': 'rgba(12, 12, 12, 1)', // Couleur de fond de l'application
         'text': 'rgba(240, 240, 240, 1)',    // Couleur de texte principale
         

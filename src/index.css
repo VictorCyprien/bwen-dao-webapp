@@ -174,3 +174,35 @@ html {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(120, 90, 200, 0.5);
 }
+
+/* Buttons */
+.btn-primary {
+  @apply px-6 py-3 bg-gradient-to-r from-primary to-secondary text-white rounded-lg font-semibold hover:opacity-90 transition-opacity;
+}
+
+.btn-outline {
+  @apply px-6 py-3 border border-white/20 text-white rounded-lg font-semibold hover:bg-white/10 transition-colors;
+}
+
+/* Animations */
+@keyframes gradient-xy {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(10%, 10%);
+  }
+  50% {
+    transform: translate(-10%, 10%);
+  }
+  75% {
+    transform: translate(-10%, -10%);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+.animate-gradient-xy {
+  animation: gradient-xy 15s ease infinite;
+}
