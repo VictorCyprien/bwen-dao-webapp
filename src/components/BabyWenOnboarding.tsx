@@ -597,7 +597,6 @@ const BabyWenOnboarding: React.FC = () => {
   const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
   const secondLastMessage = messages.length > 1 ? messages[messages.length - 2] : null;
   
-  // Recréer la fonction createDAO qui a été supprimée par erreur
   // Create the actual DAO
   const createDAO = async () => {
     setIsProcessing(true);
@@ -615,8 +614,8 @@ const BabyWenOnboarding: React.FC = () => {
         throw new Error("Failed to get user ID. Please try again or use the manual form.");
       }
       
-      // Préparer les données de base
-      const daoData: any = {
+      // Create DAO with gathered information
+      const result = await daosService.createDao({
         name: daoName,
         description: daoDescription,
         userId,
@@ -624,37 +623,9 @@ const BabyWenOnboarding: React.FC = () => {
         instagram: socialLinks.instagram || undefined,
         website: socialLinks.website || undefined,
         telegram: socialLinks.telegram || undefined,
-        tiktok: socialLinks.tiktok || undefined
-      };
-      
-      // Si un logo a été uploadé, gérer le téléchargement
-      if (daoLogo) {
-        // Créer un FormData pour l'upload de fichier
-        const formData = new FormData();
-        formData.append('file', daoLogo);
-        formData.append('type', 'dao_logo');
-        
-        // Utiliser l'API appropriée pour le téléchargement de fichier
-        try {
-          // Nous utilisons un service différent pour télécharger le fichier
-          // Note: il faudra peut-être importer ce service
-          const uploadResponse = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData,
-          });
-          
-          const uploadResult = await uploadResponse.json();
-          if (uploadResult && uploadResult.file) {
-            daoData.profilePicture = uploadResult.file;
-          }
-        } catch (uploadErr) {
-          console.error("Error uploading logo:", uploadErr);
-          // Continuer même si l'upload du logo échoue
-        }
-      }
-      
-      // Create DAO with gathered information
-      const result = await daosService.createDao(daoData);
+        tiktok: socialLinks.tiktok || undefined,
+        profilePicture: daoLogo || undefined,
+      });
       
       if (result && result.daoId) {
         setCurrentStep('complete');
@@ -930,7 +901,7 @@ const BabyWenOnboarding: React.FC = () => {
                         </div>
                       ) : (
                         <div className="py-1 text-center">
-                          <p className="text-xs text-gray-500 mt-2">A DAO without community links? Bro, are you sure you’re not just talking to your own reflection?</p>
+                          <p className="text-xs text-gray-500 mt-2">A DAO without community links? Bro, are you sure you're not just talking to your own reflection?</p>
                         </div>
                       )}
                     </div>

@@ -446,8 +446,23 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
                       <Card className="h-full transition-all hover:border-purple-500 overflow-hidden flex flex-col bg-[#151515] border-gray-800">
                         {/* Card Header */}
                         <div className="p-5 border-b border-[#222] flex items-center">
-                          <div className="h-12 w-12 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mr-4 text-white font-medium text-lg">
-                            {dao.name.charAt(0)}
+                          <div className="h-12 w-12 rounded-full overflow-hidden bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mr-4 text-white font-medium text-lg">
+                            {dao.profilePicture ? (
+                              <img 
+                                src={dao.profilePicture} 
+                                alt={`${dao.name} logo`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  // Fallback to first letter if image fails to load
+                                  e.currentTarget.style.display = 'none';
+                                  if (e.currentTarget.parentElement) {
+                                    e.currentTarget.parentElement.textContent = dao.name.charAt(0);
+                                  }
+                                }}
+                              />
+                            ) : (
+                              dao.name.charAt(0)
+                            )}
                           </div>
                           <div>
                             <h3 className="text-xl font-semibold text-white group-hover:text-purple-400 transition-colors">
