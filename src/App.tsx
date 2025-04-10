@@ -10,6 +10,7 @@ import Treasury from './components/Treasury';
 import LandingPage from './components/LandingPage';
 import LandingPageDev from './components/Landingpage_dev';
 import BabyWenOnboarding from './components/BabyWenOnboarding';
+import ChatBot from './components/ChatBot';
 import { useEffectOnce } from './hooks/useEffectOnce';
 
 // Dashboard component that handles DAO-specific routing
@@ -97,6 +98,9 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Chatbot floating button */}
+      <ChatBot />
     </div>
   );
 };

@@ -20,15 +20,14 @@
     "bs58": "^6.0.0",
     "chart.js": "^4.4.8",
     "date-fns": "^2.30.0",
+    "framer-motion": "^12.6.3",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-chartjs-2": "^5.3.0",
-    "react-colorful": "^5.6.1",
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.5.2",
-    "react-query": "^3.39.3",
     "react-router-dom": "^6.30.0",
-    "zustand": "^4.4.7"
+    "whatwg-fetch": "^3.6.20"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
