@@ -12,6 +12,8 @@ import LandingPageDev from './components/Landingpage_dev';
 import BabyWenOnboarding from './components/BabyWenOnboarding';
 import ChatBot from './components/ChatBot';
 import { useEffectOnce } from './hooks/useEffectOnce';
+import ProfileModal from './components/ProfileModal';
+import useAuthCallback from './hooks/useAuthCallback';
 
 // Dashboard component that handles DAO-specific routing
 const Dashboard = () => {
@@ -108,6 +110,7 @@ const Dashboard = () => {
 // The main App component with routing
 function App() {
   const navigate = useNavigate();
+  const { showProfileModal, hideProfileModal } = useAuthCallback();
 
   // Function to handle navigation to a specific DAO
   const handleEnterDashboard = (daoId?: string) => {
@@ -119,14 +122,22 @@ function App() {
   };
 
   return (
-    <Routes>
-      <Route path="/landingdemo" element={<LandingPageDev />} />
-      <Route path="/" element={<LandingPage onEnterDashboard={handleEnterDashboard} />} />
-      <Route path="/create/babywen" element={<BabyWenOnboarding />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/daos/:daoId" element={<Dashboard />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      {showProfileModal && (
+        <ProfileModal 
+          isOpen={showProfileModal} 
+          onClose={hideProfileModal} 
+        />
+      )}
+      <Routes>
+        <Route path="/landingdemo" element={<LandingPageDev />} />
+        <Route path="/" element={<LandingPage onEnterDashboard={handleEnterDashboard} />} />
+        <Route path="/create/babywen" element={<BabyWenOnboarding />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/daos/:daoId" element={<Dashboard />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }
 

@@ -71,14 +71,90 @@ const UserProfile: React.FC = () => {
     telegramUsername: null as string | null
   });
 
-  // Check URL for Telegram login data when component mounts
+  // Check URL for auth callback data when component mounts
   useEffectOnce(() => {
-    async function processTelegramAuth() {
+    async function processAuthCallback() {
       // Get URL search parameters
       const searchParams = new URLSearchParams(window.location.search);
       
-      // Check if Telegram auth data exists in URL
-      if (
+      // First check for standard success/error callbacks
+      if (searchParams.has('success') || searchParams.has('error')) {
+        const successStatus = searchParams.get('success');
+        const errorStatus = searchParams.get('error');
+        const errorMessage = searchParams.get('message');
+        
+        if (successStatus) {
+          setIsLoading(true);
+          try {
+            // Handle success status codes
+            switch (successStatus) {
+              case 'discord_connected':
+                setMessage({ text: 'Discord linked successfully!', type: 'success' });
+                break;
+              case 'twitter_connected':
+                setMessage({ text: 'Twitter linked successfully!', type: 'success' });
+                break;
+              default:
+                setMessage({ text: 'Account linked successfully!', type: 'success' });
+            }
+            
+            // Refresh user info to get updated data
+            await refreshUserInfo();
+          } catch (error: any) {
+            console.error('Error handling success callback:', error);
+            setMessage({ 
+              text: error.message || 'Failed to complete authentication', 
+              type: 'error' 
+            });
+          } finally {
+            setIsLoading(false);
+            
+            // Remove the query parameters from URL without refreshing page
+            const url = new URL(window.location.href);
+            url.search = '';
+            window.history.replaceState({}, document.title, url.toString());
+          }
+        } else if (errorStatus) {
+          // Handle error status codes
+          let errorText = 'Failed to connect your account. Please try again.';
+          
+          switch (errorStatus) {
+            case 'db_error':
+              errorText = 'Database error occurred. Please try again later.';
+              break;
+            case 'user_info_error':
+              errorText = 'Failed to retrieve user information. Please try again.';
+              break;
+            case 'token_error':
+              errorText = 'Authentication token error. Please try reconnecting.';
+              break;
+            case 'missing_verifier':
+              errorText = 'Verification code missing. Please try again.';
+              break;
+            case 'invalid_state':
+            case 'invalid_state_format':
+              errorText = 'Security verification failed. Please try again.';
+              break;
+            case 'missing_parameters':
+              errorText = 'Required parameters missing. Please try again.';
+              break;
+            case 'twitter_auth_error':
+              errorText = errorMessage ? `Twitter authentication error: ${errorMessage}` : 'Twitter authentication failed. Please try again.';
+              break;
+            default:
+              errorText = `Authentication error: ${errorStatus}`;
+          }
+          
+          setMessage({ text: errorText, type: 'error' });
+          
+          // Remove the query parameters from URL without refreshing page
+          const url = new URL(window.location.href);
+          url.search = '';
+          window.history.replaceState({}, document.title, url.toString());
+        }
+      }
+      // Then check for Telegram-specific authentication data
+      else if (
         searchParams.has('id') && 
         searchParams.has('first_name') && 
         searchParams.has('auth_date') && 
@@ -126,7 +202,7 @@ const UserProfile: React.FC = () => {
     }
     
     if (isAuthenticated) {
-      processTelegramAuth();
+      processAuthCallback();
     }
   }, [isAuthenticated, refreshUserInfo]);
 
