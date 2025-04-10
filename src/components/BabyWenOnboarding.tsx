@@ -22,7 +22,9 @@ import {
   Building2, 
   Layers, 
   Wallet,
-  ArrowLeft
+  ArrowLeft,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import useApiAndWallet from '../hooks/useApiAndWallet';
 import ApiAuthStatus from './common/ApiAuthStatus';
@@ -45,12 +47,83 @@ interface Message {
   options?: string[];
 }
 
+// Custom hook for audio playback
+const useAudio = (initialMuted = false) => {
+  const [muted, setMuted] = useState<boolean>(initialMuted);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Dictionary of audio files for each step
+  const stepSounds: Record<OnboardingStep, string> = {
+    welcome: '/assets/sounds/welcome.mp3',
+    name: '/assets/sounds/name.mp3',
+    description: '/assets/sounds/description.mp3',
+    logo: '/assets/sounds/logo.mp3',
+    socials: '/assets/sounds/socials.mp3',
+    confirmation: '/assets/sounds/confirmation.mp3',
+    processing: '/assets/sounds/processing.mp3',
+    complete: '/assets/sounds/complete.mp3'
+  };
+
+  const playSound = (step: OnboardingStep) => {
+    if (muted) return;
+    
+    if (audioRef.current) {
+      // Stop any currently playing audio
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    
+    // Create and play the new audio
+    const audio = new Audio(stepSounds[step]);
+    audioRef.current = audio;
+    
+    // Handle any errors (e.g., file not found)
+    audio.onerror = (e) => {
+      console.error('Error playing audio for step:', step, e);
+    };
+    
+    // Play the sound
+    audio.play().catch(err => {
+      console.error('Failed to play audio:', err);
+    });
+  };
+  
+  const toggleMute = () => {
+    setMuted(prev => !prev);
+    
+    // If we're unmuting and there's an audio playing, restart it
+    if (muted && audioRef.current) {
+      audioRef.current.play().catch(err => {
+        console.error('Failed to play audio after unmuting:', err);
+      });
+    }
+    
+    // If we're muting and there's audio playing, pause it
+    if (!muted && audioRef.current) {
+      audioRef.current.pause();
+    }
+  };
+  
+  const stopSound = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  };
+  
+  return { playSound, toggleMute, stopSound, muted, audioRef };
+};
+
 // Composants internes spécifiques à l'onboarding
 // Header interne pour l'onboarding
 const OnboardingHeader = ({ 
-  activeSection 
+  activeSection,
+  muted,
+  toggleMute
 }: { 
-  activeSection: string
+  activeSection: string,
+  muted: boolean,
+  toggleMute: () => void
 }) => {
   const { apiStatus, userDisplayInfo } = useApiAndWallet();
   
@@ -79,6 +152,19 @@ const OnboardingHeader = ({
         </div>
         
         <div className="flex items-center gap-4">
+          {/* Sound toggle button */}
+          <button 
+            onClick={toggleMute}
+            className="flex items-center justify-center w-8 h-8 bg-surface-200 hover:bg-surface-300 rounded-full transition-colors"
+            aria-label={muted ? "Unmute sounds" : "Mute sounds"}
+          >
+            {muted ? (
+              <VolumeX size={16} className="text-surface-500" />
+            ) : (
+              <Volume2 size={16} className="text-primary" />
+            )}
+          </button>
+          
           <ApiAuthStatus 
             apiStatus={apiStatus} 
             userDisplayInfo={userDisplayInfo}
@@ -224,6 +310,9 @@ const BabyWenOnboarding: React.FC = () => {
   // Confirmation state for exit
   const [showExitConfirmation, setShowExitConfirmation] = useState<boolean>(false);
   
+  // Audio system
+  const { playSound, toggleMute, stopSound, muted, audioRef } = useAudio(false);
+  
   // References
   const userInputRef = useRef<HTMLInputElement>(null);
   const { publicKey } = useWallet();
@@ -247,6 +336,9 @@ const BabyWenOnboarding: React.FC = () => {
         options: ['Yes, let\'s go!', 'Tell me more about DAOs']
       }
     ]);
+    
+    // Play welcome sound when component mounts
+    playSound('welcome');
   }, []);
   
   // Focus input when available
@@ -270,7 +362,10 @@ const BabyWenOnboarding: React.FC = () => {
   };
   
   // Simulate BabyWen typing response
-  const simulateBabyWenTyping = async (message: string, options?: string[]) => {
+  const simulateBabyWenTyping = async (message: string, options?: string[], soundToPlay?: OnboardingStep) => {
+    // Stop any currently playing audio before starting the typing animation
+    stopSound();
+    
     setIsTyping(true);
     setShowInput(false);
     
@@ -281,6 +376,14 @@ const BabyWenOnboarding: React.FC = () => {
     setMessages(prev => [...prev, { sender: 'babywen' as const, text: message, options }]);
     setIsTyping(false);
     setShowInput(true);
+    
+    // If a specific sound is provided, play it after the message is displayed
+    if (soundToPlay) {
+      playSound(soundToPlay);
+    } else if (currentStep) {
+      // Otherwise play the sound for the current step
+      playSound(currentStep);
+    }
   };
   
   // Handle user message submission
@@ -303,7 +406,7 @@ const BabyWenOnboarding: React.FC = () => {
     // If input is "skip" or "skip this step", move to confirmation
     if (lowerInput.includes('skip') || lowerInput === 'skip this step') {
       setCurrentStep('confirmation');
-      simulateBabyWenTyping(`Perfect! Here's a summary of your DAO:\n\nName: ${daoName}\nDescription: ${daoDescription}\n\nDoes everything look good? Type 'yes' to confirm or let me know what you'd like to change.`);
+      simulateBabyWenTyping(`Perfect! Here's a summary of your DAO:\n\nName: ${daoName}\nDescription: ${daoDescription}\n\nDoes everything look good? Type 'yes' to confirm or let me know what you'd like to change.`, undefined, 'confirmation');
       return;
     }
     
@@ -318,14 +421,16 @@ const BabyWenOnboarding: React.FC = () => {
         .join('\n');
       
       simulateBabyWenTyping(
-        `Perfect! Here's a summary of your DAO:\n\nName: ${daoName}\nDescription: ${daoDescription}\n${socialSummary ? '\nSocial Links:\n' + socialSummary : ''}\n\nDoes everything look good? Type 'yes' to confirm or let me know what you'd like to change.`
+        `Perfect! Here's a summary of your DAO:\n\nName: ${daoName}\nDescription: ${daoDescription}\n${socialSummary ? '\nSocial Links:\n' + socialSummary : ''}\n\nDoes everything look good? Type 'yes' to confirm or let me know what you'd like to change.`,
+        undefined,
+        'confirmation'
       );
       return;
     }
     
     // Default - show the social links form
     simulateBabyWenTyping("Let me know your social links. You can skip any or all of them.", 
-      ['Continue', 'Skip this step']);
+      ['Continue', 'Skip this step'], 'socials');
   };
   
   // Handle social links form submission
@@ -348,7 +453,9 @@ const BabyWenOnboarding: React.FC = () => {
       .join('\n');
     
     simulateBabyWenTyping(
-      `Perfect! Here's a summary of your DAO:\n\nName: ${daoName}\nDescription: ${daoDescription}\n${socialSummary ? '\nSocial Links:\n' + socialSummary : ''}\n\nDoes everything look good? Type 'yes' to confirm or let me know what you'd like to change.`
+      `Perfect! Here's a summary of your DAO:\n\nName: ${daoName}\nDescription: ${daoDescription}\n${socialSummary ? '\nSocial Links:\n' + socialSummary : ''}\n\nDoes everything look good? Type 'yes' to confirm or let me know what you'd like to change.`,
+      undefined,
+      'confirmation'
     );
   };
   
@@ -456,25 +563,26 @@ const BabyWenOnboarding: React.FC = () => {
       case 'welcome':
         // For options clicks or first input, move to name step
         setCurrentStep('name');
-        simulateBabyWenTyping("Great! Let's start by giving your DAO a name. What would you like to call it?");
+        simulateBabyWenTyping("Great! Let's start by giving your DAO a name. What would you like to call it?", undefined, 'name');
         break;
         
       case 'name':
         // Save DAO name
         setDaoName(input);
         setCurrentStep('description');
-        simulateBabyWenTyping(`"${input}" is a fantastic name! Now, let's add a short description for your DAO. What's it all about?`);
+        simulateBabyWenTyping(`"${input}" is a fantastic name! Now, let's add a short description for your DAO. What's it all about?`, undefined, 'description');
         break;
         
       case 'description':
         // Save description
         setDaoDescription(input);
+        setCurrentStep('logo');
         
         // Pass to logo step
-        setCurrentStep('logo');
         simulateBabyWenTyping(
           "Great description! Now, let's add a logo for your DAO. You can upload an image file from your computer.",
-          ['Upload Logo', 'Skip for now']
+          ['Upload Logo', 'Skip for now'],
+          'logo'
         );
         break;
         
@@ -488,7 +596,9 @@ const BabyWenOnboarding: React.FC = () => {
           
           setCurrentStep('socials');
           simulateBabyWenTyping(
-            "No problem! I'm updating your DAO preview. Now, let's add some social links (optional). You can skip any or all of them."
+            "No problem! I'm updating your DAO preview. Now, let's add some social links (optional). You can skip any or all of them.",
+            undefined,
+            'socials'
           );
         }
         break;
@@ -504,14 +614,13 @@ const BabyWenOnboarding: React.FC = () => {
           createDAO();
         } else {
           simulateBabyWenTyping("No problem! Let's review the details again. Is there anything specific you'd like to change?", 
-            ['Name', 'Description', 'Social Links', 'All looks good!']);
+            ['Name', 'Description', 'Social Links', 'All looks good!'], 'confirmation');
         }
         break;
         
       default:
         // Handle any other case
-        simulateBabyWenTyping("I'm not sure how to proceed. Let's go back to the beginning.");
-        setCurrentStep('welcome');
+        simulateBabyWenTyping("I'm not sure how to proceed. Let's go back to the beginning.", undefined);
     }
   };
   
@@ -522,13 +631,13 @@ const BabyWenOnboarding: React.FC = () => {
     
     // Check file type
     if (!file.type.match('image.*')) {
-      simulateBabyWenTyping("The file you selected is not an image. Please upload an image file (JPEG, PNG, etc.).");
+      simulateBabyWenTyping("The file you selected is not an image. Please upload an image file (JPEG, PNG, etc.).", undefined, 'logo');
       return;
     }
     
     // Check size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      simulateBabyWenTyping("The image is too large. Please upload an image smaller than 5MB.");
+      simulateBabyWenTyping("The image is too large. Please upload an image smaller than 5MB.", undefined, 'logo');
       return;
     }
     
@@ -552,7 +661,9 @@ const BabyWenOnboarding: React.FC = () => {
       // Continue to social links step
       setCurrentStep('socials');
       simulateBabyWenTyping(
-        "Perfect! Your logo looks great. I'm updating your DAO preview. Now, let's add some social links (optional). You can skip any or all of them."
+        "Perfect! Your logo looks great. I'm updating your DAO preview. Now, let's add some social links (optional). You can skip any or all of them.",
+        undefined,
+        'socials'
       );
     };
     reader.readAsDataURL(file);
@@ -582,9 +693,10 @@ const BabyWenOnboarding: React.FC = () => {
       setShowDaoTasks(true);
       setShowSidebarDaoInfo(true);
       
-      setCurrentStep('socials');
       simulateBabyWenTyping(
-        "No problem! Let's move on. Now, let's add some social links (optional). You can skip any or all of them."
+        "No problem! Let's move on. Now, let's add some social links (optional). You can skip any or all of them.",
+        undefined,
+        'socials'
       );
       return;
     }
@@ -604,7 +716,9 @@ const BabyWenOnboarding: React.FC = () => {
     
     try {
       // Show a message about creation process
-      simulateBabyWenTyping("Creating your DAO now, this will just take a moment...");
+      simulateBabyWenTyping("Creating your DAO now, this will just take a moment...", undefined, 'processing');
+      // Add 7-second wait
+      await new Promise(resolve => setTimeout(resolve, 7000));
       
       // Get current user ID
       const userData = await userService.getMe();
@@ -628,8 +742,9 @@ const BabyWenOnboarding: React.FC = () => {
       });
       
       if (result && result.daoId) {
-        setCurrentStep('complete');
-        simulateBabyWenTyping(`🎉 Congratulations! Your DAO "${daoName}" has been created successfully. You can now explore and manage it from the dashboard.`);
+        simulateBabyWenTyping(`🎉 Congratulations! Your DAO "${daoName}" has been created successfully. You can now explore and manage it from the dashboard.`, undefined, 'complete');
+        // Add 7-second wait
+        await new Promise(resolve => setTimeout(resolve, 7000));
         
         // Navigate to the new DAO's dashboard after a delay
         setTimeout(() => {
@@ -642,7 +757,7 @@ const BabyWenOnboarding: React.FC = () => {
     } catch (err) {
       console.error("Error creating DAO:", err);
       setError(err instanceof Error ? err.message : "An unexpected error occurred");
-      simulateBabyWenTyping(`I'm sorry, but there was an error creating your DAO: ${err instanceof Error ? err.message : "Unknown error"}. Would you like to try again?`, ['Try Again', 'Use Manual Form']);
+      simulateBabyWenTyping(`I'm sorry, but there was an error creating your DAO: ${err instanceof Error ? err.message : "Unknown error"}. Would you like to try again?`, ['Try Again', 'Use Manual Form'], 'processing');
     } finally {
       setIsProcessing(false);
     }
@@ -707,6 +822,8 @@ const BabyWenOnboarding: React.FC = () => {
           {/* Header - Using internal component */}
           <OnboardingHeader 
             activeSection={activeSection}
+            muted={muted}
+            toggleMute={toggleMute}
           />
           
           {/* Main content area - Modified to match App.tsx layout exactly */}
