@@ -60,7 +60,7 @@ const ChatBot: React.FC = () => {
         <div className="flex-1 overflow-y-auto mb-3 bg-[#111]/40 rounded-lg p-4 border border-gray-800/20">
           {/* Chat messages with bubbles */}
           <div className="flex flex-col space-y-4">
-            {messages.map((message) => (
+            {messages.map((message: Message) => (
               <div 
                 key={message.id} 
                 className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
