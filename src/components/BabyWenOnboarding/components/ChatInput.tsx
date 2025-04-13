@@ -26,28 +26,28 @@ const ChatInput: React.FC<ChatInputProps> = ({
   
   // Handle key press (Enter to send)
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && value.trim() !== '') {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       onSend();
     }
   };
   
   return (
-    <div className="px-4 py-3 bg-[#151515] border border-gray-700 rounded-xl mx-4 mb-4 flex shadow-lg">
+    <div className="flex gap-2">
       <input
         ref={inputRef}
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyPress={handleKeyPress}
-        placeholder="Type your response here..."
-        className="flex-1 bg-transparent border-none text-white focus:outline-none"
+        placeholder="Type your message..."
+        className="flex-1 bg-[#222] text-white text-sm focus:outline-none px-3 py-2 rounded-md"
       />
       <button
         onClick={onSend}
-        disabled={value.trim() === ''}
-        className="ml-2 p-2 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg disabled:opacity-50"
+        className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:opacity-90 transition-opacity"
       >
-        <Send size={18} className="text-white" />
+        <Send size={16} />
       </button>
     </div>
   );

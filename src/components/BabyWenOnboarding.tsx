@@ -1,29 +1,46 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { typography, ui, containers } from '../styles/theme';
-import { X } from 'lucide-react';
+import { X, Shield, Wallet, LogOut, ChevronRight, AlertTriangle, User, ChevronDown } from 'lucide-react';
+import useApiAndWallet from '../hooks/useApiAndWallet';
+import ApiAuthStatus from './common/ApiAuthStatus';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
 // Import components for the onboarding experience
-import OnboardingBackground from './BabyWenOnboarding/components/OnboardingBackground';
-import OnboardingHeader from './BabyWenOnboarding/components/OnboardingHeader';
-import OnboardingSidebar from './BabyWenOnboarding/components/OnboardingSidebar';
-import ChatBubble from './BabyWenOnboarding/components/ChatBubble';
+
 import ChatInput from './BabyWenOnboarding/components/ChatInput';
 import MultiChoiceInput from './BabyWenOnboarding/components/MultiChoiceInput';
 import FormInput, { FormField } from './BabyWenOnboarding/components/FormInput';
 import ButtonAction from './BabyWenOnboarding/components/ButtonAction';
 import MultiSelect from './BabyWenOnboarding/components/MultiSelect';
 
-// Import the step definitions
-import WelcomeStep from './BabyWenOnboarding/examples/WelcomeStep';
-import NameStep from './BabyWenOnboarding/examples/NameStep';
-import FavoriteColorStep from './BabyWenOnboarding/examples/FavoriteColorStep';
-import FormStep from './BabyWenOnboarding/examples/FormStep';
-import ButtonStep from './BabyWenOnboarding/examples/ButtonStep';
-import MultiSelectStep from './BabyWenOnboarding/examples/MultiSelectStep';
+// Import the DAO introduction steps
+import DaoNameStep from './BabyWenOnboarding/steps/1_Information/1_DaoName';
+import DaoDescriptionStep from './BabyWenOnboarding/steps/1_Information/2_DaoDescription';
+import DaoLogoStep from './BabyWenOnboarding/steps/1_Information/3_DaoLogo';
+import DaoSocialStep from './BabyWenOnboarding/steps/1_Information/4_DaoSocial';
+
+// Import the DAO governance steps
+import GovernanceModelStep from './BabyWenOnboarding/steps/2_Governance/1_GovernanceModel';
+import IdeaRightsStep from './BabyWenOnboarding/steps/2_Governance/2_IdeaRights';
+import VoteRightsStep from './BabyWenOnboarding/steps/2_Governance/3_VoteRights';
+import SurvalidationStep from './BabyWenOnboarding/steps/2_Governance/3.1_Survalidation';
+import VotingPowerStep from './BabyWenOnboarding/steps/2_Governance/4_VotingPower';
+import VoteDelegationStep from './BabyWenOnboarding/steps/2_Governance/5_VoteDelegation';
+
+// Import the DAO membership steps
+import TokenExistenceStep from './BabyWenOnboarding/steps/3_Membership/1_TokenExistence';
+import TokenAddressStep from './BabyWenOnboarding/steps/3_Membership/1.1_TokenAddress';
+import TokenNameStep from './BabyWenOnboarding/steps/3_Membership/1.21_TokenName';
+import TokenTickerStep from './BabyWenOnboarding/steps/3_Membership/1.22_TokenTicker';
+import MembershipConditionsStep from './BabyWenOnboarding/steps/3_Membership/2_MembershipConditions';
 
 // Types for the onboarding flow
-export type StepId = 'welcome' | 'name' | 'favorite-color' | 'form' | 'button' | 'multi-select';
+export type StepId = 'dao-name' | 'dao-description' | 'dao-logo' | 'dao-social' | 
+                     'dao-governance-model' | 'dao-idea-rights' | 'dao-vote-rights' | 
+                     'dao-survalidation' | 'dao-voting-power' | 'dao-vote-delegation' |
+                     'dao-token-existence' | 'dao-token-address' | 'dao-token-name' | 
+                     'dao-token-ticker' | 'dao-membership-conditions';
 
 // Button action variants
 export type ButtonVariant = 'primary' | 'secondary' | 'danger';
@@ -44,8 +61,11 @@ export interface OnboardingStep {
     variant?: ButtonVariant;
   };
   multiSelectOptions?: string[];
+  // Option details for MultiChoiceInput
+  optionDetails?: Record<string, { title: string; description: string }>;
   onResponse: (response: string) => {
     responseMessage?: string;
+    nextStep?: StepId;
   };
 }
 
@@ -65,27 +85,98 @@ const BabyWenOnboarding: React.FC = () => {
   
   // UI States
   const [messages, setMessages] = React.useState<Message[]>([]);
-  const [currentStep, setCurrentStep] = React.useState<StepId>('welcome');
+  const [currentStep, setCurrentStep] = React.useState<StepId>('dao-name');
+  const [stepHistory, setStepHistory] = React.useState<StepId[]>(['dao-name']); // Track step history
   const [userInput, setUserInput] = React.useState<string>('');
   const [isTyping, setIsTyping] = React.useState<boolean>(false);
   const [showExitConfirmation, setShowExitConfirmation] = React.useState<boolean>(false);
-  const [showInput, setShowInput] = React.useState<boolean>(true);
+  const [showInput, setShowInput] = React.useState<boolean>(false); // Start with input hidden
   const [inputType, setInputType] = React.useState<'text' | 'multiChoice' | 'form' | 'button' | 'multiSelect'>('text');
+  
+  // Animation states
+  const [hasAnimatedIn, setHasAnimatedIn] = React.useState<boolean>(false);
+  const [showVideoAndQuestion, setShowVideoAndQuestion] = React.useState<boolean>(false);
+  const [showInputContainer, setShowInputContainer] = React.useState<boolean>(false);
+  
+  // Welcome modal state
+  const [showWelcomeModal, setShowWelcomeModal] = React.useState<boolean>(true);
+  const [showOnboarding, setShowOnboarding] = React.useState<boolean>(false);
+  
+  // User dropdown state
+  const [showProfileDropdown, setShowProfileDropdown] = React.useState<boolean>(false);
+  
+  // Wallet change detection state
+  const [initialWalletAddress, setInitialWalletAddress] = React.useState<string | null>(null);
+  const [showWalletChangeError, setShowWalletChangeError] = React.useState<boolean>(false);
+  
+  // Get API and wallet status
+  const { apiStatus, userDisplayInfo, connected, publicKey } = useApiAndWallet();
+  
+  // Check if wallet is connected
+  const isWalletConnected = userDisplayInfo?.isAuthenticated || false;
+  
+  // Mock user wallet data - Replace with actual user wallet data in production
+  const [userWallet, setUserWallet] = React.useState({
+    address: '0x7C5a...F92E',
+    shortAddress: '0x7C5a...F92E',
+    balance: '1.24 ETH',
+    connected: true
+  });
+  
+  // Handle disconnect wallet
+  const handleDisconnect = () => {
+    // Add your wallet disconnect logic here
+    setUserWallet({...userWallet, connected: false});
+    // Navigate back to home or wallet connection page
+    navigate('/');
+  };
   
   // Create an object that maps step IDs to step objects
   const steps: Record<StepId, OnboardingStep> = {
-    welcome: WelcomeStep,
-    name: NameStep,
-    'favorite-color': FavoriteColorStep,
-    form: FormStep,
-    button: ButtonStep,
-    'multi-select': MultiSelectStep
+    'dao-name': DaoNameStep,
+    'dao-description': DaoDescriptionStep,
+    'dao-logo': DaoLogoStep,
+    'dao-social': DaoSocialStep,
+    'dao-governance-model': GovernanceModelStep,
+    'dao-idea-rights': IdeaRightsStep,
+    'dao-vote-rights': VoteRightsStep,
+    'dao-survalidation': SurvalidationStep,
+    'dao-voting-power': VotingPowerStep,
+    'dao-vote-delegation': VoteDelegationStep,
+    'dao-token-existence': TokenExistenceStep,
+    'dao-token-address': TokenAddressStep,
+    'dao-token-name': TokenNameStep,
+    'dao-token-ticker': TokenTickerStep,
+    'dao-membership-conditions': MembershipConditionsStep
   };
 
-  // Initialize with first step message
-  React.useEffect(() => {
-    // Get the first message of the welcome step
-    const firstMessage = steps['welcome'].messages[0];
+  // Start onboarding after welcome modal is closed
+  const startOnboarding = () => {
+    // Check if wallet is connected
+    if (!isWalletConnected) {
+      // Redirect to connect wallet page or show connection modal
+      alert("Please connect your wallet before starting DAO creation");
+      return;
+    }
+    
+    // Store the initial wallet address to detect changes
+    if (publicKey) {
+      setInitialWalletAddress(publicKey.toString());
+    }
+    
+    setShowWelcomeModal(false);
+    setShowOnboarding(true);
+    
+    // Initial appearance animation sequence
+    setTimeout(() => setHasAnimatedIn(true), 100);
+    setTimeout(() => setShowVideoAndQuestion(true), 500);
+    setTimeout(() => {
+      setShowInputContainer(true);
+      setShowInput(true); // Only show input after container is visible
+    }, 1500); // Increased delay to ensure it appears after video/question
+    
+    // Get the first message of the dao-name step
+    const firstMessage = steps['dao-name'].messages[0];
     
     // Add the first message to the chat
     setMessages([
@@ -97,7 +188,24 @@ const BabyWenOnboarding: React.FC = () => {
     ]);
     
     // Determine the input type based on the step
-    determineInputType(steps['welcome']);
+    determineInputType(steps['dao-name']);
+  };
+
+  // Check for wallet changes during onboarding
+  React.useEffect(() => {
+    if (!showOnboarding || !initialWalletAddress || !publicKey) return;
+    
+    const currentWalletAddress = publicKey.toString();
+    
+    // If wallet address changed during onboarding, show error
+    if (initialWalletAddress !== currentWalletAddress) {
+      setShowWalletChangeError(true);
+    }
+  }, [publicKey, showOnboarding, initialWalletAddress]);
+
+  // Initialize with welcome modal
+  React.useEffect(() => {
+    // Animation starts after user proceeds from welcome modal
   }, []);
 
   // Function to determine the input type based on the step
@@ -116,8 +224,12 @@ const BabyWenOnboarding: React.FC = () => {
   };
 
   // Handle sending a message
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (userInput.trim() === '') return;
+    
+    // Show loading immediately
+    setIsTyping(true);
+    setShowInput(false);
     
     // Add user message to chat
     const newUserMessage = { sender: 'user' as const, text: userInput.trim() };
@@ -125,11 +237,11 @@ const BabyWenOnboarding: React.FC = () => {
     setUserInput('');
     
     // Process user input based on current step
-    processUserResponse(userInput.trim());
+    await processUserResponse(userInput.trim());
   };
   
   // Process user response based on current step
-  const processUserResponse = (response: string) => {
+  const processUserResponse = async (response: string) => {
     // Get the current step
     const step = steps[currentStep as keyof typeof steps];
     
@@ -138,18 +250,38 @@ const BabyWenOnboarding: React.FC = () => {
     
     // If there's a response message, simulate BabyWen typing
     if (result.responseMessage) {
-      simulateBabyWenTyping(result.responseMessage);
+      await simulateBabyWenTyping(result.responseMessage);
     }
     
     // Define the flow order centrally
     const determineNextStep = () => {
-      // Define the sequence of steps
+      // Check if the step's onResponse returned a specific nextStep
+      if (result.nextStep) {
+        return result.nextStep as StepId;
+      }
+      
+      // Define the sequence of steps (default flow)
       const flowOrder: StepId[] = [
-        'welcome', 
-        'name',
-        'form',
-        'button',
-        'multi-select'
+        // Information section
+        'dao-name', 
+        'dao-description',
+        'dao-logo',
+        'dao-social',
+        
+        // Token & Membership section
+        'dao-token-existence',
+        'dao-token-address', // Only shown if user has a token
+        'dao-token-name',    // Only shown if user needs to create a token
+        'dao-token-ticker',  // Only shown if user needs to create a token
+        'dao-membership-conditions',
+        
+        // Governance section
+        'dao-governance-model',
+        'dao-idea-rights',
+        'dao-vote-rights',
+        'dao-survalidation',  // Only shown conditionally
+        'dao-voting-power',
+        'dao-vote-delegation'
       ];
       
       // Find current step index
@@ -168,30 +300,39 @@ const BabyWenOnboarding: React.FC = () => {
     const nextStepId = determineNextStep();
     const nextStep = steps[nextStepId as keyof typeof steps];
     
-    // Set the next step
+    // Update step history
+    setStepHistory(prev => [...prev, nextStepId]);
+    
+    // Set the next step and show its first message immediately
     setCurrentStep(nextStepId);
     
-    // After a delay, show the next step's first message
+    // Show next step's message immediately
     if (nextStep) {
-      setTimeout(() => {
-        const nextMessage = nextStep.messages[0];
-        simulateBabyWenTyping(nextMessage.content, nextMessage.options);
-        determineInputType(nextStep);
-      }, result.responseMessage ? 2000 : 500);
+      const nextMessage = nextStep.messages[0];
+      await simulateBabyWenTyping(nextMessage.content, nextMessage.options);
+      determineInputType(nextStep);
     }
   };
   
   // Handle option click for multi-choice responses
-  const handleOptionClick = (option: string) => {
+  const handleOptionClick = async (option: string) => {
+    // Show loading immediately
+    setIsTyping(true);
+    setShowInput(false);
+    
     // Add user message with the selected option
     setMessages(prev => [...prev, { sender: 'user' as const, text: option }]);
     
     // Process the response
-    processUserResponse(option);
+    await processUserResponse(option);
   };
 
   // Handle form submission
-  const handleFormSubmit = (formData: Record<string, string>) => {
+  const handleFormSubmit = async (formData: Record<string, string>) => {
+    // Show loading immediately
+    setIsTyping(true);
+    setShowInput(false);
+    
     // Convert form data to JSON string for processing
     const formDataString = JSON.stringify(formData);
     
@@ -204,7 +345,7 @@ const BabyWenOnboarding: React.FC = () => {
     setMessages(prev => [...prev, { sender: 'user' as const, text: `Submitted: ${formSummary}` }]);
     
     // Process the form data
-    processUserResponse(formDataString);
+    await processUserResponse(formDataString);
   };
 
   // Handle button action
@@ -243,16 +384,19 @@ const BabyWenOnboarding: React.FC = () => {
     processUserResponse(optionsString);
   };
   
-  // Simulate BabyWen typing
+  // Simulate BabyWen typing with smoother transitions
   const simulateBabyWenTyping = async (message: string, options?: string[]) => {
+    // Show loading immediately
     setIsTyping(true);
     setShowInput(false);
     
-    // Simulate typing delay (1-2 seconds based on message length)
-    const typingDelay = Math.min(1000 + message.length * 10, 2000);
-    await new Promise(resolve => setTimeout(resolve, typingDelay));
+    // Ensure loading shows for at least 1 second
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
+    // Update messages with new content
     setMessages(prev => [...prev, { sender: 'babywen' as const, text: message, options }]);
+    
+    // Immediate transition to show input
     setIsTyping(false);
     setShowInput(true);
   };
@@ -277,199 +421,401 @@ const BabyWenOnboarding: React.FC = () => {
   // Get the current step
   const currentStepObj = steps[currentStep as keyof typeof steps];
   
+  // Handle going back to the previous step
+  const handleGoBack = async () => {
+    // Can't go back if we're at the first step or only have one step in history
+    if (stepHistory.length <= 1) return;
+    
+    // Remove current step from history
+    const newHistory = [...stepHistory];
+    newHistory.pop();
+    
+    // Get the previous step
+    const previousStepId = newHistory[newHistory.length - 1];
+    const previousStep = steps[previousStepId as keyof typeof steps];
+    
+    // Update state
+    setStepHistory(newHistory);
+    setCurrentStep(previousStepId);
+    
+    // Clear messages and show the previous step's first message
+    setMessages([]);
+    
+    // Show previous step's message
+    if (previousStep) {
+      const previousMessage = previousStep.messages[0];
+      await simulateBabyWenTyping(previousMessage.content, previousMessage.options);
+      determineInputType(previousStep);
+    }
+  };
+  
+  // Handle wallet connection
+  const handleConnectWallet = () => {
+    // Redirect to wallet connection page - update this to the correct wallet connection route
+    navigate('/wallet-connect');
+    
+    // Keep the welcome modal open so user can return to it after connecting
+    setShowWelcomeModal(true);
+  };
+  
   // Render appropriate input component based on input type
   const renderInputComponent = () => {
     if (!showInput) return null;
     
-    switch (inputType) {
-      case 'text':
-        return (
-          <ChatInput
-            value={userInput}
-            onChange={setUserInput}
-            onSend={handleSendMessage}
-          />
-        );
-      case 'multiChoice':
-        return (
-          <MultiChoiceInput
-            options={lastMessage?.options || []}
-            onSelect={handleOptionClick}
-          />
-        );
-      case 'form':
-        return (
-          <FormInput
-            fields={currentStepObj.formFields || []}
-            onSubmit={handleFormSubmit}
-          />
-        );
-      case 'button':
-        return (
-          <ButtonAction
-            label={currentStepObj.buttonAction?.label || 'Click Me'}
-            onClick={handleButtonAction}
-            variant={currentStepObj.buttonAction?.variant as ButtonVariant || 'primary'}
-          />
-        );
-      case 'multiSelect':
-        return (
-          <MultiSelect
-            options={currentStepObj.multiSelectOptions || []}
-            onSubmit={handleMultiSelectSubmit}
-          />
-        );
-      default:
-        return null;
-    }
+    // Show back button (only if we have a step history)
+    const canGoBack = stepHistory.length > 1;
+    
+    return (
+      <>
+        <div className="w-full">
+          {inputType === 'text' && (
+            <ChatInput
+              value={userInput}
+              onChange={setUserInput}
+              onSend={handleSendMessage}
+            />
+          )}
+          
+          {inputType === 'multiChoice' && (
+            <MultiChoiceInput
+              options={lastMessage?.options || []}
+              onSelect={handleOptionClick}
+              optionDetails={currentStepObj.optionDetails}
+            />
+          )}
+          
+          {inputType === 'form' && (
+            <FormInput
+              fields={currentStepObj.formFields || []}
+              onSubmit={handleFormSubmit}
+            />
+          )}
+          
+          {inputType === 'button' && (
+            <ButtonAction
+              label={currentStepObj.buttonAction?.label || 'Click Me'}
+              onClick={handleButtonAction}
+              variant={currentStepObj.buttonAction?.variant as ButtonVariant || 'primary'}
+            />
+          )}
+          
+          {inputType === 'multiSelect' && (
+            <MultiSelect
+              options={currentStepObj.multiSelectOptions || []}
+              onSubmit={handleMultiSelectSubmit}
+            />
+                          )}
+                      </div>
+                      
+        {/* Back button */}
+        {canGoBack && (
+          <div className="mt-3 flex justify-center">
+          <button
+              onClick={handleGoBack}
+              className="text-xs text-indigo-400/70 hover:text-indigo-300 transition-colors"
+            >
+              Go Back
+          </button>
+                          </div>
+        )}
+      </>
+    );
   };
-
+  
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* App Background with split design */}
-      <OnboardingBackground />
-      
-      {/* Back button - Has confirmation dialog */}
-      <button 
-        onClick={handleExitClick}
-        className="absolute top-4 left-4 z-50 bg-[#222] p-2 rounded-full hover:bg-[#333] transition-colors pointer-events-auto"
-        aria-label="Go back"
-      >
-        <X size={20} className="text-white" />
-      </button>
-      
-      {/* Exit confirmation dialog */}
-      {showExitConfirmation && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-          <div className="bg-surface-100 rounded-xl p-6 max-w-md">
-            <h3 className="text-xl font-medium text-text mb-4">Exit Confirmation</h3>
-            <p className="text-gray-300 mb-6">Are you sure you want to leave? Your progress will be lost.</p>
-            <div className="flex justify-end gap-4">
-              <button 
-                onClick={cancelExit}
-                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg"
+    <div className="min-h-screen bg-[#0a0a0a] text-white overflow-hidden relative">
+      {/* Welcome Modal */}
+      {showWelcomeModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] backdrop-blur-sm transition-all duration-500 ease-in-out animate-fadeIn">
+          <div className="bg-gradient-to-b from-[#1a1a1a] to-[#111] rounded-2xl p-8 max-w-2xl border border-indigo-500/30 shadow-2xl animate-scaleIn">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-white flex items-center">
+                <Shield className="mr-2 text-indigo-400" size={24} /> 
+                Welcome to DAO Creation
+              </h2>
+              
+              {/* Wallet Section: Show either ApiAuthStatus or Connect Wallet button */}
+              {isWalletConnected ? (
+                <ApiAuthStatus 
+                  apiStatus={apiStatus} 
+                  userDisplayInfo={userDisplayInfo}
+                />
+              ) : (
+                <WalletMultiButton className="wallet-adapter-button-custom" />
+                          )}
+                        </div>
+                        
+            {/* Modal Content */}
+            <div className="mb-8">
+              <div className="flex items-start mb-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                <AlertTriangle className="text-amber-500 shrink-0 mt-1 mr-3" size={20} />
+                <div>
+                  <h3 className="text-amber-400 font-medium mb-2">Important Wallet Security Notice</h3>
+                  <p className="text-white/80 text-sm leading-relaxed">
+                    You're about to begin the DAO creation process. For security best practices, we strongly 
+                    recommend using a new, dedicated wallet created from a fresh seed phrase.
+                  </p>
+                  <p className="text-white/80 text-sm leading-relaxed mt-2">
+                    The wallet you use will become the DAO's treasury wallet and will be used to deploy your 
+                    DAO token contract. To protect your main assets, avoid using your primary wallet for this process.
+                          </p>
+                        </div>
+                      </div>
+                      
+              <h3 className="text-lg font-medium mb-3 text-indigo-300">What to expect:</h3>
+              <ul className="space-y-2 text-white/80 text-sm">
+                <li className="flex items-start">
+                  <ChevronRight size={16} className="text-indigo-400 shrink-0 mt-1 mr-2" />
+                  <span>A step-by-step guided process to customize your DAO</span>
+                </li>
+                <li className="flex items-start">
+                  <ChevronRight size={16} className="text-indigo-400 shrink-0 mt-1 mr-2" />
+                  <span>Options to configure governance, token details, and membership</span>
+                </li>
+                <li className="flex items-start">
+                  <ChevronRight size={16} className="text-indigo-400 shrink-0 mt-1 mr-2" />
+                  <span>Smart contract deployment for your DAO token and governance structure</span>
+                </li>
+              </ul>
+                              </div>
+            
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => navigate('/')}
+                className="px-4 py-2 bg-[#333] hover:bg-[#444] text-white rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button 
-                onClick={confirmExit}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                onClick={startOnboarding}
+                className={`px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg transition-all shadow-lg hover:shadow-indigo-500/25 font-medium ${!isWalletConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={!isWalletConnected}
               >
-                Exit Anyway
+                {isWalletConnected ? 'I Understand, Let\'s Begin' : 'Connect Wallet to Begin'}
               </button>
-            </div>
-          </div>
-        </div>
+                              </div>
+                              </div>
+                              </div>
       )}
       
-      {/* Dashboard Structure - All elements are non-clickable */}
-      <div className="flex h-screen w-full z-10 pointer-events-none">
-        {/* Left Sidebar */}
-        <OnboardingSidebar 
-          activeSection={activeSection}
-          setActiveSection={setActiveSection}
-          daoName=""
-          daoLogo={null}
-          showDaoInfo={false}
-        />
-        
-        {/* Main content */}
-        <div className="flex-1 flex flex-col overflow-hidden z-10 relative">
-          {/* Header */}
-          <OnboardingHeader activeSection={activeSection} />
+      {/* Main Onboarding Content */}
+      {showOnboarding && (
+        <div className={`min-h-screen bg-[#0a0a0a] text-white overflow-y-auto relative transition-opacity duration-1000 ease-in-out ${hasAnimatedIn ? 'opacity-100' : 'opacity-0'}`}>
+          {/* Aurora background effects */}
+          <div className="fixed inset-0 pointer-events-none overflow-hidden">
+            <div className="absolute top-[-20%] right-[-10%] w-[90%] h-[80%] bg-gradient-to-br from-indigo-600/20 via-purple-600/15 to-pink-600/10 rounded-full blur-[120px] animate-pulse-slow"></div>
+            <div className="absolute bottom-[-30%] left-[-20%] w-[80%] h-[70%] bg-gradient-to-tr from-teal-600/20 via-cyan-600/15 to-blue-600/10 rounded-full blur-[120px] animate-pulse-slow-delayed"></div>
+            <div className="absolute top-[30%] left-[10%] w-[40%] h-[30%] bg-gradient-to-r from-amber-600/10 to-orange-600/5 rounded-full blur-[80px] animate-float"></div>
+            <div className="absolute bottom-[20%] right-[15%] w-[35%] h-[25%] bg-gradient-to-l from-emerald-600/10 to-green-600/5 rounded-full blur-[80px] animate-float-delayed"></div>
+                    </div>
+                    
           
-          {/* Main content area */}
-          <div className="flex-1 overflow-y-auto">
-            <div className="transition-opacity duration-300 opacity-100 my-10">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-5">
-                  <h1 className={typography.h1}>Creation</h1>
-                </div>
-                
-                {/* Dashboard content - Empty initially */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="col-span-3 lg:col-span-2">
-                    {/* Placeholder for dynamic content */}
-                    <div className={`${containers.card} opacity-30`}>
-                      <h2 className={typography.h3}>DAO Overview</h2>
-                      <div className="h-48 flex items-center justify-center">
-                        <p className="text-gray-500">Content will appear here as you complete the onboarding</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="col-span-3 lg:col-span-1">
-                    {/* Placeholder for profile */}
-                    <div className={`${containers.card} opacity-30`}>
-                      <h2 className={typography.h3}>DAO Profile</h2>
-                      <div className="h-32 flex items-center justify-center">
-                        <p className="text-gray-500">Profile will appear here</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      {/* BabyWen and Chat Interface - Floating overlaid - CLICKABLE */}
-      <div className="absolute bottom-0 left-0 right-0 z-50 pointer-events-auto">
-        <div className="container mx-auto px-4 pb-4 relative">
-          <div className="flex items-end">
-            {/* BabyWen Video */}
-            <div className="mb-4 ml-4 w-32 h-32 rounded-full overflow-hidden bg-gradient-to-r from-purple-600 to-blue-600 border-4 border-[#222] shadow-2xl">
+          {/* Back button */}
+          <button 
+            onClick={handleExitClick}
+            className={`fixed top-4 left-4 z-50 bg-[#222] p-2 rounded-full hover:bg-[#333] transition-all duration-700 ${hasAnimatedIn ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`}
+            aria-label="Go back"
+          >
+            <X size={20} className="text-white" />
+          </button>
+          
+          {/* Main content layout */}
+          <div className="container mx-auto min-h-screen flex flex-col py-4">
+            {/* Video section - Top */}
+            <div className="flex-none pt-12 flex items-center justify-center mb-0">
+              <div className={`w-[350px] h-[350px] overflow-hidden transition-all duration-1000 ease-out ${showVideoAndQuestion ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
               <video 
                 autoPlay 
                 loop 
                 muted 
                 playsInline
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover rounded-3xl"
               >
                 <source src="/assets/video_agent.webm" type="video/webm" />
-                <source src="/assets/video_agent.mp4" type="video/mp4" />
               </video>
-            </div>
-
-            {/* Latest BabyWen Message */}
-            {lastMessage && lastMessage.sender === 'babywen' && (
-              <ChatBubble
-                message={lastMessage.text}
-                options={lastMessage.options}
-                onOptionClick={handleOptionClick}
-              />
-            )}
-          </div>
-
-          {/* User Reply Bubble */}
-          {secondLastMessage && lastMessage?.sender === 'user' && (
-            <div className="flex justify-end mr-4 mb-4">
-              <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-xl rounded-br-none text-white max-w-md">
-                {lastMessage.text}
               </div>
             </div>
-          )}
-          
-          {/* Typing indicator */}
-          {isTyping && (
-            <div className="ml-40 mb-4">
-              <div className="bg-[#222] inline-block p-3 rounded-xl">
-                <div className="flex space-x-2">
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+
+            {/* Question and Answer Container */}
+            <div className="flex-grow flex flex-col px-4 pb-12 self-start w-full">
+              {/* Question section with persistent container */}
+              <div className="flex justify-center">
+                <div className="w-full max-w-2xl">
+                  <div className={`bg-gradient-to-r from-indigo-600/10 to-purple-600/10 backdrop-blur-sm border border-indigo-500/20 rounded-2xl p-6 shadow-xl min-h-[80px] relative transition-all duration-1000 ease-out ${showVideoAndQuestion ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+                    {/* Loading animation with bouncing dots */}
+                    {isTyping && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0a]/30 rounded-2xl backdrop-blur-sm transition-all duration-500">
+                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                          <div className="loader"></div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Message content with fade and scale transition */}
+                    <div className={`transition-all duration-500 ${
+                      isTyping 
+                        ? 'opacity-0 scale-95' 
+                        : 'opacity-100 scale-100'
+                    }`}>
+                      {lastMessage && lastMessage.sender === 'babywen' && (
+                        <div className="text-lg text-white text-center flex flex-col items-center justify-center whitespace-pre-wrap">
+                          {lastMessage.text}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Answer section with scale/fade animation */}
+              <div className="flex justify-center mt-6 mb-8">
+                <div className="w-full max-w-2xl">
+                  {/* Dynamic input component with fade and scale transition */}
+                  <div className={`transition-all duration-1000 transform ${
+                    showInput 
+                      ? 'opacity-100 scale-100' 
+                      : 'opacity-0 scale-95 pointer-events-none'
+                  } ${showInputContainer ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'}`}>
+                    {showInput && renderInputComponent()}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Wallet change error dialog */}
+          {showWalletChangeError && (
+            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] backdrop-blur-md">
+              <div className="bg-gradient-to-r from-[#1a1a1a] to-[#222] rounded-2xl p-6 max-w-md border border-red-500/30 shadow-xl">
+                <div className="flex items-center mb-4 text-red-500">
+                  <AlertTriangle size={24} className="mr-2" />
+                  <h3 className="text-xl font-medium">Wallet Change Detected</h3>
+                </div>
+                <p className="text-gray-300 mb-6">
+                  Your wallet connection has changed during the DAO creation process. 
+                  For security reasons, you must restart the process with a single wallet.
+                </p>
+                <div className="flex justify-end">
+                  <button 
+                    onClick={() => navigate('/')}
+                    className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg transition-colors"
+                  >
+                    Return to Home
+                  </button>
                 </div>
               </div>
             </div>
           )}
           
-          {/* Dynamic Input Area based on the current step type */}
-          {renderInputComponent()}
+          {/* Exit confirmation dialog */}
+          {showExitConfirmation && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] backdrop-blur-sm">
+              <div className="bg-gradient-to-r from-[#1a1a1a] to-[#222] rounded-2xl p-6 max-w-md border border-indigo-500/20">
+                <h3 className="text-xl font-medium mb-4">Exit Confirmation</h3>
+                <p className="text-gray-300 mb-6">Are you sure you want to leave? Your progress will be lost.</p>
+                <div className="flex justify-end gap-4">
+                <button
+                    onClick={cancelExit}
+                    className="px-4 py-2 bg-[#333] hover:bg-[#444] text-white rounded-lg transition-colors"
+                >
+                    Cancel
+                </button>
+                  <button 
+                    onClick={confirmExit}
+                    className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg transition-colors"
+                  >
+                    Exit Anyway
+                  </button>
+            </div>
+            </div>
         </div>
+          )}
       </div>
+      )}
     </div>
   );
 };
+
+// Update the loader styles
+const globalStyles = `
+  .loader, .loader:before, .loader:after {
+    border-radius: 50%;
+    width: 2.5em;
+    height: 2.5em;
+    animation-fill-mode: both;
+    animation: bblFadInOut 1.8s infinite ease-in-out;
+  }
+  .loader {
+    color: #FFF;
+    font-size: 5px;
+    position: absolute;
+    text-indent: -9999em;
+    transform: translate(-50%, -50%);
+    top: 50%;
+    left: 50%;
+  }
+  .loader:before,
+  .loader:after {
+    content: '';
+    position: absolute;
+    top: 0;
+  }
+  .loader:before {
+    left: -3.5em;
+    animation-delay: -0.32s;
+  }
+  .loader:after {
+    left: 3.5em;
+  }
+
+  @keyframes bblFadInOut {
+    0%, 80%, 100% { box-shadow: 0 2.5em 0 -1.3em }
+    40% { box-shadow: 0 2.5em 0 0 }
+  }
+  
+  /* Animation keyframes for the UI elements */
+  @keyframes fadeInScale {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  /* Modal animations */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes scaleIn {
+    from { 
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to { 
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  .animate-fadeIn {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+  
+  .animate-scaleIn {
+    animation: scaleIn 0.4s ease-out forwards;
+  }
+`;
+
+// Add the styles to the document
+const styleSheet = document.createElement("style");
+styleSheet.textContent = globalStyles;
+document.head.appendChild(styleSheet);
 
 export default BabyWenOnboarding; 
