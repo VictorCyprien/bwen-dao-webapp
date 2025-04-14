@@ -12,15 +12,20 @@ import { ServerConfiguration } from '../core/modules/bwen-voice/servers';
 // Default API endpoint - now using the proxy URL
 const DEFAULT_API_ENDPOINT = '/sound';
 
+// Default audio folder path
+const DEFAULT_AUDIO_FOLDER = 'audio/babywen';
+
 /**
  * SoundService handles audio playback operations
  */
 export class SoundService {
   private apiEndpoint: string;
   private soundApi: DefaultApi;
+  private audioFolder: string;
 
-  constructor(apiEndpoint: string = DEFAULT_API_ENDPOINT) {
+  constructor(apiEndpoint: string = DEFAULT_API_ENDPOINT, audioFolder: string = DEFAULT_AUDIO_FOLDER) {
     this.apiEndpoint = apiEndpoint;
+    this.audioFolder = audioFolder;
     
     // Create configuration for the API with custom base URL
     const serverConfig = new ServerConfiguration(this.apiEndpoint, {});
@@ -50,16 +55,31 @@ export class SoundService {
 
   /**
    * Play a sound by filename
-   * @param filename The name of the audio file to play
+   * @param filename The name of the audio file to play (without folder path)
+   * @param fallbackFilename Optional fallback file if the main file cannot be played
    * @returns Promise resolving to true if successful, or false with an error message
    */
-  async play(filename: string): Promise<{ success: boolean; error?: string }> {
+  async play(filename: string, fallbackFilename?: string): Promise<{ success: boolean; error?: string }> {
     try {
-      // Call the play endpoint with the filename
-      await this.soundApi.playAudioPlayPost(filename);
+      const fullPath = this.audioFolder + "/" + filename;
+
+      // Call the play endpoint with the full filename path
+      await this.soundApi.playAudioPlayPost(fullPath);
       return { success: true };
     } catch (error) {
-      console.error('Error playing sound:', error);
+      console.error(`Error playing sound ${filename}:`, error);
+      
+      // Try fallback if provided
+      if (fallbackFilename) {
+        try {
+          console.warn(`Attempting to play fallback sound: ${fallbackFilename}`);
+          const fallbackPath = this.audioFolder + "/" + fallbackFilename;
+          await this.soundApi.playAudioPlayPost(fallbackPath);
+          return { success: true };
+        } catch (fallbackError) {
+          console.error(`Error playing fallback sound ${fallbackFilename}:`, fallbackError);
+        }
+      }
       
       // Extract error message from the API response if available
       let errorMessage = 'Failed to play sound';
