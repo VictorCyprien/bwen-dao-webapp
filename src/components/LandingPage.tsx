@@ -262,18 +262,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
       {/* Main content container */}
       <div className="relative z-10">
         {/* Navbar */}
-        <nav className="py-2 sm:py-4 px-4 sm:px-8 flex flex-col sm:flex-row justify-between items-center backdrop-blur-sm bg-black/20 border-b border-white/5">
+        <nav className="py-6 px-8 flex justify-between items-center">
           <div className="flex items-center mb-4 sm:mb-0">
             {/* Logo removed from here */}
           </div>
           
           <div className="flex items-center">
-            <div className="ml-2 sm:ml-0">
               <ApiAuthStatus 
                 apiStatus={apiStatus} 
                 userDisplayInfo={userDisplayInfo}
               />
-            </div>
           </div>
         </nav>
         
