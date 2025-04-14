@@ -28,9 +28,12 @@ export const getDAOReviewData = () => {
     description: sessionStorage.getItem('daoDescription') || 'Not specified',
     logo: sessionStorage.getItem('daoLogo') || null,
     socials: {
-      twitter: sessionStorage.getItem('daoTwitter') || 'Not specified',
-      discord: sessionStorage.getItem('daoDiscord') || 'Not specified',
-      website: sessionStorage.getItem('daoWebsite') || 'Not specified'
+      twitter: sessionStorage.getItem('daoTwitter') || undefined,
+      discord: sessionStorage.getItem('daoDiscord') || undefined,
+      website: sessionStorage.getItem('daoWebsite') || undefined,
+      telegram: sessionStorage.getItem('daoTelegram') || undefined,
+      instagram: sessionStorage.getItem('daoInstagram') || undefined,
+      tiktok: sessionStorage.getItem('daoTiktok') || undefined,
     }
   };
 

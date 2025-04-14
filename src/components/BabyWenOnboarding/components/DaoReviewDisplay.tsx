@@ -33,18 +33,47 @@ const DaoReviewDisplay: React.FC = () => {
       <div className="mb-6">
         <h4 className="font-medium text-indigo-400 mb-2 border-b border-indigo-500/20 pb-1">Social Links</h4>
         <div className="grid grid-cols-1 gap-2">
-          <div className="flex justify-between">
-            <span className="text-white/60">Twitter:</span>
-            <span className="text-white font-medium">{daoInfo.socials.twitter}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-white/60">Discord:</span>
-            <span className="text-white font-medium">{daoInfo.socials.discord}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-white/60">Website:</span>
-            <span className="text-white font-medium">{daoInfo.socials.website}</span>
-          </div>
+          {daoInfo.socials.twitter && (
+            <div className="flex justify-between">
+              <span className="text-white/60">Twitter:</span>
+              <span className="text-white font-medium">{daoInfo.socials.twitter}</span>
+            </div>
+          )}
+          {daoInfo.socials.discord && (
+            <div className="flex justify-between">
+              <span className="text-white/60">Discord:</span>
+              <span className="text-white font-medium">{daoInfo.socials.discord}</span>
+            </div>
+          )}
+          {daoInfo.socials.website && (
+            <div className="flex justify-between">
+              <span className="text-white/60">Website:</span>
+              <span className="text-white font-medium">{daoInfo.socials.website}</span>
+            </div>
+          )}
+          {daoInfo.socials.telegram && (
+            <div className="flex justify-between">
+              <span className="text-white/60">Telegram:</span>
+              <span className="text-white font-medium">{daoInfo.socials.telegram}</span>
+            </div>
+          )}
+          {daoInfo.socials.instagram && (
+            <div className="flex justify-between">
+              <span className="text-white/60">Instagram:</span>
+              <span className="text-white font-medium">{daoInfo.socials.instagram}</span>
+            </div>
+          )}
+          {daoInfo.socials.tiktok && (
+            <div className="flex justify-between">
+              <span className="text-white/60">TikTok:</span>
+              <span className="text-white font-medium">{daoInfo.socials.tiktok}</span>
+            </div>
+          )}
+          {/* If no social links are specified, show a message */}
+          {!daoInfo.socials.twitter && !daoInfo.socials.discord && !daoInfo.socials.website && 
+           !daoInfo.socials.telegram && !daoInfo.socials.instagram && !daoInfo.socials.tiktok && (
+            <div className="text-center text-white/60 italic">No social links specified</div>
+          )}
         </div>
       </div>
       

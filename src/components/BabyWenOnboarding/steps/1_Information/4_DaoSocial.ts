@@ -276,21 +276,27 @@ const DaoSocialStep: OnboardingStep = {
         .map(([key, value]) => `${key}: ${value}`)
         .join(', ');
 
+      console.log('Social links:', socialLinks);
+      console.log('Data:', data);
+
       // Store social links in sessionStorage
-      if (data.websiteUrl) {
-        sessionStorage.setItem('websiteUrl', data.websiteUrl);
+      if (data.website) {
+        sessionStorage.setItem('daoWebsite', data.websiteUrl);
       }
-      if (data.twitterUrl) {
-        sessionStorage.setItem('twitterUrl', data.twitterUrl);
+      if (data.twitter) {
+        sessionStorage.setItem('daoTwitter', data.twitterUrl);
       }
-      if (data.discordUrl) {
-        sessionStorage.setItem('discordUrl', data.discordUrl);
+      if (data.discord) {
+        sessionStorage.setItem('daoDiscord', data.discord);
       }
-      if (data.telegramUrl) {
-        sessionStorage.setItem('telegramUrl', data.telegramUrl);
+      if (data.telegram) {
+        sessionStorage.setItem('daoTelegram', data.telegram);
       }
-      if (data.instagramUrl) {
-        sessionStorage.setItem('instagramUrl', data.instagramUrl);
+      if (data.instagram) {
+        sessionStorage.setItem('daoInstagram', data.instagram);
+      }
+      if (data.tiktok) {
+        sessionStorage.setItem('daoTiktok', data.tiktok);
       }
       
       const responseMessage = socialLinks 
