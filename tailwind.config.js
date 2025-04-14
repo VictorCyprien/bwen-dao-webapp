@@ -38,6 +38,12 @@ export default {
       },
       animation: {
         'pulse-subtle': 'pulse-subtle 4s ease-in-out infinite',
+        'pulse-slow': 'pulse-slow 8s ease-in-out infinite',
+        'pulse-slow-delayed': 'pulse-slow-delayed 10s ease-in-out infinite',
+        'float': 'float 6s ease-in-out infinite',
+        'float-delayed': 'float-delayed 7s ease-in-out infinite',
+        'float-slow': 'float-slow 9s ease-in-out infinite',
+        'twinkle': 'twinkle 4s ease-in-out infinite',
       },
       keyframes: {
         'pulse-subtle': {
@@ -50,6 +56,61 @@ export default {
             transform: 'scale(1.05)',
           },
         },
+        'pulse-slow': {
+          '0%, 100%': {
+            opacity: 0.8,
+            transform: 'scale(1)',
+          },
+          '50%': {
+            opacity: 0.6,
+            transform: 'scale(1.05)',
+          },
+        },
+        'pulse-slow-delayed': {
+          '0%, 100%': {
+            opacity: 0.7,
+            transform: 'scale(1)',
+          },
+          '50%': {
+            opacity: 0.5,
+            transform: 'scale(1.03)',
+          },
+        },
+        'float': {
+          '0%, 100%': {
+            transform: 'translateY(0)',
+          },
+          '50%': {
+            transform: 'translateY(-10px)',
+          },
+        },
+        'float-delayed': {
+          '0%, 100%': {
+            transform: 'translateY(0)',
+          },
+          '50%': {
+            transform: 'translateY(-15px)',
+          },
+        },
+        'float-slow': {
+          '0%, 100%': {
+            transform: 'translateY(0)',
+          },
+          '50%': {
+            transform: 'translateY(-5px)',
+          },
+        },
+        'twinkle': {
+          '0%, 100%': {
+            opacity: 0.2,
+          },
+          '50%': {
+            opacity: 0.8,
+          },
+        },
+      },
+      backdropBlur: {
+        xs: '2px',
       },
     },
   },

@@ -22,9 +22,13 @@ import {
   Globe, 
   Shield,
   LayoutGrid,
-  Search
+  Search,
+  ArrowUpRight,
+  Star,
+  Rocket
 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import '../styles/aurora.css';
 
 interface LandingPageProps {
   onEnterDashboard: (daoId?: string) => void;
@@ -41,17 +45,17 @@ const Badge = ({ type }: { type: BadgeType }) => {
   
   switch (type) {
     case 'featured':
-      bgColor = 'bg-gradient-to-r from-purple-600 to-blue-600';
+      bgColor = 'bg-gradient-to-r from-indigo-600 to-purple-600';
       textColor = 'text-white';
       icon = <Sparkles size={14} className="mr-1" />;
       break;
     case 'active':
-      bgColor = 'bg-gradient-to-r from-green-600 to-emerald-600';
+      bgColor = 'bg-gradient-to-r from-teal-600 to-emerald-600';
       textColor = 'text-white';
       icon = <Users size={14} className="mr-1" />;
       break;
     case 'new':
-      bgColor = 'bg-gradient-to-r from-orange-600 to-amber-600';
+      bgColor = 'bg-gradient-to-r from-amber-600 to-orange-600';
       textColor = 'text-white';
       icon = <Clock size={14} className="mr-1" />;
       break;
@@ -119,7 +123,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setAnimationComplete(true);
-    }, 1800);
+    }, 800);
     
     return () => clearTimeout(timer);
   }, []);
@@ -200,116 +204,157 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
     navigate('/create/babywen');
   };
 
+  // Add a ref for the 3D effect
+  const logoRef = useRef<HTMLDivElement>(null);
+  
+  // Handle mouse movement for 3D effect
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!logoRef.current) return;
+      
+      const { clientX, clientY } = e;
+      const { left, top, width, height } = logoRef.current.getBoundingClientRect();
+      
+      const x = (clientX - left) / width;
+      const y = (clientY - top) / height;
+      
+      const rotateX = (y - 0.5) * 20;
+      const rotateY = (x - 0.5) * 20;
+      
+      logoRef.current.style.transform = `perspective(1000px) rotateX(${-rotateX}deg) rotateY(${rotateY}deg)`;
+    };
+    
+    window.addEventListener('mousemove', handleMouseMove);
+    
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, []);
+
   return (
     <div className="bg-[#0a0a0a] min-h-screen text-white overflow-x-hidden">
-      {/* Fixed background gradients */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] right-[-20%] w-[80%] h-[70%] bg-purple-600/10 rounded-full blur-[120px]"></div>
-        <div className="absolute bottom-[-30%] left-[-10%] w-[70%] h-[80%] bg-blue-600/10 rounded-full blur-[120px]"></div>
+      {/* Aurora background effects */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {/* Primary aurora */}
+        <div className="absolute top-[-20%] right-[-10%] w-[90%] h-[80%] bg-gradient-to-br from-indigo-600/20 via-purple-600/15 to-pink-600/10 rounded-full blur-[120px] animate-pulse-slow"></div>
+        <div className="absolute bottom-[-30%] left-[-20%] w-[80%] h-[70%] bg-gradient-to-tr from-teal-600/20 via-cyan-600/15 to-blue-600/10 rounded-full blur-[120px] animate-pulse-slow-delayed"></div>
+        
+        {/* Secondary aurora effects */}
+        <div className="absolute top-[30%] left-[10%] w-[40%] h-[30%] bg-gradient-to-r from-amber-600/10 to-orange-600/5 rounded-full blur-[80px] animate-float"></div>
+        <div className="absolute bottom-[20%] right-[15%] w-[35%] h-[25%] bg-gradient-to-l from-emerald-600/10 to-green-600/5 rounded-full blur-[80px] animate-float-delayed"></div>
+        
+        {/* Aurora particles */}
+        <div className="absolute inset-0 opacity-30">
+          {[...Array(20)].map((_, i) => (
+            <div 
+              key={i}
+              className="absolute w-1 h-1 rounded-full bg-white"
+              style={{
+                top: `${Math.random() * 100}%`,
+                left: `${Math.random() * 100}%`,
+                animation: `twinkle ${3 + Math.random() * 5}s infinite ${Math.random() * 5}s`
+              }}
+            ></div>
+          ))}
+        </div>
       </div>
       
       {/* Main content container */}
       <div className="relative z-10">
         {/* Navbar */}
         <nav className="py-6 px-8 flex justify-between items-center">
-          <div className="flex items-center">
+          <div className="flex items-center mb-4 sm:mb-0">
             {/* Logo removed from here */}
           </div>
           
-          <div className="flex items-center space-x-6">
-            <button 
-              onClick={scrollToDAOs} 
-              className="text-gray-300 hover:text-white transition-colors"
-            >
-              Explore DAOs
-            </button>
-            <button 
-              onClick={() => { window.scrollTo({ top: document.getElementById('features')?.offsetTop, behavior: 'smooth' }) }} 
-              className="text-gray-300 hover:text-white transition-colors"
-            >
-              Features
-            </button>
-            <ApiAuthStatus 
-              apiStatus={apiStatus} 
-              userDisplayInfo={userDisplayInfo}
-            />
+          <div className="flex items-center">
+              <ApiAuthStatus 
+                apiStatus={apiStatus} 
+                userDisplayInfo={userDisplayInfo}
+              />
           </div>
         </nav>
         
-        {/* Hero section */}
-        <section className="relative">
-          {/* Decorative element */}
-          <div className="absolute top-20 left-10 w-20 h-20 border border-purple-500/30 rounded-full"></div>
-          <div className="absolute bottom-20 right-10 w-32 h-32 border border-blue-500/20 rounded-full"></div>
+        {/* Hero section - Centered Logo Focus */}
+        <section className="relative h-[95vh] flex flex-col items-center justify-center">
+          {/* Decorative elements removed */}
           
-          <div className="container mx-auto px-8 py-12 min-h-[85vh] flex flex-col lg:flex-row items-center justify-between">
-            {/* Left column: Hero Text */}
-            <div className="lg:w-1/2 mb-12 lg:mb-0 lg:pr-12">
-              <div className={`transition-all duration-1000 ${animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-                <h1 className="text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-                  Transform <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-blue-500">governance</span> into something extraordinary
-                </h1>
-                <p className="text-xl text-gray-300 mb-10 leading-relaxed">
-                  Create, manage, and scale your decentralized autonomous organization with powerful tools designed for modern communities.
-                </p>
-                <div className="flex flex-wrap gap-4">
-                  <button
-                    onClick={openCreateDaoModal}
-                    className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium hover:opacity-90 transition-colors"
-                  >
-                    Create DAO
-                  </button>
-                  <Button 
-                    variant="outline"
-                    size="lg"
-                    onClick={scrollToDAOs}
-                    className="rounded-xl"
-                  >
-                    Explore DAOs
-                  </Button>
-                </div>
-                
-                <div className="mt-10 flex items-center">
-                  <div className="flex -space-x-2 mr-4">
-                    {[...Array(4)].map((_, i) => (
-                      <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center border-2 border-[#0a0a0a] text-xs font-bold">
-                        {String.fromCharCode(65 + i)}
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-gray-400 text-sm">Join <span className="text-white font-medium">400+</span> users building DAOs</p>
-                </div>
+          {/* Floating orbs removed */}
+          
+          {/* Main Logo Container with Animation */}
+          <div 
+            className={`transition-all duration-1000 ease-out ${
+              animationComplete ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
+            }`}
+          >
+            <div className="relative">
+              {/* Animated glow effect removed */}
+              
+              {/* Logo with 3D effect */}
+              <div className="relative z-10 w-[80vw] sm:w-[500px] md:w-[600px] h-[250px] sm:h-[350px] md:h-[450px] mx-auto overflow-hidden">
+                <img 
+                  src="https://i.imgur.com/OZCrF4z.png" 
+                  alt="DAO Logo" 
+                  className="w-full h-full object-contain object-top drop-shadow-2xl"
+                />
               </div>
             </div>
-            
-            {/* Right column: Giant Logo Animation */}
-            <div className="lg:w-1/2 flex justify-center items-center">
-              <div 
-                className={`transition-all duration-1500 ease-out ${animationComplete ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}
+          </div>
+          
+          {/* Tagline below logo */}
+          <div 
+            className={`mt-1 sm:mt-2 md:mt-4 text-center transition-all duration-700 delay-300 ${
+              animationComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+            }`}
+          >
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 sm:mb-3 leading-tight px-4">
+              Transform <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">governance</span> into something extraordinary
+            </h1>
+            <p className="text-base sm:text-lg text-gray-300 mb-3 sm:mb-4 leading-relaxed max-w-2xl mx-auto px-4">
+              Create, manage, and scale your decentralized autonomous organization with powerful tools designed for modern communities.
+            </p>
+            <div className="flex flex-wrap gap-3 justify-center px-4">
+              <button
+                onClick={openCreateDaoModal}
+                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:opacity-90 transition-colors shadow-lg shadow-indigo-500/20 group text-sm sm:text-base"
               >
-                <div className="relative">
-                  {/* Animated glow effect */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-600/30 to-blue-600/30 rounded-full blur-xl animate-pulse-slow"></div>
-                  
-                  {/* Logo */}
-                  <img 
-                    src="https://i.imgur.com/OZCrF4z.png" 
-                    alt="DAO Logo" 
-                    className="relative z-10 w-full max-w-lg mx-auto animate-float"
-                  />
-                  
-                  {/* Floating elements */}
-                  <div className="absolute top-10 left-0 w-12 h-12 bg-purple-500/10 rounded-lg animate-float-slow"></div>
-                  <div className="absolute bottom-20 right-10 w-16 h-16 bg-blue-500/10 rounded-full animate-float-delay"></div>
-                </div>
+                <span className="flex items-center">
+                  Create DAO
+                  <Rocket className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform" />
+                </span>
+              </button>
+              <Button 
+                variant="outline"
+                size="lg"
+                onClick={scrollToDAOs}
+                className="rounded-xl border-indigo-500/30 hover:border-indigo-500/50 group text-sm sm:text-base"
+              >
+                <span className="flex items-center">
+                  Explore DAOs
+                  <ArrowUpRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                </span>
+              </Button>
+            </div>
+            
+            <div className="mt-3 sm:mt-4 flex items-center justify-center px-4">
+              <div className="flex -space-x-2 mr-3 sm:mr-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="w-5 sm:w-6 h-5 sm:h-6 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center border-2 border-[#0a0a0a] text-xs font-bold">
+                    {String.fromCharCode(65 + i)}
+                  </div>
+                ))}
               </div>
+              <p className="text-gray-400 text-xs sm:text-sm">Join <span className="text-white font-medium">400+</span> users building DAOs</p>
             </div>
           </div>
           
           {/* Scroll indicator */}
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
-            <p className="text-gray-400 text-sm mb-2">Scroll to explore</p>
-            <ChevronDown size={20} className="text-gray-400 animate-bounce" />
+          <div className={`absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center transition-opacity duration-1000 ${
+            animationComplete ? 'opacity-100' : 'opacity-0'
+          }`}>
+            <p className="text-gray-400 text-xs sm:text-sm mb-1">Scroll to explore</p>
+            <ChevronDown size={14} className="text-gray-400 animate-bounce sm:hidden" />
+            <ChevronDown size={18} className="text-gray-400 animate-bounce hidden sm:block" />
           </div>
         </section>
         
@@ -319,25 +364,25 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
           
           <div className="container mx-auto px-8 py-12">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-gray-800">
-                <div className="w-14 h-14 rounded-xl bg-purple-500/10 flex items-center justify-center mb-4">
-                  <Users size={28} className="text-purple-400" />
+              <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-indigo-800/30 backdrop-blur-sm hover:border-indigo-800/50 transition-colors group hover:shadow-lg hover:shadow-indigo-500/10">
+                <div className="w-14 h-14 rounded-xl bg-indigo-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Users size={28} className="text-indigo-400" />
                 </div>
                 <h3 className="text-3xl font-bold mb-2">400+</h3>
                 <p className="text-gray-400">Active DAO Members</p>
               </div>
               
-              <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-gray-800">
-                <div className="w-14 h-14 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4">
-                  <LayoutGrid size={28} className="text-blue-400" />
+              <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-purple-800/30 backdrop-blur-sm hover:border-purple-800/50 transition-colors group hover:shadow-lg hover:shadow-purple-500/10">
+                <div className="w-14 h-14 rounded-xl bg-purple-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <LayoutGrid size={28} className="text-purple-400" />
                 </div>
                 <h3 className="text-3xl font-bold mb-2">50+</h3>
                 <p className="text-gray-400">DAOs Launched</p>
               </div>
               
-              <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-gray-800">
-                <div className="w-14 h-14 rounded-xl bg-green-500/10 flex items-center justify-center mb-4">
-                  <Zap size={28} className="text-green-400" />
+              <div className="bg-[#1a1a1a] p-8 rounded-2xl border border-pink-800/30 backdrop-blur-sm hover:border-pink-800/50 transition-colors group hover:shadow-lg hover:shadow-pink-500/10">
+                <div className="w-14 h-14 rounded-xl bg-pink-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Zap size={28} className="text-pink-400" />
                 </div>
                 <h3 className="text-3xl font-bold mb-2">200+</h3>
                 <p className="text-gray-400">Successful Proposals</p>
@@ -358,7 +403,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
               <div className="mt-6 md:mt-0">
                 <button
                   onClick={openCreateDaoModal}
-                  className="px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-medium hover:opacity-90 transition-colors"
+                  className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:opacity-90 transition-colors shadow-lg shadow-indigo-500/20"
                 >
                   Create DAO
                 </button>
@@ -373,7 +418,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
                     key={filter}
                     className={`px-6 py-2 rounded-md transition-all ${
                       activeFilter === filter 
-                        ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white font-medium' 
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium' 
                         : 'text-gray-300 hover:text-white'
                     }`}
                     onClick={() => setActiveFilter(filter)}
@@ -389,7 +434,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
                   placeholder="Search DAOs..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-[#151515] border border-gray-700 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full bg-[#151515] border border-indigo-700/30 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
               </div>
@@ -398,7 +443,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
             {/* Loading state */}
             {isLoading && (
               <div className="flex flex-col items-center justify-center py-12">
-                <div className="w-12 h-12 rounded-full border-t-2 border-l-2 border-purple-600 animate-spin mb-4"></div>
+                <div className="w-12 h-12 rounded-full border-t-2 border-l-2 border-indigo-600 animate-spin mb-4"></div>
                 <p className="text-gray-400">Loading DAOs...</p>
               </div>
             )}
@@ -443,10 +488,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
                       className="group cursor-pointer"
                       onClick={() => onEnterDashboard(dao.daoId)}
                     >
-                      <Card className="h-full transition-all hover:border-purple-500 overflow-hidden flex flex-col bg-[#151515] border-gray-800">
+                      <Card className="h-full transition-all hover:border-indigo-500 overflow-hidden flex flex-col bg-[#151515] border-indigo-800/30 backdrop-blur-sm hover:shadow-lg hover:shadow-indigo-500/10">
                         {/* Card Header */}
                         <div className="p-5 border-b border-[#222] flex items-center">
-                          <div className="h-12 w-12 rounded-full overflow-hidden bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mr-4 text-white font-medium text-lg">
+                          <div className="h-12 w-12 rounded-full overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center mr-4 text-white font-medium text-lg">
                             {dao.profilePicture ? (
                               <img 
                                 src={dao.profilePicture} 
@@ -465,7 +510,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
                             )}
                           </div>
                           <div>
-                            <h3 className="text-xl font-semibold text-white group-hover:text-purple-400 transition-colors">
+                            <h3 className="text-xl font-semibold text-white group-hover:text-indigo-400 transition-colors">
                               {dao.name}
                             </h3>
                             <div className="flex mt-1 space-x-2">
@@ -500,7 +545,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
                           <span className="text-sm text-gray-400">
                             {dao.isActive ? 'Active' : 'Inactive'}
                           </span>
-                          <div className="flex items-center text-purple-500 font-medium">
+                          <div className="flex items-center text-indigo-500 font-medium">
                             <span className="mr-2">Enter DAO</span>
                             <ArrowRight size={16} />
                           </div>
@@ -535,7 +580,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-12">
               <div className="flex flex-col items-start">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center mb-6">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center mb-6">
                   <Users size={24} className="text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-4">Member Management</h3>
@@ -545,7 +590,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
               </div>
               
               <div className="flex flex-col items-start">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center mb-6">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center mb-6">
                   <Shield size={24} className="text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-4">Governance</h3>
@@ -555,7 +600,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
               </div>
               
               <div className="flex flex-col items-start">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-600 to-red-600 flex items-center justify-center mb-6">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-pink-600 to-rose-600 flex items-center justify-center mb-6">
                   <Heart size={24} className="text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-4">Community Building</h3>
@@ -565,7 +610,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
               </div>
               
               <div className="flex flex-col items-start">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center mb-6">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-600 to-cyan-600 flex items-center justify-center mb-6">
                   <Zap size={24} className="text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-4">Token Integration</h3>
@@ -575,7 +620,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
               </div>
               
               <div className="flex flex-col items-start">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-600 to-amber-600 flex items-center justify-center mb-6">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-600 to-orange-600 flex items-center justify-center mb-6">
                   <Globe size={24} className="text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-4">Global Accessibility</h3>
@@ -585,7 +630,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
               </div>
               
               <div className="flex flex-col items-start">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center mb-6">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-600 to-green-600 flex items-center justify-center mb-6">
                   <LayoutGrid size={24} className="text-white" />
                 </div>
                 <h3 className="text-xl font-bold mb-4">Modular Design</h3>
@@ -599,9 +644,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
         
         {/* CTA Section */}
         <section className="py-20 px-8 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-900/20 to-blue-900/20"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-indigo-900/20 to-purple-900/20"></div>
           <div className="container mx-auto relative z-10">
-            <div className="bg-gradient-to-br from-[#1a1a1a] to-[#131313] rounded-3xl p-12 border border-gray-800">
+            <div className="bg-gradient-to-br from-[#1a1a1a] to-[#131313] rounded-3xl p-12 border border-indigo-800/30 backdrop-blur-sm">
               <div className="max-w-3xl mx-auto text-center">
                 <h2 className="text-3xl font-bold mb-6">Ready to launch your DAO?</h2>
                 <p className="text-xl text-gray-300 mb-8">
@@ -612,7 +657,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
                     variant="primary"
                     size="lg"
                     onClick={() => setIsCreateDaoModalOpen(true)}
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
                   >
                     Create a DAO
                   </Button>
@@ -623,7 +668,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }) => {
         </section>
         
         {/* Footer */}
-        <footer className="py-12 px-8 bg-[#0a0a0a] border-t border-gray-800">
+        <footer className="py-12 px-8 bg-[#0a0a0a] border-t border-indigo-800/20">
           <div className="container mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-center">
               <div className="flex items-center mb-6 md:mb-0">

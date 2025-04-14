@@ -1,0 +1,35 @@
+import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
+
+const VoteRightsStep: OnboardingStep = {
+  id: 'dao-vote-rights',
+  messages: [
+    {
+      content: "Who gets to cast their vote in your DAO?",
+      options: [
+        "Selective - Only specific members can vote",
+        "Election - Members elect representatives who vote",
+        "Every Member - All members can vote on decisions"
+      ]
+    }
+  ],
+  onResponse: (response: string) => {
+    let responseMessage = "";
+    let nextStep: StepId = 'dao-voting-power'; // Default next step
+    
+    if (response.startsWith("Selective")) {
+      responseMessage = "You've chosen selective voting. This approach ensures that only qualified or designated members make critical decisions, streamlining the process.";
+    } else if (response.startsWith("Election")) {
+      responseMessage = "You've chosen representative democracy. Members elect trusted individuals to vote on their behalf, creating an efficient governance system while maintaining indirect member influence.";
+    } else if (response.startsWith("Every Member")) {
+      responseMessage = "You've chosen full democratic participation. All members get a voice in decision-making, maximizing inclusivity and collective wisdom.";
+      nextStep = 'dao-survalidation'; // If everyone votes, ask about survalidation
+    }
+    
+    return {
+      responseMessage,
+      nextStep
+    };
+  }
+};
+
+export default VoteRightsStep; 

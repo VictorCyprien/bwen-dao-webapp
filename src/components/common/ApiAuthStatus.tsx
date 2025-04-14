@@ -87,7 +87,7 @@ const ApiAuthStatus: React.FC<ApiAuthStatusProps> = ({
           onClick={() => setMenuOpen(!menuOpen)}
         >
           <UserCircle size={18} className="text-purple-400" />
-          <span className="text-sm">Logged as <span className="font-bold">{displayUsername}</span></span>
+          <span className="text-sm font-bold">{displayUsername}</span>
           <ChevronDown size={16} className={`transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
         </button>
 
