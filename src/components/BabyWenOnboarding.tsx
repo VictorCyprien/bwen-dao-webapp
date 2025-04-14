@@ -461,6 +461,23 @@ const BabyWenOnboarding: React.FC = () => {
           // Store the DAO ID for the success step to use
           sessionStorage.setItem('createdDaoId', daoId);
           
+          // Clear all form data from sessionStorage but keep the created DAO ID
+          const keysToRemove = [
+            // Basic information
+            'daoName', 'daoDescription', 'daoLogo', 
+            // Social links
+            'daoTwitter', 'daoDiscord', 'daoWebsite', 'daoTelegram', 'daoInstagram', 'daoTiktok',
+            // Token information
+            'hasExistingToken', 'tokenAddress', 'tokenName', 'tokenTicker',
+            // Membership information
+            'membershipConditions', 'tokenThreshold', 'applicationApproval',
+            // Governance information
+            'governanceModel', 'ideaRights', 'voteRights', 'survalidation', 'votingPower', 'voteDelegation'
+          ];
+          
+          // Remove each key
+          keysToRemove.forEach(key => sessionStorage.removeItem(key));
+          
           // Show success message and change to success step
           setCurrentStep('dao-success');
           
