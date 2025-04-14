@@ -1,0 +1,87 @@
+/**
+ * Sound Service
+ * Handles all API interactions related to playing sounds
+ */
+
+import { 
+  createConfiguration,
+  DefaultApi
+} from '../core/modules/bwen-voice';
+import { ServerConfiguration } from '../core/modules/bwen-voice/servers';
+
+// Default API endpoint - now using the proxy URL
+const DEFAULT_API_ENDPOINT = '/sound';
+
+/**
+ * SoundService handles audio playback operations
+ */
+export class SoundService {
+  private apiEndpoint: string;
+  private soundApi: DefaultApi;
+
+  constructor(apiEndpoint: string = DEFAULT_API_ENDPOINT) {
+    this.apiEndpoint = apiEndpoint;
+    
+    // Create configuration for the API with custom base URL
+    const serverConfig = new ServerConfiguration(this.apiEndpoint, {});
+    const configuration = createConfiguration({
+      baseServer: serverConfig
+    });
+    
+    // Initialize API client
+    this.soundApi = new DefaultApi(configuration);
+  }
+
+  /**
+   * Set the API endpoint and reinitialize API client
+   */
+  setApiEndpoint(endpoint: string): void {
+    this.apiEndpoint = endpoint;
+    
+    // Create new configuration with updated endpoint
+    const serverConfig = new ServerConfiguration(this.apiEndpoint, {});
+    const configuration = createConfiguration({
+      baseServer: serverConfig
+    });
+    
+    // Reinitialize API client
+    this.soundApi = new DefaultApi(configuration);
+  }
+
+  /**
+   * Play a sound by filename
+   * @param filename The name of the audio file to play
+   * @returns Promise resolving to true if successful, or false with an error message
+   */
+  async play(filename: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Call the play endpoint with the filename
+      await this.soundApi.playAudioPlayPost(filename);
+      return { success: true };
+    } catch (error) {
+      console.error('Error playing sound:', error);
+      
+      // Extract error message from the API response if available
+      let errorMessage = 'Failed to play sound';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        // Try to extract API error message
+        const anyError = error as any;
+        if (anyError.body?.message) {
+          errorMessage = anyError.body.message;
+        } else if (anyError.message) {
+          errorMessage = anyError.message;
+        }
+      }
+      
+      return { success: false, error: errorMessage };
+    }
+  }
+}
+
+// Create a singleton instance
+export const soundService = new SoundService();
+
+// Export default for convenience
+export default soundService; 
