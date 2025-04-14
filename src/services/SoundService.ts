@@ -98,6 +98,36 @@ export class SoundService {
       return { success: false, error: errorMessage };
     }
   }
+
+  /**
+   * Stop any currently playing audio
+   * @returns Promise resolving to true if successful, or false with an error message
+   */
+  async stop(): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Call the stop endpoint to stop any playing audio
+      await this.soundApi.stopAudioStopPost();
+      return { success: true };
+    } catch (error) {
+      console.error('Error stopping audio playback:', error);
+      
+      // Extract error message from the API response if available
+      let errorMessage = 'Failed to stop audio';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        // Try to extract API error message
+        const anyError = error as any;
+        if (anyError.body?.message) {
+          errorMessage = anyError.body.message;
+        } else if (anyError.message) {
+          errorMessage = anyError.message;
+        }
+      }
+      
+      return { success: false, error: errorMessage };
+    }
+  }
 }
 
 // Create a singleton instance
