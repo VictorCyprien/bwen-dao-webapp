@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React from 'react';
 import { Info } from 'lucide-react';
 import ReactDOM from 'react-dom';
 
@@ -86,7 +86,7 @@ const MultiChoiceInput: React.FC<MultiChoiceInputProps> = ({
 
   // Function to handle info button click
   const handleInfoClick = (e: React.MouseEvent, title: string): void => {
-    e.stopPropagation(); // Prevent the button click from triggering the parent
+    e.stopPropagation(); // Prevent the click from triggering the parent button
     const baseTitle = getBaseTitle(title);
     
     // Type assertion to satisfy TypeScript
@@ -128,27 +128,27 @@ const MultiChoiceInput: React.FC<MultiChoiceInputProps> = ({
             const colSpanClass = isLastItem ? "md:col-span-2 md:max-w-md md:mx-auto md:w-full" : "";
             
             return (
-              <button
+              <div
                 key={index}
                 onClick={() => onSelect(option)}
-                className={`text-left p-4 bg-gradient-to-r from-indigo-600/20 to-purple-600/20 hover:from-indigo-600/30 hover:to-purple-600/30 border border-indigo-500/30 rounded-lg transition-colors relative ${colSpanClass}`}
+                className={`text-left p-4 bg-gradient-to-r from-indigo-600/20 to-purple-600/20 hover:from-indigo-600/30 hover:to-purple-600/30 border border-indigo-500/30 rounded-lg transition-colors relative cursor-pointer ${colSpanClass}`}
               >
                 <div className="flex justify-between items-start mb-1">
                   <div className="font-medium text-white">{title}</div>
                   {showInfoButton && (
-                    <button 
+                    <div 
                       onClick={(e) => handleInfoClick(e, baseTitle)}
-                      className="p-1 rounded-full bg-indigo-600/30 hover:bg-indigo-600/50 transition-colors"
+                      className="p-1 rounded-full bg-indigo-600/30 hover:bg-indigo-600/50 transition-colors cursor-pointer"
                       aria-label={`More info about ${baseTitle}`}
                     >
                       <Info size={16} className="text-white/80" />
-                    </button>
+                    </div>
                   )}
                 </div>
                 {description && (
                   <div className="text-white/70 text-sm">{description}</div>
                 )}
-              </button>
+              </div>
             );
           })}
         </div>
@@ -160,13 +160,13 @@ const MultiChoiceInput: React.FC<MultiChoiceInputProps> = ({
               const { title, description } = parseOption(option);
               
               return (
-                <button
+                <div
                   key={`custom-${index}`}
                   onClick={() => onSelect(option)}
-                  className="text-sm px-3 py-1.5 bg-[#222]/40 hover:bg-[#333]/60 border border-gray-700/20 rounded-md text-white/50 hover:text-white/70 transition-colors"
+                  className="text-sm px-3 py-1.5 bg-[#222]/40 hover:bg-[#333]/60 border border-gray-700/20 rounded-md text-white/50 hover:text-white/70 transition-colors cursor-pointer"
                 >
                   <span>{title}</span>
-                </button>
+                </div>
               );
             })}
           </div>
