@@ -210,13 +210,18 @@ const BabyWenOnboarding: React.FC = () => {
 
   // Function to determine the input type based on the step
   const determineInputType = (step: OnboardingStep) => {
+    if (!step) {
+      setInputType('text'); // Default to text input if step is undefined
+      return;
+    }
+    
     if (step.formFields) {
       setInputType('form');
     } else if (step.buttonAction) {
       setInputType('button');
     } else if (step.multiSelectOptions) {
       setInputType('multiSelect');
-    } else if (step.messages[0].options) {
+    } else if (step.messages?.[0]?.options) {
       setInputType('multiChoice');
     } else {
       setInputType('text');
@@ -480,28 +485,28 @@ const BabyWenOnboarding: React.FC = () => {
             <MultiChoiceInput
               options={lastMessage?.options || []}
               onSelect={handleOptionClick}
-              optionDetails={currentStepObj.optionDetails}
+              optionDetails={currentStepObj?.optionDetails || {}}
             />
           )}
           
           {inputType === 'form' && (
             <FormInput
-              fields={currentStepObj.formFields || []}
+              fields={currentStepObj?.formFields || []}
               onSubmit={handleFormSubmit}
             />
           )}
           
           {inputType === 'button' && (
             <ButtonAction
-              label={currentStepObj.buttonAction?.label || 'Click Me'}
+              label={currentStepObj?.buttonAction?.label || 'Click Me'}
               onClick={handleButtonAction}
-              variant={currentStepObj.buttonAction?.variant as ButtonVariant || 'primary'}
+              variant={currentStepObj?.buttonAction?.variant as ButtonVariant || 'primary'}
             />
           )}
           
           {inputType === 'multiSelect' && (
             <MultiSelect
-              options={currentStepObj.multiSelectOptions || []}
+              options={currentStepObj?.multiSelectOptions || []}
               onSubmit={handleMultiSelectSubmit}
             />
                           )}
@@ -610,7 +615,6 @@ const BabyWenOnboarding: React.FC = () => {
             <div className="absolute top-[30%] left-[10%] w-[40%] h-[30%] bg-gradient-to-r from-amber-600/10 to-orange-600/5 rounded-full blur-[80px] animate-float"></div>
             <div className="absolute bottom-[20%] right-[15%] w-[35%] h-[25%] bg-gradient-to-l from-emerald-600/10 to-green-600/5 rounded-full blur-[80px] animate-float-delayed"></div>
                     </div>
-                    
           
           {/* Back button */}
           <button 
