@@ -36,3 +36,4 @@ node_modules/.vite/
 .vite_cache/
 program_docs.md
 dao-webapp.service
+dao-webapp.nginx.conf
