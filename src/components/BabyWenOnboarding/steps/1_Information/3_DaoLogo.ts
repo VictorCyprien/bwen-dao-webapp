@@ -17,8 +17,27 @@ const DaoLogoStep: OnboardingStep = {
     }
   ],
   onResponse: (response: string) => {
-    // Return empty object to skip response message
-    return {};
+    try {
+      const data = JSON.parse(response);
+      
+      // Store the logo info in sessionStorage if available
+      if (data.daoLogo) {
+        // In a real app, the file would be uploaded to a server
+        // and we'd store the URL. For now, just store that it was uploaded
+        sessionStorage.setItem('daoLogo', 'logo_uploaded');
+      }
+      
+      return {
+        responseMessage: "Perfect! Your logo looks great. Now let's add some social links for your DAO.",
+        nextStep: 'dao-social'
+      };
+    } catch (e) {
+      // If there was an error, continue anyway
+      return {
+        responseMessage: "Let's continue and add some social links for your DAO.",
+        nextStep: 'dao-social'
+      };
+    }
   }
 };
 

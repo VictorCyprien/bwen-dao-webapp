@@ -37,8 +37,8 @@ const TokenTickerStep: OnboardingStep = {
       const data = JSON.parse(response);
       const tokenTicker = data.tokenTicker;
       
-      // Save token ticker to context or state if needed
-      // sessionStorage.setItem('tokenTicker', tokenTicker);
+      // Save token ticker to sessionStorage
+      sessionStorage.setItem('tokenTicker', tokenTicker);
       
       return {
         responseMessage: `Perfect! Your token will use the ticker symbol "${tokenTicker}". Now let's set up membership conditions.`,

@@ -13,6 +13,10 @@ const SurvalidationStep: OnboardingStep = {
     }
   ],
   onResponse: (response: string) => {
+    // Store whether survalidation is enabled
+    const survalidationEnabled = response.startsWith("Yes");
+    sessionStorage.setItem('survalidation', survalidationEnabled.toString());
+    
     let responseMessage = "";
     let nextStep: StepId = 'dao-voting-power'; // Go to voting power distribution step
     

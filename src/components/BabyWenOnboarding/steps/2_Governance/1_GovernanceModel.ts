@@ -85,6 +85,7 @@ const GovernanceModelStep: OnboardingStep = {
   onResponse: (response: string) => {
     // Extract the governance model type from the response
     const governanceType = response.split(' - ')[0];
+    sessionStorage.setItem('governanceModel', governanceType);
     
     // Process the selection
     let responseMessage = "";

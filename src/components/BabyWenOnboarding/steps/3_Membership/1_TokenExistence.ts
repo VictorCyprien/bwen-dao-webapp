@@ -17,8 +17,10 @@ const TokenExistenceStep: OnboardingStep = {
     
     if (response.startsWith("Yes")) {
       responseMessage = "Great! Let's use your existing token for DAO membership.";
+      sessionStorage.setItem('hasExistingToken', 'true');
     } else if (response.startsWith("No")) {
       responseMessage = "No problem! We'll create a new token for your DAO.";
+      sessionStorage.setItem('hasExistingToken', 'false');
       nextStep = 'dao-token-name';
     }
     

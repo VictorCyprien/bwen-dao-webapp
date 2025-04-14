@@ -275,6 +275,19 @@ const DaoSocialStep: OnboardingStep = {
         .filter(([_, value]) => value !== '')
         .map(([key, value]) => `${key}: ${value}`)
         .join(', ');
+
+      // Store social links in sessionStorage
+      if (data.websiteUrl) {
+        sessionStorage.setItem('websiteUrl', data.websiteUrl);
+      }
+      if (data.twitterUrl) {
+        sessionStorage.setItem('twitterUrl', data.twitterUrl);
+      }
+      if (data.discordUrl) {
+        sessionStorage.setItem('discordUrl', data.discordUrl);
+      }
+
+      // TODO: Add other social links later
       
       const responseMessage = socialLinks 
         ? `I've saved your social links: ${socialLinks}. Now let's set up your governance model!` 
