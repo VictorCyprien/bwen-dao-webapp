@@ -85,6 +85,9 @@ const BabyWenOnboarding: React.FC = () => {
   // Navigation
   const navigate = useNavigate();
   
+  // Track last played sound to prevent duplicates
+  const [lastPlayedStepSound, setLastPlayedStepSound] = React.useState<StepId | null>(null);
+
   // Active section for sidebar highlight
   const [activeSection, setActiveSection] = React.useState<string>('dashboard');
   
@@ -196,12 +199,27 @@ const BabyWenOnboarding: React.FC = () => {
     
     // Play sound for the first step using the step ID
     const firstStepId: StepId = 'dao-name';
-    soundService.play(`${firstStepId}.mp3`).catch(error => {
-      console.warn(`Could not play sound for step ${firstStepId}:`, error);
-    });
+    
+    // Play sound and set as last played
+    playStepSound(firstStepId);
     
     // Determine the input type based on the step
     determineInputType(steps['dao-name']);
+  };
+
+  // Function to play sound for a step and prevent duplicates
+  const playStepSound = (stepId: StepId) => {
+    // Only play if this is a different step than the last played sound
+    if (stepId !== lastPlayedStepSound) {
+      soundService.play(`${stepId}.mp3`)
+        .then(() => {
+          // Update last played step
+          setLastPlayedStepSound(stepId);
+        })
+        .catch(error => {
+          console.warn(`Could not play sound for step ${stepId}:`, error);
+        });
+    }
   };
 
   // Check for wallet changes during onboarding
@@ -268,8 +286,9 @@ const BabyWenOnboarding: React.FC = () => {
     
     // If there's a response message, simulate BabyWen typing
     if (result.responseMessage) {
-      // Pass current step ID for audio
-      await simulateBabyWenTyping(result.responseMessage, undefined, currentStep);
+      // For response messages, we don't change the step, so don't pass a stepId
+      // This ensures we don't play the sound again for the same step
+      await simulateBabyWenTyping(result.responseMessage);
     }
     
     // Define the flow order centrally
@@ -410,20 +429,21 @@ const BabyWenOnboarding: React.FC = () => {
     setIsTyping(true);
     setShowInput(false);
     
+    // Stop any currently playing sound when BabyWen starts typing
+    soundService.stop().catch(error => {
+      console.warn('Error stopping audio playback:', error);
+    });
+    
     // Ensure loading shows for at least 1 second
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Update messages with new content
     setMessages((prev: Message[]) => [...prev, { sender: 'babywen' as const, text: message, options }]);
     
-    // Play sound for the current step
-    // If stepId is provided, use it; otherwise, use currentStep from state
-    const audioStepId = stepId || currentStep;
-    
-    // Play the audio file named after the step ID (e.g., dao-name.mp3)
-    soundService.play(`${audioStepId}.mp3`).catch(error => {
-      console.warn(`Could not play sound for step ${audioStepId}:`, error);
-    });
+    // Play sound for the current step if a new stepId is provided
+    if (stepId) {
+      playStepSound(stepId);
+    }
     
     // Immediate transition to show input
     setIsTyping(false);
@@ -466,6 +486,9 @@ const BabyWenOnboarding: React.FC = () => {
     // Update state
     setStepHistory(newHistory);
     setCurrentStep(previousStepId);
+    
+    // Reset last played sound to ensure we can hear the previous step sound
+    setLastPlayedStepSound(null);
     
     // Clear messages and show the previous step's first message
     setMessages([]);
