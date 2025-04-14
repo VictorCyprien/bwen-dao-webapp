@@ -6,6 +6,8 @@ import useApiAndWallet from '../hooks/useApiAndWallet';
 import ApiAuthStatus from './common/ApiAuthStatus';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { soundService } from '../services/SoundService';
+import { userService } from '../services/UserService';
+import { daosService } from '../services/DaosService';
 
 // Import components for the onboarding experience
 
@@ -14,6 +16,7 @@ import MultiChoiceInput from './BabyWenOnboarding/components/MultiChoiceInput';
 import FormInput, { FormField } from './BabyWenOnboarding/components/FormInput';
 import ButtonAction from './BabyWenOnboarding/components/ButtonAction';
 import MultiSelect from './BabyWenOnboarding/components/MultiSelect';
+import DaoReviewDisplay from './BabyWenOnboarding/components/DaoReviewDisplay';
 
 // Import the DAO introduction steps
 import DaoNameStep from './BabyWenOnboarding/steps/1_Information/1_DaoName';
@@ -39,13 +42,18 @@ import MembershipConditionsStep from './BabyWenOnboarding/steps/3_Membership/2_M
 import TokenThresholdStep from './BabyWenOnboarding/steps/3_Membership/2.1_TokenThreshold';
 import ApplicationApprovalStep from './BabyWenOnboarding/steps/3_Membership/2.2_ApplicationApproval';
 
+// Import the final review step
+import DaoReviewStep from './BabyWenOnboarding/steps/4_Review/DaoReviewStep';
+import DaoSuccessStep from './BabyWenOnboarding/steps/4_Review/DaoSuccessStep';
+import { InputCreateDAO } from '../core/modules/dao-api';
+
 // Types for the onboarding flow
 export type StepId = 'dao-name' | 'dao-description' | 'dao-logo' | 'dao-social' | 
                      'dao-governance-model' | 'dao-idea-rights' | 'dao-vote-rights' | 
                      'dao-survalidation' | 'dao-voting-power' | 'dao-vote-delegation' |
                      'dao-token-existence' | 'dao-token-address' | 'dao-token-name' | 
                      'dao-token-ticker' | 'dao-membership-conditions' | 'dao-token-threshold' |
-                     'dao-application-approval';
+                     'dao-application-approval' | 'dao-review' | 'dao-success';
 
 // Button action variants
 export type ButtonVariant = 'primary' | 'secondary' | 'danger';
@@ -100,6 +108,7 @@ const BabyWenOnboarding: React.FC = () => {
   const [showExitConfirmation, setShowExitConfirmation] = React.useState<boolean>(false);
   const [showInput, setShowInput] = React.useState<boolean>(false); // Start with input hidden
   const [inputType, setInputType] = React.useState<'text' | 'multiChoice' | 'form' | 'button' | 'multiSelect'>('text');
+  const [redirectCountdown, setRedirectCountdown] = React.useState<number>(10); // Countdown timer for redirect
   
   // Animation states
   const [hasAnimatedIn, setHasAnimatedIn] = React.useState<boolean>(false);
@@ -118,7 +127,7 @@ const BabyWenOnboarding: React.FC = () => {
   const [showWalletChangeError, setShowWalletChangeError] = React.useState<boolean>(false);
   
   // Get API and wallet status
-  const { apiStatus, userDisplayInfo, connected, publicKey } = useApiAndWallet();
+  const { apiStatus, userDisplayInfo, connected, publicKey, userInfo } = useApiAndWallet();
   
   // Check if wallet is connected
   const isWalletConnected = userDisplayInfo?.isAuthenticated || false;
@@ -157,7 +166,9 @@ const BabyWenOnboarding: React.FC = () => {
     'dao-token-ticker': TokenTickerStep,
     'dao-membership-conditions': MembershipConditionsStep,
     'dao-token-threshold': TokenThresholdStep,
-    'dao-application-approval': ApplicationApprovalStep
+    'dao-application-approval': ApplicationApprovalStep,
+    'dao-review': DaoReviewStep,
+    'dao-success': DaoSuccessStep
   };
 
   // Start onboarding after welcome modal is closed
@@ -246,6 +257,11 @@ const BabyWenOnboarding: React.FC = () => {
       return;
     }
     
+    // Special handling for review step
+    if (step.id === 'dao-review') {
+      setInputType('button');
+    }
+    
     if (step.formFields) {
       setInputType('form');
     } else if (step.buttonAction) {
@@ -319,7 +335,10 @@ const BabyWenOnboarding: React.FC = () => {
         'dao-vote-rights',
         'dao-survalidation',  // Only shown conditionally
         'dao-voting-power',
-        'dao-vote-delegation'
+        'dao-vote-delegation',
+        
+        // Final review step
+        'dao-review'
       ];
       
       // Find current step index
@@ -393,9 +412,114 @@ const BabyWenOnboarding: React.FC = () => {
     
     if (step.buttonAction?.action === 'showAlert') {
       alert('Hello World! This is a special message just for you!');
+    } else if (step.buttonAction?.action === 'createDao') {
+      // This is where we would call the DAO creation service
+      console.log('Creating DAO with collected data from sessionStorage');
+      
+      // Get data from sessionStorage
+      const collectedData : InputCreateDAO = {
+        // Basic DAO Info
+        name: sessionStorage.getItem('daoName') || '',
+        description: sessionStorage.getItem('daoDescription') || '',
+        //profile
+        discordServer: sessionStorage.getItem('daoDiscord') || '',
+        twitter: sessionStorage.getItem('daoTwitter') || '',
+        website: sessionStorage.getItem('daoWebsite') || '',
+        telegram: sessionStorage.getItem('daoTelegram') || '',
+        tiktok: sessionStorage.getItem('daoTiktok') || '',
+        instagram: sessionStorage.getItem('daoInstagram') || '',
+        ownerId: userInfo?.userId,
+      };
+      
+      // Add user message indicating button was clicked
+      setMessages((prev: Message[]) => [...prev, { 
+        sender: 'user' as const, 
+        text: `Clicked: ${step.buttonAction?.label}` 
+      }]);
+      
+      // Show loading state
+      setIsTyping(true);
+      setShowInput(false);
+      
+      // Call the DAO creation service
+      daosService.createDao({
+        name: collectedData.name,
+        description: collectedData.description,
+        userId: collectedData.ownerId || '',
+        treasury: undefined,
+        discordServer: collectedData.discordServer,
+        twitter: collectedData.twitter,
+        telegram: collectedData.telegram,
+        instagram: collectedData.instagram,
+        tiktok: collectedData.tiktok,
+        website: collectedData.website
+      }).then(result => {
+        if (result) {
+          const daoId = result.daoId?.toString() || '';
+          console.log('DAO created with ID:', daoId);
+          
+          // Store the DAO ID for the success step to use
+          sessionStorage.setItem('createdDaoId', daoId);
+          
+          // Show success message and change to success step
+          setCurrentStep('dao-success');
+          
+          // Update step history
+          setStepHistory((prev: StepId[]) => [...prev, 'dao-success']);
+          
+          // Show the success message
+          simulateBabyWenTyping(steps['dao-success'].messages[0].content, undefined, 'dao-success');
+          
+          // Determine the input type for the success step
+          determineInputType(steps['dao-success']);
+          
+          // Reset countdown
+          setRedirectCountdown(10);
+          
+          // Start countdown timer
+          const countdownInterval = setInterval(() => {
+            setRedirectCountdown((prevCount: number) => {
+              const newCount = prevCount - 1;
+              if (newCount <= 0) {
+                clearInterval(countdownInterval);
+              }
+              return newCount;
+            });
+          }, 1000);
+          
+          // Set a timeout to redirect after 10 seconds
+          setTimeout(() => {
+            clearInterval(countdownInterval);
+            navigate(`/daos/${daoId}`);
+          }, 10000); // 10 second delay before redirect
+        } else {
+          // Show error message
+          simulateBabyWenTyping("I'm sorry, there was an error creating your DAO. Please try again.");
+          setShowInput(true);
+        }
+      }).catch(error => {
+        console.error('Error creating DAO:', error);
+        // Show error message
+        simulateBabyWenTyping("I'm sorry, there was an error creating your DAO. Please try again.");
+        setShowInput(true);
+      });
+      
+      return; // Exit early to avoid duplicate messages
+    } else if (step.buttonAction?.action === 'goToDashboard') {
+      // Get the created DAO ID
+      const daoId = sessionStorage.getItem('createdDaoId') || '';
+      
+      // Navigate to the DAO dashboard
+      if (daoId) {
+        navigate(`/daos/${daoId}`);
+      } else {
+        navigate('/dashboard');
+      }
+      
+      return; // Exit early
     }
     
-    // Add user message indicating button was clicked
+    // For non-special actions, add user message and process response
     setMessages((prev: Message[]) => [...prev, { 
       sender: 'user' as const, 
       text: `Clicked: ${step.buttonAction?.label}` 
@@ -517,6 +641,71 @@ const BabyWenOnboarding: React.FC = () => {
     
     // Show back button (only if we have a step history)
     const canGoBack = stepHistory.length > 1;
+    
+    // If we're on the success step, show the countdown
+    if (currentStep === 'dao-success') {
+      return (
+        <>
+          <div className="w-full mb-6">
+            <div className="bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-xl p-6 border border-indigo-500/30">
+              <div className="flex items-center justify-center mb-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </div>
+              <h3 className="text-xl font-semibold text-center text-white mb-2">DAO Created Successfully!</h3>
+              <p className="text-indigo-200 text-center mb-4">
+                Your DAO is now live and ready to use.
+              </p>
+              <div className="flex justify-center mb-2">
+                <div className="bg-indigo-900/40 rounded-full px-4 py-2 text-indigo-200">
+                  Redirecting in <span className="font-bold text-white">{redirectCountdown}</span> seconds
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="w-full">
+            <ButtonAction
+              label={currentStepObj?.buttonAction?.label || 'Go to Dashboard Now'}
+              onClick={handleButtonAction}
+              variant={currentStepObj?.buttonAction?.variant as ButtonVariant || 'primary'}
+            />
+          </div>
+        </>
+      );
+    }
+    
+    // If we're on the review step, show the DAO Review Display above the button
+    if (currentStep === 'dao-review') {
+      return (
+        <>
+          <div className="w-full mb-6">
+            <DaoReviewDisplay />
+          </div>
+          <div className="w-full">
+            <ButtonAction
+              label={currentStepObj?.buttonAction?.label || 'Create DAO'}
+              onClick={handleButtonAction}
+              variant={currentStepObj?.buttonAction?.variant as ButtonVariant || 'primary'}
+            />
+          </div>
+          
+          {/* Back button */}
+          {canGoBack && (
+            <div className="mt-3 flex justify-center">
+              <button
+                onClick={handleGoBack}
+                className="text-xs text-indigo-400/70 hover:text-indigo-300 transition-colors"
+              >
+                Go Back
+              </button>
+            </div>
+          )}
+        </>
+      );
+    }
     
     return (
       <>
