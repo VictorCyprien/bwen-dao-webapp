@@ -286,8 +286,12 @@ const DaoSocialStep: OnboardingStep = {
       if (data.discordUrl) {
         sessionStorage.setItem('discordUrl', data.discordUrl);
       }
-
-      // TODO: Add other social links later
+      if (data.telegramUrl) {
+        sessionStorage.setItem('telegramUrl', data.telegramUrl);
+      }
+      if (data.instagramUrl) {
+        sessionStorage.setItem('instagramUrl', data.instagramUrl);
+      }
       
       const responseMessage = socialLinks 
         ? `I've saved your social links: ${socialLinks}. Now let's set up your governance model!` 
