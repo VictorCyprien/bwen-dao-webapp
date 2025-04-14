@@ -35,12 +35,16 @@ import TokenNameStep from './BabyWenOnboarding/steps/3_Membership/1.21_TokenName
 import TokenTickerStep from './BabyWenOnboarding/steps/3_Membership/1.22_TokenTicker';
 import MembershipConditionsStep from './BabyWenOnboarding/steps/3_Membership/2_MembershipConditions';
 
+import TokenThresholdStep from './BabyWenOnboarding/steps/3_Membership/2.1_TokenThreshold';
+import ApplicationApprovalStep from './BabyWenOnboarding/steps/3_Membership/2.2_ApplicationApproval';
+
 // Types for the onboarding flow
 export type StepId = 'dao-name' | 'dao-description' | 'dao-logo' | 'dao-social' | 
                      'dao-governance-model' | 'dao-idea-rights' | 'dao-vote-rights' | 
                      'dao-survalidation' | 'dao-voting-power' | 'dao-vote-delegation' |
                      'dao-token-existence' | 'dao-token-address' | 'dao-token-name' | 
-                     'dao-token-ticker' | 'dao-membership-conditions';
+                     'dao-token-ticker' | 'dao-membership-conditions' | 'dao-token-threshold' |
+                     'dao-application-approval';
 
 // Button action variants
 export type ButtonVariant = 'primary' | 'secondary' | 'danger';
@@ -147,7 +151,9 @@ const BabyWenOnboarding: React.FC = () => {
     'dao-token-address': TokenAddressStep,
     'dao-token-name': TokenNameStep,
     'dao-token-ticker': TokenTickerStep,
-    'dao-membership-conditions': MembershipConditionsStep
+    'dao-membership-conditions': MembershipConditionsStep,
+    'dao-token-threshold': TokenThresholdStep,
+    'dao-application-approval': ApplicationApprovalStep
   };
 
   // Start onboarding after welcome modal is closed
@@ -509,19 +515,19 @@ const BabyWenOnboarding: React.FC = () => {
               options={currentStepObj?.multiSelectOptions || []}
               onSubmit={handleMultiSelectSubmit}
             />
-                          )}
-                      </div>
-                      
+          )}
+        </div>
+        
         {/* Back button */}
         {canGoBack && (
           <div className="mt-3 flex justify-center">
-          <button
+            <button
               onClick={handleGoBack}
               className="text-xs text-indigo-400/70 hover:text-indigo-300 transition-colors"
             >
               Go Back
-          </button>
-                          </div>
+            </button>
+          </div>
         )}
       </>
     );
@@ -548,9 +554,9 @@ const BabyWenOnboarding: React.FC = () => {
                 />
               ) : (
                 <WalletMultiButton className="wallet-adapter-button-custom" />
-                          )}
-                        </div>
-                        
+              )}
+            </div>
+            
             {/* Modal Content */}
             <div className="mb-8">
               <div className="flex items-start mb-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
@@ -564,10 +570,10 @@ const BabyWenOnboarding: React.FC = () => {
                   <p className="text-white/80 text-sm leading-relaxed mt-2">
                     The wallet you use will become the DAO's treasury wallet and will be used to deploy your 
                     DAO token contract. To protect your main assets, avoid using your primary wallet for this process.
-                          </p>
-                        </div>
-                      </div>
-                      
+                  </p>
+                </div>
+              </div>
+              
               <h3 className="text-lg font-medium mb-3 text-indigo-300">What to expect:</h3>
               <ul className="space-y-2 text-white/80 text-sm">
                 <li className="flex items-start">
@@ -583,7 +589,7 @@ const BabyWenOnboarding: React.FC = () => {
                   <span>Smart contract deployment for your DAO token and governance structure</span>
                 </li>
               </ul>
-                              </div>
+            </div>
             
             {/* Modal Footer */}
             <div className="flex items-center justify-between">
@@ -600,9 +606,9 @@ const BabyWenOnboarding: React.FC = () => {
               >
                 {isWalletConnected ? 'I Understand, Let\'s Begin' : 'Connect Wallet to Begin'}
               </button>
-                              </div>
-                              </div>
-                              </div>
+            </div>
+          </div>
+        </div>
       )}
       
       {/* Main Onboarding Content */}
@@ -614,7 +620,7 @@ const BabyWenOnboarding: React.FC = () => {
             <div className="absolute bottom-[-30%] left-[-20%] w-[80%] h-[70%] bg-gradient-to-tr from-teal-600/20 via-cyan-600/15 to-blue-600/10 rounded-full blur-[120px] animate-pulse-slow-delayed"></div>
             <div className="absolute top-[30%] left-[10%] w-[40%] h-[30%] bg-gradient-to-r from-amber-600/10 to-orange-600/5 rounded-full blur-[80px] animate-float"></div>
             <div className="absolute bottom-[20%] right-[15%] w-[35%] h-[25%] bg-gradient-to-l from-emerald-600/10 to-green-600/5 rounded-full blur-[80px] animate-float-delayed"></div>
-                    </div>
+          </div>
           
           {/* Back button */}
           <button 
@@ -630,15 +636,15 @@ const BabyWenOnboarding: React.FC = () => {
             {/* Video section - Top */}
             <div className="flex-none pt-12 flex items-center justify-center mb-0">
               <div className={`w-[350px] h-[350px] overflow-hidden transition-all duration-1000 ease-out ${showVideoAndQuestion ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-              <video 
-                autoPlay 
-                loop 
-                muted 
-                playsInline
-                className="w-full h-full object-cover rounded-3xl"
-              >
-                <source src="/assets/video_agent.webm" type="video/webm" />
-              </video>
+                <video 
+                  autoPlay 
+                  loop 
+                  muted 
+                  playsInline
+                  className="w-full h-full object-cover rounded-3xl"
+                >
+                  <source src="/assets/video_agent.webm" type="video/webm" />
+                </video>
               </div>
             </div>
 
@@ -720,23 +726,23 @@ const BabyWenOnboarding: React.FC = () => {
                 <h3 className="text-xl font-medium mb-4">Exit Confirmation</h3>
                 <p className="text-gray-300 mb-6">Are you sure you want to leave? Your progress will be lost.</p>
                 <div className="flex justify-end gap-4">
-                <button
+                  <button
                     onClick={cancelExit}
                     className="px-4 py-2 bg-[#333] hover:bg-[#444] text-white rounded-lg transition-colors"
-                >
+                  >
                     Cancel
-                </button>
+                  </button>
                   <button 
                     onClick={confirmExit}
                     className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg transition-colors"
                   >
                     Exit Anyway
                   </button>
+                </div>
+              </div>
             </div>
-            </div>
-        </div>
           )}
-      </div>
+        </div>
       )}
     </div>
   );
