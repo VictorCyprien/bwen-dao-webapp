@@ -194,9 +194,10 @@ const BabyWenOnboarding: React.FC = () => {
       }
     ]);
     
-    // Play sound for the first step
-    soundService.play('bwen.mp3').catch(error => {
-      console.error('Failed to play intro sound:', error);
+    // Play sound for the first step using the step ID
+    const firstStepId: StepId = 'dao-name';
+    soundService.play(`${firstStepId}.mp3`).catch(error => {
+      console.warn(`Could not play sound for step ${firstStepId}:`, error);
     });
     
     // Determine the input type based on the step
@@ -267,7 +268,8 @@ const BabyWenOnboarding: React.FC = () => {
     
     // If there's a response message, simulate BabyWen typing
     if (result.responseMessage) {
-      await simulateBabyWenTyping(result.responseMessage, undefined, result.nextStep);
+      // Pass current step ID for audio
+      await simulateBabyWenTyping(result.responseMessage, undefined, currentStep);
     }
     
     // Define the flow order centrally
@@ -326,6 +328,7 @@ const BabyWenOnboarding: React.FC = () => {
     // Show next step's message immediately
     if (nextStep) {
       const nextMessage = nextStep.messages[0];
+      // Pass the new step ID for audio
       await simulateBabyWenTyping(nextMessage.content, nextMessage.options, nextStepId);
       determineInputType(nextStep);
     }
@@ -400,7 +403,7 @@ const BabyWenOnboarding: React.FC = () => {
     // Process the selected options
     processUserResponse(optionsString);
   };
-  
+    
   // Simulate BabyWen typing with smoother transitions
   const simulateBabyWenTyping = async (message: string, options?: string[], stepId?: StepId) => {
     // Show loading immediately
@@ -413,18 +416,13 @@ const BabyWenOnboarding: React.FC = () => {
     // Update messages with new content
     setMessages((prev: Message[]) => [...prev, { sender: 'babywen' as const, text: message, options }]);
     
-    // Play sound for the specific step if provided, otherwise use generic message sound
-    const soundFile = stepId ? `${stepId}.wav` : 'message.wav';
-    soundService.play(soundFile).catch(error => {
-      // Fallback to generic message sound if step-specific sound fails
-      if (stepId) {
-        console.warn(`Sound file for step ${stepId} not found, using fallback`);
-        soundService.play('message.wav').catch(e => {
-          console.error('Failed to play fallback sound:', e);
-        });
-      } else {
-        console.error('Failed to play message sound:', error);
-      }
+    // Play sound for the current step
+    // If stepId is provided, use it; otherwise, use currentStep from state
+    const audioStepId = stepId || currentStep;
+    
+    // Play the audio file named after the step ID (e.g., dao-name.mp3)
+    soundService.play(`${audioStepId}.mp3`).catch(error => {
+      console.warn(`Could not play sound for step ${audioStepId}:`, error);
     });
     
     // Immediate transition to show input
@@ -475,6 +473,7 @@ const BabyWenOnboarding: React.FC = () => {
     // Show previous step's message
     if (previousStep) {
       const previousMessage = previousStep.messages[0];
+      // Pass the previous step ID for audio
       await simulateBabyWenTyping(previousMessage.content, previousMessage.options, previousStepId);
       determineInputType(previousStep);
     }
