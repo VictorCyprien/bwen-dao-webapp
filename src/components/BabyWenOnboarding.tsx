@@ -1,10 +1,11 @@
-import * as React from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { typography, ui, containers } from '../styles/theme';
 import { X, Shield, Wallet, LogOut, ChevronRight, AlertTriangle, User, ChevronDown } from 'lucide-react';
 import useApiAndWallet from '../hooks/useApiAndWallet';
 import ApiAuthStatus from './common/ApiAuthStatus';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { soundService } from '../services/SoundService';
 
 // Import components for the onboarding experience
 
@@ -193,6 +194,11 @@ const BabyWenOnboarding: React.FC = () => {
       }
     ]);
     
+    // Play sound for the first step
+    soundService.play('bwen.mp3').catch(error => {
+      console.error('Failed to play intro sound:', error);
+    });
+    
     // Determine the input type based on the step
     determineInputType(steps['dao-name']);
   };
@@ -244,7 +250,7 @@ const BabyWenOnboarding: React.FC = () => {
     
     // Add user message to chat
     const newUserMessage = { sender: 'user' as const, text: userInput.trim() };
-    setMessages(prev => [...prev, newUserMessage]);
+    setMessages((prev: Message[]) => [...prev, newUserMessage]);
     setUserInput('');
     
     // Process user input based on current step
@@ -261,7 +267,7 @@ const BabyWenOnboarding: React.FC = () => {
     
     // If there's a response message, simulate BabyWen typing
     if (result.responseMessage) {
-      await simulateBabyWenTyping(result.responseMessage);
+      await simulateBabyWenTyping(result.responseMessage, undefined, result.nextStep);
     }
     
     // Define the flow order centrally
@@ -312,7 +318,7 @@ const BabyWenOnboarding: React.FC = () => {
     const nextStep = steps[nextStepId as keyof typeof steps];
     
     // Update step history
-    setStepHistory(prev => [...prev, nextStepId]);
+    setStepHistory((prev: StepId[]) => [...prev, nextStepId]);
     
     // Set the next step and show its first message immediately
     setCurrentStep(nextStepId);
@@ -320,7 +326,7 @@ const BabyWenOnboarding: React.FC = () => {
     // Show next step's message immediately
     if (nextStep) {
       const nextMessage = nextStep.messages[0];
-      await simulateBabyWenTyping(nextMessage.content, nextMessage.options);
+      await simulateBabyWenTyping(nextMessage.content, nextMessage.options, nextStepId);
       determineInputType(nextStep);
     }
   };
@@ -332,7 +338,7 @@ const BabyWenOnboarding: React.FC = () => {
     setShowInput(false);
     
     // Add user message with the selected option
-    setMessages(prev => [...prev, { sender: 'user' as const, text: option }]);
+    setMessages((prev: Message[]) => [...prev, { sender: 'user' as const, text: option }]);
     
     // Process the response
     await processUserResponse(option);
@@ -353,7 +359,7 @@ const BabyWenOnboarding: React.FC = () => {
       .join(', ');
     
     // Add user message with form summary
-    setMessages(prev => [...prev, { sender: 'user' as const, text: `Submitted: ${formSummary}` }]);
+    setMessages((prev: Message[]) => [...prev, { sender: 'user' as const, text: `Submitted: ${formSummary}` }]);
     
     // Process the form data
     await processUserResponse(formDataString);
@@ -368,7 +374,7 @@ const BabyWenOnboarding: React.FC = () => {
     }
     
     // Add user message indicating button was clicked
-    setMessages(prev => [...prev, { 
+    setMessages((prev: Message[]) => [...prev, { 
       sender: 'user' as const, 
       text: `Clicked: ${step.buttonAction?.label}` 
     }]);
@@ -386,7 +392,7 @@ const BabyWenOnboarding: React.FC = () => {
     const optionsSummary = selectedOptions.join(', ');
     
     // Add user message with selections
-    setMessages(prev => [...prev, { 
+    setMessages((prev: Message[]) => [...prev, { 
       sender: 'user' as const, 
       text: `Selected: ${optionsSummary}` 
     }]);
@@ -396,7 +402,7 @@ const BabyWenOnboarding: React.FC = () => {
   };
   
   // Simulate BabyWen typing with smoother transitions
-  const simulateBabyWenTyping = async (message: string, options?: string[]) => {
+  const simulateBabyWenTyping = async (message: string, options?: string[], stepId?: StepId) => {
     // Show loading immediately
     setIsTyping(true);
     setShowInput(false);
@@ -405,7 +411,21 @@ const BabyWenOnboarding: React.FC = () => {
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     // Update messages with new content
-    setMessages(prev => [...prev, { sender: 'babywen' as const, text: message, options }]);
+    setMessages((prev: Message[]) => [...prev, { sender: 'babywen' as const, text: message, options }]);
+    
+    // Play sound for the specific step if provided, otherwise use generic message sound
+    const soundFile = stepId ? `${stepId}.wav` : 'message.wav';
+    soundService.play(soundFile).catch(error => {
+      // Fallback to generic message sound if step-specific sound fails
+      if (stepId) {
+        console.warn(`Sound file for step ${stepId} not found, using fallback`);
+        soundService.play('message.wav').catch(e => {
+          console.error('Failed to play fallback sound:', e);
+        });
+      } else {
+        console.error('Failed to play message sound:', error);
+      }
+    });
     
     // Immediate transition to show input
     setIsTyping(false);
@@ -455,7 +475,7 @@ const BabyWenOnboarding: React.FC = () => {
     // Show previous step's message
     if (previousStep) {
       const previousMessage = previousStep.messages[0];
-      await simulateBabyWenTyping(previousMessage.content, previousMessage.options);
+      await simulateBabyWenTyping(previousMessage.content, previousMessage.options, previousStepId);
       determineInputType(previousStep);
     }
   };
