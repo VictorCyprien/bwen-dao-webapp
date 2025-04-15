@@ -1,5 +1,19 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
 
+// Enum for vote rights options
+export enum VoteRightsType {
+  SELECTIVE = 'selective',
+  ELECTION = 'election',
+  EVERY_MEMBER = 'every_member'
+}
+
+// Mapping from display name to enum value
+const voteRightsMapping: Record<string, VoteRightsType> = {
+  "Selective - Only specific members can vote": VoteRightsType.SELECTIVE,
+  "Election - Members elect representatives who vote": VoteRightsType.ELECTION,
+  "Every Member - All members can vote on decisions": VoteRightsType.EVERY_MEMBER
+};
+
 const VoteRightsStep: OnboardingStep = {
   id: 'dao-vote-rights',
   messages: [
@@ -13,8 +27,11 @@ const VoteRightsStep: OnboardingStep = {
     }
   ],
   onResponse: (response: string) => {
+    // Get the enum value from the mapping
+    const voteRightsType = voteRightsMapping[response];
+    
     // Store the selected vote rights in sessionStorage
-    sessionStorage.setItem('voteRights', response);
+    sessionStorage.setItem('voteRights', voteRightsType);
     
     let responseMessage = "";
     let nextStep: StepId = 'dao-voting-power'; // Default next step
