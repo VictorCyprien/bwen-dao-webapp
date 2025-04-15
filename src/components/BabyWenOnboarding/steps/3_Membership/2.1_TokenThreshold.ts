@@ -32,17 +32,17 @@ const TokenThresholdStep: OnboardingStep = {
       const data = JSON.parse(response);
       const threshold = data.tokenThreshold;
       
-      // Save token threshold to context or state if needed
-      // sessionStorage.setItem('tokenThreshold', threshold);
+      // Save token threshold to session storage
+      sessionStorage.setItem('tokenThreshold', threshold);
       
       return {
         responseMessage: `Great! Members will need at least ${threshold} tokens to join your DAO. Now let's finalize your DAO setup.`,
-        nextStep: 'dao-confirmation'
+        nextStep: 'dao-review'
       };
     } catch (e) {
       return {
         responseMessage: "There was an error processing your input. Let's continue to the confirmation page.",
-        nextStep: 'dao-confirmation'
+        nextStep: 'dao-review'
       };
     }
   }

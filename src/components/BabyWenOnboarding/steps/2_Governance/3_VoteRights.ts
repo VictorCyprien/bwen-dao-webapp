@@ -13,6 +13,9 @@ const VoteRightsStep: OnboardingStep = {
     }
   ],
   onResponse: (response: string) => {
+    // Store the selected vote rights in sessionStorage
+    sessionStorage.setItem('voteRights', response);
+    
     let responseMessage = "";
     let nextStep: StepId = 'dao-voting-power'; // Default next step
     

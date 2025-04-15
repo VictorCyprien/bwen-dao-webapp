@@ -12,6 +12,10 @@ const VoteDelegationStep: OnboardingStep = {
     }
   ],
   onResponse: (response: string) => {
+    // Store whether vote delegation is enabled
+    const voteDelegationEnabled = response.startsWith("Yes");
+    sessionStorage.setItem('voteDelegation', voteDelegationEnabled.toString());
+    
     let responseMessage = "";
     let nextStep: StepId = 'dao-token-existence'; // Go to the first membership step
     

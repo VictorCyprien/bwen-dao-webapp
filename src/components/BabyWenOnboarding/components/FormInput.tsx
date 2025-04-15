@@ -13,6 +13,7 @@ export interface FormField {
 interface FormInputProps {
   fields: FormField[];
   onSubmit: (formData: Record<string, string>) => void;
+  initialValues?: Record<string, string>;
 }
 
 /**
@@ -20,12 +21,20 @@ interface FormInputProps {
  */
 const FormInput: React.FC<FormInputProps> = ({ 
   fields, 
-  onSubmit 
+  onSubmit,
+  initialValues = {}
 }: FormInputProps) => {
-  const [formData, setFormData] = React.useState<Record<string, string>>({});
+  const [formData, setFormData] = React.useState<Record<string, string>>(initialValues);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [touched, setTouched] = React.useState<Record<string, boolean>>({});
   const [isFormValid, setIsFormValid] = React.useState<boolean>(true);
+
+  // Use useEffect to update formData when initialValues change
+  React.useEffect(() => {
+    if (Object.keys(initialValues).length > 0) {
+      setFormData(initialValues);
+    }
+  }, [initialValues]);
 
   // Social media icons mapping
   const socialIcons: Record<string, JSX.Element> = {

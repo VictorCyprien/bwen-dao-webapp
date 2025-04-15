@@ -22,6 +22,13 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, ''),
         secure: false,
         ws: true,
+      },
+      '/sound': {
+        target: 'http://localhost:8500',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/sound/, ''),
+        secure: false,
+        ws: true,
       }
     }
   },

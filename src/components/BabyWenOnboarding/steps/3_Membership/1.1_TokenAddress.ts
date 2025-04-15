@@ -32,8 +32,8 @@ const TokenAddressStep: OnboardingStep = {
       const data = JSON.parse(response);
       const tokenAddress = data.tokenAddress;
       
-      // Save token address to context or state if needed
-      // sessionStorage.setItem('tokenAddress', tokenAddress);
+      // Save token address to sessionStorage
+      sessionStorage.setItem('tokenAddress', tokenAddress);
       
       return {
         responseMessage: `Thanks! I've registered your token at address ${tokenAddress}. Now let's set up the membership conditions.`,

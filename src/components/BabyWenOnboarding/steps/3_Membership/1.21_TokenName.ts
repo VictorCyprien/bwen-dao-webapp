@@ -31,8 +31,8 @@ const TokenNameStep: OnboardingStep = {
       const data = JSON.parse(response);
       const tokenName = data.tokenName;
       
-      // Save token name to context or state if needed
-      // sessionStorage.setItem('tokenName', tokenName);
+      // Save token name to sessionStorage
+      sessionStorage.setItem('tokenName', tokenName);
       
       return {
         responseMessage: `Great! "${tokenName}" is a good name for your token. Now let's choose a ticker symbol.`,

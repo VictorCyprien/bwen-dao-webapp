@@ -14,17 +14,23 @@ const MembershipConditionsStep: OnboardingStep = {
   ],
   onResponse: (response: string) => {
     let responseMessage = "";
-    let nextStep: StepId = 'dao-confirmation'; // Default next step for Free option
+    let nextStep: StepId = 'dao-review'; // Default next step for Free option
+    
+    // Store the selected membership condition in sessionStorage
+    sessionStorage.setItem('membershipConditions', response);
     
     if (response.startsWith("Token Based")) {
       responseMessage = "You've chosen a token threshold model. This creates value for your token and ensures members have skin in the game.";
       nextStep = 'dao-token-threshold'; // Go to token threshold input
+      sessionStorage.setItem('membershipType', 'token');
     } else if (response.startsWith("Free")) {
       responseMessage = "You've chosen a minimal token requirement. This creates an open DAO that's easy to join while still requiring some basic commitment.";
       // Keep default nextStep (confirmation)
+      sessionStorage.setItem('membershipType', 'free');
     } else if (response.startsWith("Application")) {
       responseMessage = "You've chosen an application process. This gives you more control over membership and creates a more curated community.";
       nextStep = 'dao-application-approval'; // Go to application approval selection
+      sessionStorage.setItem('membershipType', 'application');
     }
     
     // Add a closing message

@@ -13,6 +13,9 @@ const IdeaRightsStep: OnboardingStep = {
     }
   ],
   onResponse: (response: string) => {
+    // Store the selected idea rights in sessionStorage
+    sessionStorage.setItem('ideaRights', response);
+    
     let responseMessage = "";
     let nextStep: StepId = 'dao-vote-rights'; // After answering this, go to the voting rights step
     

@@ -14,6 +14,9 @@ const VotingPowerStep: OnboardingStep = {
     }
   ],
   onResponse: (response: string) => {
+    // Store the selected voting power mechanism
+    sessionStorage.setItem('votingPower', response);
+    
     let responseMessage = "";
     let nextStep: StepId = 'dao-vote-delegation'; // Go to the vote delegation step
     
