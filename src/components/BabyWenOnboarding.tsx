@@ -408,9 +408,6 @@ const BabyWenOnboarding: React.FC = () => {
     // Add user message with the selected option
     setMessages((prev: Message[]) => [...prev, { sender: 'user' as const, text: option }]);
     
-    // Save the selected option to sessionStorage using the currentStep ID as the key
-    sessionStorage.setItem(currentStep, option);
-    
     // Process the response
     await processUserResponse(option);
   };
@@ -677,6 +674,28 @@ const BabyWenOnboarding: React.FC = () => {
       // Pass the previous step ID for audio
       await simulateBabyWenTyping(previousMessage.content, previousMessage.options, previousStepId);
       determineInputType(previousStep);
+    }
+
+    // Clear specific sessionStorage variables based on which step we're going back from
+    if (previousStepId === 'dao-governance-model') {
+      // Remove all governance info variables
+      const governanceKeys = [
+        'governanceModel', 'ideaRights', 'voteRights', 
+        'survalidation', 'votingPower', 'voteDelegation',
+      ];
+      governanceKeys.forEach(key => sessionStorage.removeItem(key));
+    } else if (previousStepId === 'dao-token-existence') {
+      // Remove all token info variables
+      const tokenKeys = [
+        'hasExistingToken', 'tokenAddress', 'tokenName', 'tokenTicker'
+      ];
+      tokenKeys.forEach(key => sessionStorage.removeItem(key));
+    } else if (previousStepId === 'dao-membership-conditions') {
+      // Remove all membership info variables
+      const membershipKeys = [
+        'membershipConditions', 'membershipType', 'tokenThreshold', 'applicationApproval', 'approvalType'
+      ];
+      membershipKeys.forEach(key => sessionStorage.removeItem(key));
     }
   };
   
