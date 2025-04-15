@@ -22,7 +22,7 @@ import DaoReviewDisplay from './BabyWenOnboarding/components/DaoReviewDisplay';
 import DaoNameStep from './BabyWenOnboarding/steps/1_Information/1_DaoName';
 import DaoDescriptionStep from './BabyWenOnboarding/steps/1_Information/2_DaoDescription';
 import DaoLogoStep from './BabyWenOnboarding/steps/1_Information/3_DaoLogo';
-import DaoSocialStep from './BabyWenOnboarding/steps/1_Information/4_DaoSocial';
+import DaoSocialStep, { getInitialSocialLinks } from './BabyWenOnboarding/steps/1_Information/4_DaoSocial';
 
 // Import the DAO governance steps
 import GovernanceModelStep from './BabyWenOnboarding/steps/2_Governance/1_GovernanceModel';
@@ -108,7 +108,9 @@ const BabyWenOnboarding: React.FC = () => {
   const [showExitConfirmation, setShowExitConfirmation] = React.useState<boolean>(false);
   const [showInput, setShowInput] = React.useState<boolean>(false); // Start with input hidden
   const [inputType, setInputType] = React.useState<'text' | 'multiChoice' | 'form' | 'button' | 'multiSelect'>('text');
-  const [redirectCountdown, setRedirectCountdown] = React.useState<number>(10); // Countdown timer for redirect
+  const [redirectCountdown, setRedirectCountdown] = React.useState<number>(20); // Countdown timer for redirect
+  // Add initialFormValues state
+  const [initialFormValues, setInitialFormValues] = React.useState<Record<string, string>>({});
   
   // Animation states
   const [hasAnimatedIn, setHasAnimatedIn] = React.useState<boolean>(false);
@@ -264,6 +266,17 @@ const BabyWenOnboarding: React.FC = () => {
     
     if (step.formFields) {
       setInputType('form');
+      
+      // Special handling for social links step
+      if (step.id === 'dao-social') {
+        // Use the specialized function to get social links
+        const socialLinks = getInitialSocialLinks();
+        setInitialFormValues(socialLinks);
+      } else {
+        // Get initial form values for other form steps from sessionStorage
+        const values = getInitialFormValues(step.formFields);
+        setInitialFormValues(values);
+      }
     } else if (step.buttonAction) {
       setInputType('button');
     } else if (step.multiSelectOptions) {
@@ -273,6 +286,20 @@ const BabyWenOnboarding: React.FC = () => {
     } else {
       setInputType('text');
     }
+  };
+
+  // Function to get initial form values from sessionStorage
+  const getInitialFormValues = (formFields: FormField[] = []): Record<string, string> => {
+    const values: Record<string, string> = {};
+    
+    formFields.forEach(field => {
+      const storedValue = sessionStorage.getItem(field.id);
+      if (storedValue) {
+        values[field.id] = storedValue;
+      }
+    });
+    
+    return values;
   };
 
   // Handle sending a message
@@ -380,6 +407,9 @@ const BabyWenOnboarding: React.FC = () => {
     
     // Add user message with the selected option
     setMessages((prev: Message[]) => [...prev, { sender: 'user' as const, text: option }]);
+    
+    // Save the selected option to sessionStorage using the currentStep ID as the key
+    sessionStorage.setItem(currentStep, option);
     
     // Process the response
     await processUserResponse(option);
@@ -504,11 +534,11 @@ const BabyWenOnboarding: React.FC = () => {
             });
           }, 1000);
           
-          // Set a timeout to redirect after 10 seconds
+          // Set a timeout to redirect after 20 seconds
           setTimeout(() => {
             clearInterval(countdownInterval);
             navigate(`/daos/${daoId}`);
-          }, 10000); // 10 second delay before redirect
+          }, 20000); // 20 second delay before redirect
         } else {
           // Show error message
           simulateBabyWenTyping("I'm sorry, there was an error creating your DAO. Please try again.");
@@ -548,6 +578,10 @@ const BabyWenOnboarding: React.FC = () => {
 
   // Handle multi-select submission
   const handleMultiSelectSubmit = (selectedOptions: string[]) => {
+    // Show loading immediately
+    setIsTyping(true);
+    setShowInput(false);
+    
     // Convert selected options to JSON string for processing
     const optionsString = JSON.stringify(selectedOptions);
     
@@ -559,6 +593,9 @@ const BabyWenOnboarding: React.FC = () => {
       sender: 'user' as const, 
       text: `Selected: ${optionsSummary}` 
     }]);
+    
+    // Save selected options to sessionStorage using the currentStep ID as the key
+    sessionStorage.setItem(currentStep, optionsString);
     
     // Process the selected options
     processUserResponse(optionsString);
@@ -724,6 +761,9 @@ const BabyWenOnboarding: React.FC = () => {
       );
     }
     
+    // Get any previously selected option for the current step
+    const previouslySelectedOption = sessionStorage.getItem(currentStep);
+    
     return (
       <>
         <div className="w-full">
@@ -747,6 +787,7 @@ const BabyWenOnboarding: React.FC = () => {
             <FormInput
               fields={currentStepObj?.formFields || []}
               onSubmit={handleFormSubmit}
+              initialValues={initialFormValues}
             />
           )}
           

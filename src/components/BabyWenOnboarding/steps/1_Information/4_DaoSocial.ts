@@ -1,5 +1,17 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
 
+// Helper function to get initial social links
+export const getInitialSocialLinks = () => {
+  return {
+    website: sessionStorage.getItem('daoWebsite') || undefined,
+    twitter: sessionStorage.getItem('daoTwitter') || undefined,
+    discord: sessionStorage.getItem('daoDiscord') || undefined,
+    telegram: sessionStorage.getItem('daoTelegram') || undefined,
+    instagram: sessionStorage.getItem('daoInstagram') || undefined,
+    tiktok: sessionStorage.getItem('daoTiktok') || undefined
+  };
+};
+
 const DaoSocialStep: OnboardingStep = {
   id: 'dao-social',
   messages: [
@@ -281,10 +293,10 @@ const DaoSocialStep: OnboardingStep = {
 
       // Store social links in sessionStorage
       if (data.website) {
-        sessionStorage.setItem('daoWebsite', data.websiteUrl);
+        sessionStorage.setItem('daoWebsite', data.website);
       }
       if (data.twitter) {
-        sessionStorage.setItem('daoTwitter', data.twitterUrl);
+        sessionStorage.setItem('daoTwitter', data.twitter);
       }
       if (data.discord) {
         sessionStorage.setItem('daoDiscord', data.discord);
