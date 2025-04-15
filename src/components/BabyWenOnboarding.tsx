@@ -521,7 +521,7 @@ const BabyWenOnboarding: React.FC = () => {
           determineInputType(steps['dao-success']);
           
           // Reset countdown
-          setRedirectCountdown(10);
+          setRedirectCountdown(20);
           
           // Start countdown timer
           const countdownInterval = setInterval(() => {
