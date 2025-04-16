@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
@@ -12,17 +12,28 @@ import LandingPageDev from './components/Landingpage_dev';
 import BabyWenOnboarding from './components/BabyWenOnboarding';
 import ChatBot from './components/ChatBot';
 import { useEffectOnce } from './hooks/useEffectOnce';
+<<<<<<< Updated upstream
 import ProfileModal from './components/ProfileModal';
 import useAuthCallback from './hooks/useAuthCallback';
+=======
+import useMediaQuery from './hooks/useMediaQuery';
+>>>>>>> Stashed changes
 
 // Dashboard component that handles DAO-specific routing
 const Dashboard = () => {
   const { daoId } = useParams();
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState('home');
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [fadeIn, setFadeIn] = useState(true);
-  const [currentComponent, setCurrentComponent] = useState<React.ReactNode>(null);
+  const [activeSection, setActiveSection] = React.useState('home');
+  const [showNotifications, setShowNotifications] = React.useState(false);
+  const [fadeIn, setFadeIn] = React.useState(true);
+  const [currentComponent, setCurrentComponent] = React.useState<React.ReactNode>(null);
+  const [sidebarOpen, setSidebarOpen] = React.useState(true);
+  const isMobile = useMediaQuery('(max-width: 768px)');
+  
+  // Set default sidebar state based on screen size
+  React.useEffect(() => {
+    setSidebarOpen(!isMobile);
+  }, [isMobile]);
 
   // Handle section changes
   const handleSectionChange = (section: string) => {
@@ -30,8 +41,18 @@ const Dashboard = () => {
     setActiveSection(section);
   };
 
+  // Handle sidebar toggle - only works on mobile
+  const toggleSidebar = () => {
+    if (isMobile) {
+      setSidebarOpen((prev: boolean) => !prev);
+    } else {
+      // Always keep sidebar open on desktop
+      setSidebarOpen(true);
+    }
+  };
+
   // Effect to initialize the correct component based on the active section
-  useEffect(() => {
+  React.useEffect(() => {
     setFadeIn(false); // Start fade out
     
     const timer = setTimeout(() => {
@@ -68,6 +89,13 @@ const Dashboard = () => {
     // Here you could fetch specific DAO data based on the ID
   }, [daoId]);
 
+  // Handle close sidebar - only works on mobile
+  const closeSidebar = () => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  };
+
   return (
     <div className="flex h-screen">
       {/* App Background with split design */}
@@ -79,10 +107,17 @@ const Dashboard = () => {
       </div>
       
       {/* Left Sidebar */}
-      <Sidebar activeSection={activeSection} setActiveSection={handleSectionChange} />
+      <Sidebar 
+        activeSection={activeSection} 
+        setActiveSection={handleSectionChange} 
+        isOpen={sidebarOpen} 
+        onClose={closeSidebar}
+        onToggle={toggleSidebar}
+        isMobile={isMobile}
+      />
       
       {/* Main content */}
-      <div className="flex-1 flex flex-col overflow-hidden z-10 relative">
+      <div className="flex-1 flex flex-col overflow-hidden z-10 relative w-full">
         <Header 
           activeSection={activeSection} 
           showNotifications={showNotifications}

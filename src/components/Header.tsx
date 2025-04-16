@@ -2,6 +2,7 @@ import NotificationIcon from './common/NotificationIcon';
 import { ui } from '../styles/theme';
 import ApiAuthStatus from './common/ApiAuthStatus';
 import useApiAndWallet from '../hooks/useApiAndWallet';
+import useMediaQuery from '../hooks/useMediaQuery';
 
 interface HeaderProps {
   activeSection: string;
@@ -19,6 +20,7 @@ const Header = ({
   daoId
 }: HeaderProps) => {
   const { apiStatus, userDisplayInfo } = useApiAndWallet();
+  const isMobile = useMediaQuery('(max-width: 768px)');
   
   const getSectionDisplayName = () => {
     switch (activeSection) {

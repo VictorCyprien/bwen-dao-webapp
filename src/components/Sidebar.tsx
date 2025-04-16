@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Home, 
@@ -9,29 +9,43 @@ import {
   Trophy, 
   MessageSquareQuote, 
   FileText,
-  ArrowLeft
+  ArrowLeft,
+  ChevronRight,
+  ChevronLeft
 } from 'lucide-react';
 import { ui } from '../styles/theme';
 import { useAuth } from '../context/AuthContext';
 import { DAO } from '../core/modules/dao-api';
 import { daosService } from '../services/DaosService';
 import { useEffectOnce } from '../hooks/useEffectOnce';
+import useMediaQuery from '../hooks/useMediaQuery';
 
 interface SidebarProps {
   activeSection: string;
   setActiveSection: (section: string) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
+  onToggle?: () => void;
+  isMobile?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) => {
+const Sidebar: React.FC<SidebarProps> = ({ 
+  activeSection,
+  setActiveSection,
+  isOpen = true,
+  onClose,
+  onToggle,
+  isMobile = false
+}: SidebarProps) => {
   const { userInfo } = useAuth();
   const { daoId } = useParams<{ daoId: string }>();
   const navigate = useNavigate();
-  const [dao, setDao] = useState<DAO | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [profileImgError, setProfileImgError] = useState<boolean>(false);
-  const [refreshTimestamp, setRefreshTimestamp] = useState<number>(Date.now());
-  const [retryCount, setRetryCount] = useState<number>(0);
+  const [dao, setDao] = React.useState<DAO | null>(null);
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [profileImgError, setProfileImgError] = React.useState<boolean>(false);
+  const [refreshTimestamp, setRefreshTimestamp] = React.useState<number>(Date.now());
+  const [retryCount, setRetryCount] = React.useState<number>(0);
   const maxRetries = 3;
   
   // Fetch the DAO data when the daoId changes
@@ -67,7 +81,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
   }, [daoId]);
   
   // Listen for dao-updated events
-  useEffect(() => {
+  React.useEffect(() => {
     const handleDaoUpdated = (event: CustomEvent<{ daoId: string }>) => {
       if (event.detail.daoId === daoId) {
         fetchDaoData();
@@ -98,12 +112,20 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
       
       setTimeout(() => {
         setRefreshTimestamp(Date.now()); // Update timestamp to force a fresh load
-        setRetryCount(prevCount => prevCount + 1);
+        setRetryCount((prevCount: number) => prevCount + 1);
       }, delay);
     } else {
       // After all retries, set the error flag
       console.log('Image load failed after all retries, showing placeholder');
       setProfileImgError(true);
+    }
+  };
+
+  // Close sidebar on mobile when clicking a navigation item
+  const handleNavigationClick = (section: string) => {
+    setActiveSection(section);
+    if (isMobile && onClose) {
+      onClose();
     }
   };
 
@@ -146,73 +168,117 @@ const Sidebar: React.FC<SidebarProps> = ({ activeSection, setActiveSection }) =>
     return dao?.name || 'Select a DAO';
   };
 
+  // Common button styling for both toggle buttons
+  const toggleButtonClass = "bg-[#151515] border border-surface-300 rounded-full p-1 shadow-lg transition-all hover:bg-surface-200 focus:outline-none focus:ring-2 focus:ring-primary z-50";
+
+  // Calculate sidebar position based on isOpen and isMobile
+  const sidebarClasses = `w-64 text-text flex flex-col ${ui.sidebar} font-normal ${
+    isMobile ? 'fixed top-0 bottom-0 left-0 z-40 h-full transition-transform duration-300 ease-in-out transform' : ''
+  } ${
+    isMobile && !isOpen ? '-translate-x-full' : 'translate-x-0'
+  }`;
+
   return (
-    <div className={`w-64 text-text flex flex-col ${ui.sidebar} font-normal relative z-10`}>
-      {/* Back to landing page button */}
-      <div className="p-4 text-center">
+    <>
+      {/* Sidebar */}
+      <div className={sidebarClasses}>
+        {/* Back to landing page button */}
+        <div className="p-4 text-center">
+          <button 
+            onClick={handleReturnToLanding}
+            className="flex items-center text-surface-500 hover:text-text transition-colors mx-auto"
+            title="Return to landing page"
+          >
+            <ArrowLeft size={16} className="mr-2" />
+            <span className="text-sm">Back to Homepage</span>
+          </button>
+        </div>
+        
+        {/* DAO Profile */}
+        <div className="p-4 flex flex-col items-center">
+          <div className="w-20 h-20 rounded-full bg-primary mb-2 overflow-hidden">
+            {/* Logo normal - afficher le logo standard */}
+            <img 
+              src={!profileImgError && dao?.profilePicture 
+                ? `${dao.profilePicture}` 
+                : "https://i.imgur.com/PeLdfS1.png"}
+              alt="DAO Logo" 
+              className="w-full h-full object-cover" 
+              onError={handleImageError}
+              key={`profile-image-${refreshTimestamp}-${retryCount}`} // Force react to recreate the element
+            />
+          </div>
+          <div className="text-center">
+            <p className="text-sm text-text font-normal">
+              {renderDaoName()}
+            </p>
+          </div>
+        </div>
+        
+        {/* Navigation */}
+        <div className="flex-1 overflow-y-auto">
+          {navItems.map((section) => (
+            <React.Fragment key={section.section}>
+              <div className="px-3 py-2 text-xs text-surface-500 font-normal">{section.section}</div>
+              <nav>
+                {section.items.map((item) => (
+                  <button 
+                    key={item.id}
+                    onClick={() => handleNavigationClick(item.id)}
+                    className={`flex items-center px-5 py-3 my-1 mx-[5%] w-[90%] text-left rounded-[12px] font-normal ${activeSection === item.id ? 'bg-surface-300' : 'hover:bg-surface-200'}`}
+                  >
+                    <span className="mr-3">{item.icon}</span>
+                    <span className="font-normal">{item.label}</span>
+                  </button>
+                ))}
+              </nav>
+            </React.Fragment>
+          ))}
+        </div>
+        
+        {/* DAO Logo */}
+        <div className="p-4">
+          <div className="w-32 mx-auto">
+            <img 
+              src="https://i.imgur.com/OZCrF4z.png" 
+              alt="DAO Logo" 
+              className="w-full h-full object-contain"
+            />
+          </div>
+        </div>
+
+        {/* Toggle button when sidebar is open - only shown on mobile */}
+        {isMobile && isOpen && onToggle && (
+          <button 
+            onClick={onToggle}
+            className={`absolute -right-4 top-1/2 transform -translate-y-1/2 ${toggleButtonClass}`}
+            aria-label="Collapse sidebar"
+          >
+            <ChevronLeft size={16} />
+          </button>
+        )}
+      </div>
+
+      {/* Overlay when sidebar is open on mobile */}
+      {isMobile && isOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-30" 
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Separate toggle button when sidebar is closed - only shown on mobile */}
+      {isMobile && !isOpen && onToggle && (
         <button 
-          onClick={handleReturnToLanding}
-          className="flex items-center text-surface-500 hover:text-text transition-colors mx-auto"
-          title="Return to landing page"
+          onClick={onToggle}
+          className={`fixed left-4 top-1/2 transform -translate-y-1/2 ${toggleButtonClass}`}
+          aria-label="Expand sidebar"
         >
-          <ArrowLeft size={16} className="mr-2" />
-          <span className="text-sm">Back to Homepage</span>
+          <ChevronRight size={16} />
         </button>
-      </div>
-      
-      {/* DAO Profile */}
-      <div className="p-4 flex flex-col items-center">
-        <div className="w-20 h-20 rounded-full bg-primary mb-2 overflow-hidden">
-          {/* Logo normal - afficher le logo standard */}
-          <img 
-            src={!profileImgError && dao?.profilePicture 
-              ? `${dao.profilePicture}` 
-              : "https://i.imgur.com/PeLdfS1.png"}
-            alt="DAO Logo" 
-            className="w-full h-full object-cover" 
-            onError={handleImageError}
-            key={`profile-image-${refreshTimestamp}-${retryCount}`} // Force react to recreate the element
-          />
-        </div>
-        <div className="text-center">
-          <p className="text-sm text-text font-normal">
-            {renderDaoName()}
-          </p>
-        </div>
-      </div>
-      
-      {/* Navigation */}
-      <div className="flex-1 overflow-y-auto">
-        {navItems.map((section) => (
-          <React.Fragment key={section.section}>
-            <div className="px-3 py-2 text-xs text-surface-500 font-normal">{section.section}</div>
-            <nav>
-              {section.items.map((item) => (
-                <button 
-                  key={item.id}
-                  onClick={() => setActiveSection(item.id)}
-                  className={`flex items-center px-5 py-3 my-1 mx-[5%] w-[90%] text-left rounded-[12px] font-normal ${activeSection === item.id ? 'bg-surface-300' : 'hover:bg-surface-200'}`}
-                >
-                  <span className="mr-3">{item.icon}</span>
-                  <span className="font-normal">{item.label}</span>
-                </button>
-              ))}
-            </nav>
-          </React.Fragment>
-        ))}
-      </div>
-      
-      {/* DAO Logo */}
-      <div className="p-4">
-        <div className="w-32 mx-auto">
-          <img 
-            src="https://i.imgur.com/OZCrF4z.png" 
-            alt="DAO Logo" 
-            className="w-full h-full object-contain"
-          />
-        </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 };
 
