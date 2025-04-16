@@ -1086,9 +1086,9 @@ const Governance = () => {
         </Card>
       </div>
 
-      <div className="mt-6 grid grid-cols-10 gap-6 flex-1 overflow-hidden">
-        {/* Active Proposals Column - 70% */}
-        <div className="col-span-7 flex flex-col h-full overflow-hidden">
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-10 gap-6 flex-1 overflow-hidden">
+        {/* Active Proposals Column - 70% on desktop, full width on mobile/tablet */}
+        <div className="col-span-1 lg:col-span-7 flex flex-col h-full overflow-hidden order-2 lg:order-1">
           <Card title="Active Proposals" className="flex-1 flex flex-col h-full">
             {isLoading ? (
               <div className="flex justify-center py-8">
@@ -1142,8 +1142,8 @@ const Governance = () => {
           </Card>
         </div>
 
-        {/* Right Column - 30% */}
-        <div className="col-span-3 space-y-6 flex flex-col h-full">
+        {/* Right Column - 30% on desktop, full width on mobile/tablet */}
+        <div className="col-span-1 lg:col-span-3 flex flex-col gap-6 order-1 lg:order-2">
           {/* Create Proposal Card */}
           <Card title="Actions" className="flex-shrink-0">
             <div className="flex justify-center">
@@ -1182,7 +1182,7 @@ const Governance = () => {
           </Card>
 
           {/* Completed Proposals */}
-          <Card title="Completed Proposals" className="flex-1 flex flex-col overflow-hidden">
+          <Card title="Completed Proposals" className="flex-1">
             {isLoading ? (
               <div className="flex justify-center py-8">
                 <div className="animate-spin h-8 w-8 border-4 border-purple-500 rounded-full border-t-transparent"></div>
@@ -1192,7 +1192,7 @@ const Governance = () => {
                 <p className="text-gray-400">No completed proposals yet.</p>
               </div>
             ) : (
-              <div className="space-y-4 overflow-y-auto flex-1 custom-scrollbar pr-1">
+              <div className="space-y-4 overflow-y-auto max-h-[300px] lg:max-h-none lg:flex-1 custom-scrollbar pr-1">
                 {proposals
                   .filter(p => p.status === 'Passed' || p.status === 'completed' || p.status === 'Completed')
                   .map(proposal => (
