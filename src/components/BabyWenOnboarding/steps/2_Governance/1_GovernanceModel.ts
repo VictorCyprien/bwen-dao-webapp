@@ -109,33 +109,14 @@ const GovernanceModelStep: OnboardingStep = {
     // Store the enum value in sessionStorage
     sessionStorage.setItem('governanceModel', governanceType);
     
-    // Process the selection
-    let responseMessage = "";
+    // Determine the next step
     let nextStep: StepId = 'dao-token-existence'; // Templates go straight to token/membership
     
-    switch(governanceDisplay) {
-      case "Token Vote":
-        responseMessage = "You've selected Token Voting. This is a straightforward approach where voting power is proportional to token holdings.";
-        break;
-      case "Multisig":
-        responseMessage = "You've selected Multisig. This gives decision-making authority to a trusted group of signers.";
-        break;
-      case "Reputation":
-        responseMessage = "You've selected Reputation-based governance. Members earn voting power through participation and contributions.";
-        break;
-      case "Quadratic":
-        responseMessage = "You've selected Quadratic Voting. This balances influence by making each additional vote more expensive.";
-        break;
-      case "Custom":
-        responseMessage = "You want to customize your governance model. Let's build it together step by step.";
-        nextStep = 'dao-idea-rights'; // Custom option goes to the idea rights step
-        break;
-      default:
-        responseMessage = "Thanks for your selection! Let's continue setting up your DAO.";
+    if (governanceDisplay === "Custom") {
+      nextStep = 'dao-idea-rights'; // Custom option goes to the idea rights step
     }
     
     return {
-      responseMessage,
       nextStep
     };
   }

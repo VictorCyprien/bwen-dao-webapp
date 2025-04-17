@@ -13,10 +13,8 @@ const DaoReviewStep: OnboardingStep = {
     variant: 'primary'
   },
   onResponse: (response: string) => {
-    // When the user clicks "Create DAO", we'll show a confirmation message
-    return {
-      responseMessage: "Amazing! I'm creating your DAO now. This will only take a moment..."
-    };
+    // No need for response message, just proceed
+    return {};
   }
 };
 

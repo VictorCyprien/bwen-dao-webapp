@@ -37,12 +37,10 @@ const TokenAddressStep: OnboardingStep = {
       sessionStorage.setItem('tokenAddress', tokenAddress);
       
       return {
-        responseMessage: `Thanks! I've registered your token at address ${tokenAddress}. Now let's set up the membership conditions.`,
         nextStep: 'dao-membership-conditions'
       };
     } catch (e) {
       return {
-        responseMessage: "There was an error processing your token address. Let's continue anyway.",
         nextStep: 'dao-membership-conditions'
       };
     }

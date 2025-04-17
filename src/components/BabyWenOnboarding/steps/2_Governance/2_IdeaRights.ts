@@ -34,19 +34,10 @@ const IdeaRightsStep: OnboardingStep = {
     // Store the selected idea rights in sessionStorage
     sessionStorage.setItem('ideaRights', ideaRightsType);
     
-    let responseMessage = "";
-    let nextStep: StepId = 'dao-vote-rights'; // After answering this, go to the voting rights step
-    
-    if (response.startsWith("Selective")) {
-      responseMessage = "Vous avez choisi de limiter les propositions à certains membres spécifiques. Cela peut aider à maintenir une haute qualité de propositions.";
-    } else if (response.startsWith("Election")) {
-      responseMessage = "Vous avez choisi d'établir un comité élu pour les propositions. C'est un bon équilibre entre ouverture et contrôle.";
-    } else if (response.startsWith("Every Member")) {
-      responseMessage = "Vous avez choisi de permettre à tous les membres de faire des propositions. C'est l'approche la plus démocratique et participative.";
-    }
+    // After answering this, go to the voting rights step
+    const nextStep: StepId = 'dao-vote-rights';
     
     return {
-      responseMessage,
       nextStep
     };
   }

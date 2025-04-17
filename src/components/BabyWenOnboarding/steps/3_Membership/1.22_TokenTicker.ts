@@ -1,4 +1,4 @@
-import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
+import { OnboardingStep } from '../../../BabyWenOnboarding';
 import { FormField } from '../../../BabyWenOnboarding/components/FormInput';
 import { getRandomMessage } from '../messages';
 
@@ -12,23 +12,29 @@ const TokenTickerStep: OnboardingStep = {
   formFields: [
     {
       id: 'tokenTicker',
-      label: 'Token Ticker',
+      label: 'Token Ticker Symbol',
       type: 'text',
-      placeholder: 'e.g. MDT',
+      placeholder: 'e.g. MTK',
       required: true,
       validator: (value: string) => {
-        if (value.trim().length < 2 || value.trim().length > 6) {
-          return {
-            isValid: false,
-            errorMessage: 'Ticker should be between 2 and 6 characters'
+        value = value.trim().toUpperCase();
+        
+        // Basic ticker validation
+        if (value.length < 2 || value.length > 5) {
+          return { 
+            isValid: false, 
+            errorMessage: 'Ticker symbol must be 2-5 characters long' 
           };
         }
-        if (!/^[A-Z0-9]+$/.test(value.trim())) {
+        
+        // Check for valid characters (alphanumeric)
+        if (!/^[A-Z0-9]+$/.test(value)) {
           return {
             isValid: false,
-            errorMessage: 'Ticker should only contain uppercase letters and numbers'
+            errorMessage: 'Ticker can only contain letters and numbers'
           };
         }
+        
         return { isValid: true };
       }
     }
@@ -36,18 +42,19 @@ const TokenTickerStep: OnboardingStep = {
   onResponse: (response: string) => {
     try {
       const data = JSON.parse(response);
-      const tokenTicker = data.tokenTicker;
+      let tokenTicker = data.tokenTicker;
+      
+      // Normalize ticker to uppercase
+      tokenTicker = tokenTicker.trim().toUpperCase();
       
       // Save token ticker to sessionStorage
       sessionStorage.setItem('tokenTicker', tokenTicker);
       
       return {
-        responseMessage: `Perfect! Your token will use the ticker symbol "${tokenTicker}". Now let's set up membership conditions.`,
         nextStep: 'dao-membership-conditions'
       };
     } catch (e) {
       return {
-        responseMessage: "There was an error processing your token ticker. Let's continue anyway.",
         nextStep: 'dao-membership-conditions'
       };
     }

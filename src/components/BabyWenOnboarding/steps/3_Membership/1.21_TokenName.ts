@@ -1,4 +1,4 @@
-import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
+import { OnboardingStep } from '../../../BabyWenOnboarding';
 import { FormField } from '../../../BabyWenOnboarding/components/FormInput';
 import { getRandomMessage } from '../messages';
 
@@ -17,12 +17,13 @@ const TokenNameStep: OnboardingStep = {
       placeholder: 'e.g. MyDAO Token',
       required: true,
       validator: (value: string) => {
-        if (value.trim().length < 3) {
-          return {
-            isValid: false,
-            errorMessage: 'Token name should be at least 3 characters long'
+        if (value.length < 3) {
+          return { 
+            isValid: false, 
+            errorMessage: 'Token name must be at least 3 characters long' 
           };
         }
+        
         return { isValid: true };
       }
     }
@@ -36,12 +37,10 @@ const TokenNameStep: OnboardingStep = {
       sessionStorage.setItem('tokenName', tokenName);
       
       return {
-        responseMessage: `Great! "${tokenName}" is a good name for your token. Now let's choose a ticker symbol.`,
         nextStep: 'dao-token-ticker'
       };
     } catch (e) {
       return {
-        responseMessage: "There was an error processing your token name. Let's continue with the ticker anyway.",
         nextStep: 'dao-token-ticker'
       };
     }

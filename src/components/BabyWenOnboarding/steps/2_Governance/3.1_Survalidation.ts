@@ -1,18 +1,20 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
 import { getRandomMessage } from '../messages';
 
-// Enum for survalidation options
+// Define survalidation options
 export enum SurvalidationType {
-  SELECTIVE = 'selective',
-  ELECTION = 'election',
-  NO_SURVALIDATION = 'no_survalidation'
+  NONE = 'none',
+  MEMBER_COMMITTEE = 'member_committee',
+  FOUNDING_TEAM = 'founding_team',
+  DELEGATED = 'delegated'
 }
 
 // Mapping from display name to enum value
 const survalidationMapping: Record<string, SurvalidationType> = {
-  "Selective - Only certain members can survalidate": SurvalidationType.SELECTIVE,
-  "Election - Elected committee gives final approval": SurvalidationType.ELECTION,
-  "No survalidating - Decisions pass automatically when voted": SurvalidationType.NO_SURVALIDATION
+  "No Survalidation - All decisions are valid after voting": SurvalidationType.NONE,
+  "Member Committee - A group of elected members": SurvalidationType.MEMBER_COMMITTEE, 
+  "Founding Team - Original creators of the DAO": SurvalidationType.FOUNDING_TEAM,
+  "Delegated - Members with delegation powers": SurvalidationType.DELEGATED,
 };
 
 const SurvalidationStep: OnboardingStep = {
@@ -21,37 +23,24 @@ const SurvalidationStep: OnboardingStep = {
     {
       content: getRandomMessage('dao-survalidation'),
       options: [
-        "Selective - Only certain members can survalidate",
-        "Election - Elected committee gives final approval",
-        "No survalidating - Decisions pass automatically when voted"
+        "No Survalidation - All decisions are valid after voting",
+        "Member Committee - A group of elected members",
+        "Founding Team - Original creators of the DAO",
+        "Delegated - Members with delegation powers"
       ]
     }
   ],
   onResponse: (response: string) => {
-    // Get the enum value from the mapping
+    // Get the corresponding enum value
     const survalidationType = survalidationMapping[response];
     
-    // Store the survalidation type in sessionStorage
+    // Store the survalidation decision in sessionStorage
+    sessionStorage.setItem('survalidation', survalidationType !== SurvalidationType.NONE ? 'true' : 'false');
     sessionStorage.setItem('survalidationType', survalidationType);
     
-    // Store whether survalidation is enabled (true for selective and election, false for no survalidation)
-    const survalidationEnabled = response !== "No survalidating - Decisions pass automatically when voted";
-    sessionStorage.setItem('survalidation', survalidationEnabled.toString());
-    
-    let responseMessage = "";
-    let nextStep: StepId = 'dao-voting-power'; // Go to voting power distribution step
-    
-    if (response.startsWith("Selective")) {
-      responseMessage = "You've chosen to have specific members with final approval power. This creates a hierarchical structure that can provide stability and leadership.";
-    } else if (response.startsWith("Election")) {
-      responseMessage = "You've chosen an elected committee for final approval. This provides oversight while maintaining democratic principles.";
-    } else if (response.startsWith("No survalidating")) {
-      responseMessage = "You've chosen to have no additional approval. Once a vote passes, it's automatically enacted - the most direct form of governance.";
-    }
-    
+    // Move to the next step in the onboarding process
     return {
-      responseMessage,
-      nextStep
+      nextStep: 'dao-voting-power'
     };
   }
 };

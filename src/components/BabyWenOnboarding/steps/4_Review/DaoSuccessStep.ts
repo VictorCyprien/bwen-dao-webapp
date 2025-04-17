@@ -13,9 +13,7 @@ const DaoSuccessStep: OnboardingStep = {
     variant: "primary"
   },
   onResponse: (response: string) => {
-    return {
-      responseMessage: "Taking you to your DAO dashboard now..."
-    };
+    return {};
   }
 };
 
