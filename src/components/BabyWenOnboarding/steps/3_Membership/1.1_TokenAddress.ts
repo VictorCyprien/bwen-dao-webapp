@@ -1,11 +1,12 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
 import { FormField } from '../../../BabyWenOnboarding/components/FormInput';
+import { getRandomMessage } from '../messages';
 
 const TokenAddressStep: OnboardingStep = {
   id: 'dao-token-address',
   messages: [
     {
-      content: "Ok, paste me the contract address of your token"
+      content: getRandomMessage('dao-token-address')
     }
   ],
   formFields: [

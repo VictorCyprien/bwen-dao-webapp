@@ -1,10 +1,11 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
+import { getRandomMessage } from '../messages';
 
 const IdeaRightsStep: OnboardingStep = {
   id: 'dao-idea-rights',
   messages: [
     {
-      content: "Building time!\nWho has the right to drop ideas for the DAO to vote on?",
+      content: getRandomMessage('dao-idea-rights'),
       options: [
         "Selective - Only certain members can propose ideas",
         "Election - Members elected to a proposal committee",

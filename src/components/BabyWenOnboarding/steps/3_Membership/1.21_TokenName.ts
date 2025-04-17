@@ -1,11 +1,12 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
 import { FormField } from '../../../BabyWenOnboarding/components/FormInput';
+import { getRandomMessage } from '../messages';
 
 const TokenNameStep: OnboardingStep = {
   id: 'dao-token-name',
   messages: [
     {
-      content: "Gotcha! Let's create the token for your DAO.\nLet's give your token a name!"
+      content: getRandomMessage('dao-token-name')
     }
   ],
   formFields: [

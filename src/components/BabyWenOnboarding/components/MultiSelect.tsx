@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React from 'react';
 
 interface MultiSelectProps {
   options: string[];
@@ -15,9 +15,9 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
   const [selectedOptions, setSelectedOptions] = React.useState<string[]>([]);
 
   const toggleOption = (option: string) => {
-    setSelectedOptions(prev => {
+    setSelectedOptions((prev: string[]) => {
       if (prev.includes(option)) {
-        return prev.filter(o => o !== option);
+        return prev.filter((o: string) => o !== option);
       } else {
         return [...prev, option];
       }
@@ -69,9 +69,9 @@ const MultiSelect: React.FC<MultiSelectProps> = ({
         <button
           onClick={handleSubmit}
           disabled={selectedOptions.length === 0}
-          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg disabled:opacity-50"
+          className="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Submit
+          Continue
         </button>
       </div>
     </div>

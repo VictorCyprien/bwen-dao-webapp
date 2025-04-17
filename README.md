@@ -263,3 +263,19 @@ fn process_vote(
 2. **Serialization**: Use consistent serialization formats between client and program
 3. **Signers**: Make sure all required accounts are set as signers
 4. **Error Handling**: Provide clear error messages to help debugging
+
+## AI-Powered Features
+
+This project uses the Replicate API to power AI features such as improving DAO descriptions. To enable these features:
+
+1. Sign up for a Replicate account at [replicate.com](https://replicate.com) if you don't already have one
+2. Go to your account settings and obtain an API token
+3. Create a `.env` file at the root of the project (or copy from `.env.example`)
+4. Add your Replicate API token:
+   ```
+   REPLICATE_API_TOKEN=r8_your_token_here
+   ```
+5. Restart the development server for the changes to take effect
+
+The AI-powered features that require this token include:
+- "Improve with AI" button on the DAO description step

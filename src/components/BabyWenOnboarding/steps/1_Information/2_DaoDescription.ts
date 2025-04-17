@@ -1,21 +1,28 @@
 import { OnboardingStep } from '../../../BabyWenOnboarding';
+import { getRandomMessage } from '../messages';
+import DescriptionInput from '../../components/DescriptionInput';
 
 const DaoDescriptionStep: OnboardingStep = {
   id: 'dao-description',
   messages: [
     {
-      content: "Cool name! Now, what's the purpose of your DAO?\nGive me the juicy details"
+      content: getRandomMessage('dao-description')
     }
   ],
-  formFields: [
-    {
-      id: 'daoDescription',
-      label: 'DAO Description',
-      type: 'textarea',
-      placeholder: 'Describe your DAO\'s purpose and goals',
-      required: true
+  customComponent: DescriptionInput,
+  onCustomComponentResponse: (option: string, data?: string) => {
+    if (option === 'submit' && data) {
+      // Store DAO description in sessionStorage
+      sessionStorage.setItem('daoDescription', data);
+    } else if (option === 'improved' && data) {
+      // Store the AI-improved DAO description in sessionStorage
+      sessionStorage.setItem('daoDescription', data);
     }
-  ],
+    
+    return {
+      nextStep: 'dao-logo'
+    };
+  },
   onResponse: (response: string) => {
     try {
       // Parse the JSON response from the form
@@ -27,13 +34,11 @@ const DaoDescriptionStep: OnboardingStep = {
       }
       
       return {
-        responseMessage: "Perfect! That gives everyone a clear picture of what your DAO is about. Now let's add a logo.",
         nextStep: 'dao-logo'
       };
     } catch (e) {
       // If there's an error, just continue
       return {
-        responseMessage: "Let's continue and add a logo for your DAO.",
         nextStep: 'dao-logo'
       };
     }

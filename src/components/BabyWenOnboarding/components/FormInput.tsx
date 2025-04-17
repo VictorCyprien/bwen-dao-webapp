@@ -1,13 +1,29 @@
 import React from 'react';
 
+// Option type for select inputs
+export interface SelectOption {
+  value: string;
+  label: string;
+}
+
+// Conditional display configuration
+export interface ConditionalDisplay {
+  field: string;
+  value: string | string[];
+}
+
 export interface FormField {
   id: string;
   label: string;
   type: string;
-  placeholder: string;
+  placeholder?: string;
   required: boolean;
   validator?: (value: string) => { isValid: boolean; errorMessage?: string };
   icon?: string; // Path to icon image or SVG content
+  options?: SelectOption[]; // For select inputs
+  defaultValue?: string; // Default value for the field
+  accept?: string; // For file inputs, e.g., 'image/*'
+  conditionalDisplay?: ConditionalDisplay; // Show field only when condition is met
 }
 
 interface FormInputProps {
@@ -35,6 +51,19 @@ const FormInput: React.FC<FormInputProps> = ({
       setFormData(initialValues);
     }
   }, [initialValues]);
+
+  // Set default values for form fields
+  React.useEffect(() => {
+    const defaultValues: Record<string, string> = {};
+    fields.forEach((field) => {
+      if (field.defaultValue && !formData[field.id]) {
+        defaultValues[field.id] = field.defaultValue;
+      }
+    });
+    if (Object.keys(defaultValues).length > 0) {
+      setFormData((prev: Record<string, string>) => ({ ...prev, ...defaultValues }));
+    }
+  }, [fields]);
 
   // Social media icons mapping
   const socialIcons: Record<string, JSX.Element> = {
@@ -86,6 +115,23 @@ const FormInput: React.FC<FormInputProps> = ({
     }
   };
 
+  const handleFileChange = (id: string, files: FileList | null): void => {
+    if (files && files.length > 0) {
+      const file = files[0];
+      setFormData((prev: Record<string, string>) => ({ 
+        ...prev, 
+        [id]: file.name,
+        [`${id}_data`]: URL.createObjectURL(file) // Store data URL for preview
+      }));
+    } else {
+      setFormData((prev: Record<string, string>) => ({ 
+        ...prev, 
+        [id]: '',
+        [`${id}_data`]: ''
+      }));
+    }
+  };
+
   const handleBlur = (id: string): void => {
     setTouched((prev: Record<string, boolean>) => ({ ...prev, [id]: true }));
     validateField(id, formData[id] || '');
@@ -123,10 +169,13 @@ const FormInput: React.FC<FormInputProps> = ({
     const newTouched: Record<string, boolean> = {};
     
     fields.forEach((field: FormField) => {
-      newTouched[field.id] = true;
-      const fieldIsValid = validateField(field.id, formData[field.id] || '');
-      if (!fieldIsValid) {
-        isValid = false;
+      // Skip validation for conditionally hidden fields
+      if (shouldShowField(field)) {
+        newTouched[field.id] = true;
+        const fieldIsValid = validateField(field.id, formData[field.id] || '');
+        if (!fieldIsValid) {
+          isValid = false;
+        }
       }
     });
     
@@ -142,47 +191,120 @@ const FormInput: React.FC<FormInputProps> = ({
   const hasIconForField = (fieldId: string): boolean => {
     return socialIcons[fieldId] !== undefined;
   };
+  
+  // Helper function to check if a field should be displayed based on conditional logic
+  const shouldShowField = (field: FormField): boolean => {
+    if (!field.conditionalDisplay) return true;
+    
+    const { field: dependsOnField, value: dependsOnValue } = field.conditionalDisplay;
+    const currentValue = formData[dependsOnField];
+    
+    if (Array.isArray(dependsOnValue)) {
+      return dependsOnValue.includes(currentValue);
+    }
+    
+    return currentValue === dependsOnValue;
+  };
+
+  // Render different input types
+  const renderFieldInput = (field: FormField) => {
+    if (!shouldShowField(field)) return null;
+    
+    switch (field.type) {
+      case 'select':
+        return (
+          <select
+            value={formData[field.id] || ''}
+            onChange={(e) => handleChange(field.id, e.target.value)}
+            onBlur={() => handleBlur(field.id)}
+            className={`w-full px-4 py-2 bg-[#222] border ${
+              errors[field.id] ? 'border-red-500' : 'border-indigo-500/30'
+            } rounded-lg text-white/70 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:text-white transition-colors`}
+            aria-label={field.label}
+          >
+            {field.options?.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        );
+        
+      case 'file':
+        return (
+          <div className="flex flex-col gap-2">
+            <input
+              type="file"
+              onChange={(e) => handleFileChange(field.id, e.target.files)}
+              accept={field.accept}
+              className="w-full text-white/70 cursor-pointer"
+              aria-label={field.label}
+            />
+            {formData[`${field.id}_data`] && field.accept?.includes('image') && (
+              <div className="mt-2">
+                <img 
+                  src={formData[`${field.id}_data`]} 
+                  alt="Preview" 
+                  className="max-h-24 max-w-full rounded-lg border border-indigo-500/30"
+                />
+              </div>
+            )}
+          </div>
+        );
+        
+      default:
+        return (
+          <div className="relative">
+            {hasIconForField(field.id) && (
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                {socialIcons[field.id]}
+              </div>
+            )}
+            <input
+              type={field.type}
+              placeholder={field.placeholder || ''}
+              value={formData[field.id] || ''}
+              onChange={(e) => handleChange(field.id, e.target.value)}
+              onBlur={() => handleBlur(field.id)}
+              className={`w-full ${hasIconForField(field.id) ? 'pl-10' : 'pl-4'} pr-4 py-2 bg-[#222] border ${
+                errors[field.id] ? 'border-red-500' : 'border-indigo-500/30'
+              } rounded-lg text-white/70 placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:text-white transition-colors`}
+              aria-label={field.label}
+            />
+          </div>
+        );
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="w-full">
       <div className="space-y-4">
         {fields.map((field: FormField) => (
-          <div key={field.id} className="space-y-2">
-            <div className="relative">
-              {hasIconForField(field.id) && (
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  {socialIcons[field.id]}
-                </div>
+          shouldShowField(field) ? (
+            <div key={field.id} className="space-y-2">
+              <label className="block text-white/70 text-sm font-medium">
+                {field.label}
+                {field.required && <span className="ml-1 text-red-500">*</span>}
+              </label>
+              {renderFieldInput(field)}
+              {errors[field.id] && (
+                <p className="text-red-500 text-sm mt-1">{errors[field.id]}</p>
               )}
-              <input
-                type={field.type}
-                placeholder={field.placeholder}
-                value={formData[field.id] || ''}
-                onChange={(e) => handleChange(field.id, e.target.value)}
-                onBlur={() => handleBlur(field.id)}
-                className={`w-full ${hasIconForField(field.id) ? 'pl-10' : 'pl-4'} pr-4 py-2 bg-[#222] border ${
-                  errors[field.id] ? 'border-red-500' : 'border-indigo-500/30'
-                } rounded-lg text-white/70 placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:text-white transition-colors`}
-                aria-label={field.label}
-              />
             </div>
-            {errors[field.id] && (
-              <p className="text-red-500 text-sm mt-1">{errors[field.id]}</p>
-            )}
-          </div>
+          ) : null
         ))}
       </div>
-      <div className="mt-6">
+      <div className="mt-6 flex justify-center">
         <button
           type="submit"
           disabled={!isFormValid}
-          className={`w-full px-4 py-3 rounded-lg text-white font-medium transition-colors ${
+          className={`px-6 py-3 rounded-lg text-white font-medium transition-colors ${
             isFormValid 
               ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500' 
               : 'bg-gray-500/50 cursor-not-allowed'
           }`}
         >
-          Submit
+          Continue
         </button>
       </div>
     </form>
