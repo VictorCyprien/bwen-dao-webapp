@@ -4,8 +4,9 @@ import { userService } from '../services/UserService';
 import { socialConnectionService } from '../services/SocialConnectionService';
 import { ui } from '../styles/theme';
 import { useEffectOnce } from '../hooks/useEffectOnce';
-import { Upload } from 'lucide-react';
+import { Upload, Key } from 'lucide-react';
 import { validateImageFile } from '../utils/fileUtils';
+import ApiKeyModal from './ApiKeyModal';
 
 // Telegram Login Widget component
 const TelegramLoginWidget: React.FC<{
@@ -54,11 +55,12 @@ const TelegramLoginWidget: React.FC<{
 
 const UserProfile: React.FC = () => {
   const { userInfo, refreshUserInfo, isAuthenticated } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState({ text: '', type: '' });
-  const [profilePicture, setProfilePicture] = useState<File | null>(null);
-  const [profilePictureError, setProfilePictureError] = useState<string | null>(null);
-  const profileInputRef = useRef<HTMLInputElement>(null);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [message, setMessage] = React.useState({ text: '', type: '' });
+  const [profilePicture, setProfilePicture] = React.useState<File | null>(null);
+  const [profilePictureError, setProfilePictureError] = React.useState<string | null>(null);
+  const profileInputRef = React.useRef<HTMLInputElement>(null);
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = React.useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -314,6 +316,16 @@ const UserProfile: React.FC = () => {
     }
   };
 
+  // Open API Key modal
+  const openApiKeyModal = () => {
+    setIsApiKeyModalOpen(true);
+  };
+
+  // Close API Key modal
+  const closeApiKeyModal = () => {
+    setIsApiKeyModalOpen(false);
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="text-center py-6">
@@ -536,6 +548,20 @@ const UserProfile: React.FC = () => {
           </button>
         </div>
       </form>
+
+      <div className="mt-8">
+        <h3 className="text-xl font-semibold text-white mb-4">API Keys</h3>
+        <p className="text-gray-400 mb-4">Manage your API keys to access DAO API programmatically.</p>
+        <button
+          onClick={openApiKeyModal}
+          className="flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-md transition"
+        >
+          <Key size={16} className="mr-2" />
+          Manage API Keys
+        </button>
+      </div>
+
+      <ApiKeyModal isOpen={isApiKeyModalOpen} onClose={closeApiKeyModal} />
     </div>
   );
 };

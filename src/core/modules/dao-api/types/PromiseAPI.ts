@@ -6,11 +6,17 @@ import { ChallengeRequest } from '../models/ChallengeRequest';
 import { ChallengeResponse } from '../models/ChallengeResponse';
 import { ConnectionResponse } from '../models/ConnectionResponse';
 import { ConnectionsList } from '../models/ConnectionsList';
+import { CreateDeviceRequest } from '../models/CreateDeviceRequest';
+import { CreateDeviceResponse } from '../models/CreateDeviceResponse';
 import { DAO } from '../models/DAO';
 import { DAOMembership } from '../models/DAOMembership';
 import { DAOMembershipResponse } from '../models/DAOMembershipResponse';
 import { DAOSchemaResponse } from '../models/DAOSchemaResponse';
 import { DAOUpdate } from '../models/DAOUpdate';
+import { DeleteDeviceResponse } from '../models/DeleteDeviceResponse';
+import { Device } from '../models/Device';
+import { DeviceList } from '../models/DeviceList';
+import { DeviceWithKey } from '../models/DeviceWithKey';
 import { DisconnectResponse } from '../models/DisconnectResponse';
 import { DiscordChannel } from '../models/DiscordChannel';
 import { DiscordChannelResponse } from '../models/DiscordChannelResponse';
@@ -56,6 +62,153 @@ import { UserExistResponse } from '../models/UserExistResponse';
 import { UserInfoError } from '../models/UserInfoError';
 import { UserResponse } from '../models/UserResponse';
 import { VerifySignature } from '../models/VerifySignature';
+import { ObservableApiKeysApi } from './ObservableAPI';
+
+import { ApiKeysApiRequestFactory, ApiKeysApiResponseProcessor} from "../apis/ApiKeysApi";
+export class PromiseApiKeysApi {
+    private api: ObservableApiKeysApi
+
+    public constructor(
+        configuration: Configuration,
+        requestFactory?: ApiKeysApiRequestFactory,
+        responseProcessor?: ApiKeysApiResponseProcessor
+    ) {
+        this.api = new ObservableApiKeysApi(configuration, requestFactory, responseProcessor);
+    }
+
+    /**
+     * Delete an API key
+     * @param deviceId
+     */
+    public apikeysDeviceIdDeleteWithHttpInfo(deviceId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DeleteDeviceResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.apikeysDeviceIdDeleteWithHttpInfo(deviceId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Delete an API key
+     * @param deviceId
+     */
+    public apikeysDeviceIdDelete(deviceId: string, _options?: PromiseConfigurationOptions): Promise<DeleteDeviceResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.apikeysDeviceIdDelete(deviceId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Creates a new API key and returns it to the user.
+     * Create a new API key for the authenticated user
+     * @param createDeviceRequest
+     */
+    public createAPIKeyWithHttpInfo(createDeviceRequest: CreateDeviceRequest, _options?: PromiseConfigurationOptions): Promise<HttpInfo<CreateDeviceResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.createAPIKeyWithHttpInfo(createDeviceRequest, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Creates a new API key and returns it to the user.
+     * Create a new API key for the authenticated user
+     * @param createDeviceRequest
+     */
+    public createAPIKey(createDeviceRequest: CreateDeviceRequest, _options?: PromiseConfigurationOptions): Promise<CreateDeviceResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.createAPIKey(createDeviceRequest, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Returns a list of API keys (with sensitive information removed)
+     * List all API keys for the authenticated user
+     */
+    public getAPIKeysWithHttpInfo(_options?: PromiseConfigurationOptions): Promise<HttpInfo<DeviceList>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getAPIKeysWithHttpInfo(observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Returns a list of API keys (with sensitive information removed)
+     * List all API keys for the authenticated user
+     */
+    public getAPIKeys(_options?: PromiseConfigurationOptions): Promise<DeviceList> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getAPIKeys(observableOptions);
+        return result.toPromise();
+    }
+
+
+}
+
+
+
 import { ObservableAuthApi } from './ObservableAPI';
 
 import { AuthApiRequestFactory, AuthApiResponseProcessor} from "../apis/AuthApi";
