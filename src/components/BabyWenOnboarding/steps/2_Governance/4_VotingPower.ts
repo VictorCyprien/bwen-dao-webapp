@@ -1,10 +1,11 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
+import { getRandomMessage } from '../messages';
 
 const VotingPowerStep: OnboardingStep = {
   id: 'dao-voting-power',
   messages: [
     {
-      content: "Alright, let's talk power!\nHow do you want to distribute voting power in your DAO?",
+      content: getRandomMessage('dao-voting-power'),
       options: [
         "Token Based - Voting power proportional to tokens held",
         "1 Member 1 Vote - Equal voting power for all members",

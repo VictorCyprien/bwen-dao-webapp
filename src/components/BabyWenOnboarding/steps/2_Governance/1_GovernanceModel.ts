@@ -1,5 +1,6 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
 import { OptionDetail } from '../../../BabyWenOnboarding/components/MultiChoiceInput';
+import { getRandomMessage } from '../messages';
 
 // Detailed information for each governance model
 const governanceDetails: Record<string, OptionDetail> = {
@@ -70,7 +71,7 @@ const GovernanceModelStep: OnboardingStep = {
   id: 'dao-governance-model',
   messages: [
     {
-      content: "How do you want your DAO to make decisions?",
+      content: getRandomMessage('dao-governance-model'),
       options: [
         "Token Vote - Traditional token-weighted voting where 1 token equals 1 vote",
         "Multisig - A council of trusted members makes decisions by multiple signatures",

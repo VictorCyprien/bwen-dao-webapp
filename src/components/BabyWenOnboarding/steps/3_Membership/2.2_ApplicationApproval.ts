@@ -1,10 +1,11 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
+import { getRandomMessage } from '../messages';
 
 const ApplicationApprovalStep: OnboardingStep = {
   id: 'dao-application-approval',
   messages: [
     {
-      content: "Who gets to approve who joins your DAO?",
+      content: getRandomMessage('dao-application-approval'),
       options: [
         "Selective - Only specific members can approve applications",
         "Election - An elected committee approves new members",

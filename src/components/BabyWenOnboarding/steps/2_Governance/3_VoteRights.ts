@@ -1,10 +1,11 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
+import { getRandomMessage } from '../messages';
 
 const VoteRightsStep: OnboardingStep = {
   id: 'dao-vote-rights',
   messages: [
     {
-      content: "Who gets to cast their vote in your DAO?",
+      content: getRandomMessage('dao-vote-rights'),
       options: [
         "Selective - Only specific members can vote",
         "Election - Members elect representatives who vote",

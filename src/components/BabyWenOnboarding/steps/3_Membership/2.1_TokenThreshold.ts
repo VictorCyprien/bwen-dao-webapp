@@ -1,11 +1,12 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
 import { FormField } from '../../../BabyWenOnboarding/components/FormInput';
+import { getRandomMessage } from '../messages';
 
 const TokenThresholdStep: OnboardingStep = {
   id: 'dao-token-threshold',
   messages: [
     {
-      content: "How much token is required to enter your DAO?"
+      content: getRandomMessage('dao-token-threshold')
     }
   ],
   formFields: [

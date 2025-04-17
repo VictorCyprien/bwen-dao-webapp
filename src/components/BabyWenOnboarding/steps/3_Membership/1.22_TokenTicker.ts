@@ -1,11 +1,12 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
 import { FormField } from '../../../BabyWenOnboarding/components/FormInput';
+import { getRandomMessage } from '../messages';
 
 const TokenTickerStep: OnboardingStep = {
   id: 'dao-token-ticker',
   messages: [
     {
-      content: "Time to pick a ticker!\nKeep it short and snappy."
+      content: getRandomMessage('dao-token-ticker')
     }
   ],
   formFields: [

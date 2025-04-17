@@ -1,331 +1,306 @@
-import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
+import { OnboardingStep } from '../../../BabyWenOnboarding';
+import { getRandomMessage } from '../messages';
 
-// Helper function to get initial social links
-export const getInitialSocialLinks = () => {
+// Function to get initial social links from session storage
+export function getInitialSocialLinks() {
   return {
-    website: sessionStorage.getItem('daoWebsite') || undefined,
-    twitter: sessionStorage.getItem('daoTwitter') || undefined,
-    discord: sessionStorage.getItem('daoDiscord') || undefined,
-    telegram: sessionStorage.getItem('daoTelegram') || undefined,
-    instagram: sessionStorage.getItem('daoInstagram') || undefined,
-    tiktok: sessionStorage.getItem('daoTiktok') || undefined
+    daoWebsite: sessionStorage.getItem('daoWebsite') || '',
+    daoTwitter: sessionStorage.getItem('daoTwitter') || '',
+    daoTelegram: sessionStorage.getItem('daoTelegram') || '',
+    daoDiscord: sessionStorage.getItem('daoDiscord') || '',
+    daoInstagram: sessionStorage.getItem('daoInstagram') || '',
+    daoTiktok: sessionStorage.getItem('daoTiktok') || ''
   };
+}
+
+// Validators for different social links
+const validators = {
+  twitter: (value: string) => {
+    // Accept either a Twitter/X handle (@username) or URL
+    const twitterRegex = /^(?:@[\w]{1,15}|(?:https?:\/\/)?(?:www\.)?(?:twitter\.com|x\.com)\/[\w]{1,15}\/?(?:\?.*)?$)/;
+    
+    if (!value || twitterRegex.test(value)) {
+      return { isValid: true };
+    }
+    return { 
+      isValid: false, 
+      errorMessage: 'Please enter a valid Twitter/X URL (e.g., https://twitter.com/username)' 
+    };
+  },
+  discord: (value: string) => {
+    // Accept a Discord invite link
+    const discordRegex = /^(?:https?:\/\/)?(?:www\.)?discord(?:app)?\.(?:com|gg)\/(?:invite\/)?([a-zA-Z0-9-]+)$/;
+    
+    if (!value || discordRegex.test(value)) {
+      return { isValid: true };
+    }
+    return { 
+      isValid: false, 
+      errorMessage: 'Please enter a valid Discord invite URL' 
+    };
+  },
+  website: (value: string) => {
+    // Basic URL validation
+    const urlRegex = /^(?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+(?:\/[a-zA-Z0-9-._~:/?#[\]@!$&'()*+,;=]*)?$/;
+    
+    if (!value || urlRegex.test(value)) {
+      return { isValid: true };
+    }
+    return { 
+      isValid: false, 
+      errorMessage: 'Please enter a valid website URL' 
+    };
+  },
+  telegram: (value: string) => {
+    // Accept a Telegram group link or username
+    const telegramRegex = /^(?:https?:\/\/)?(?:www\.)?t(?:elegram)?\.(?:me|dog)\/([a-zA-Z0-9_]+)(?:\/.*)?$/;
+    
+    if (!value || telegramRegex.test(value)) {
+      return { isValid: true };
+    }
+    return { 
+      isValid: false, 
+      errorMessage: 'Please enter a valid Telegram URL (e.g., https://t.me/groupname)' 
+    };
+  },
+  instagram: (value: string) => {
+    // Accept an Instagram handle or URL
+    const instagramRegex = /^(?:@)?(?!.*\.\.)(?!.*\.$)[^\W][\w.]{0,29}$|^(?:https?:\/\/)?(?:www\.)?instagram\.com\/([a-zA-Z0-9_.]+)\/?$/;
+    
+    if (!value || instagramRegex.test(value)) {
+      return { isValid: true };
+    }
+    return { 
+      isValid: false, 
+      errorMessage: 'Please enter a valid Instagram URL (e.g., https://instagram.com/username)' 
+    };
+  },
+  tiktok: (value: string) => {
+    // Accept a TikTok handle or URL
+    const tiktokRegex = /^(?:@)?[a-zA-Z0-9_]{2,24}$|^(?:https?:\/\/)?(?:www\.)?tiktok\.com\/@([a-zA-Z0-9_]{2,24})(?:\/.*)?$/;
+    
+    if (!value || tiktokRegex.test(value)) {
+      return { isValid: true };
+    }
+    return { 
+      isValid: false, 
+      errorMessage: 'Please enter a valid TikTok URL (e.g., https://tiktok.com/@username)' 
+    };
+  }
 };
 
 const DaoSocialStep: OnboardingStep = {
   id: 'dao-social',
   messages: [
     {
-      content: "Let's connect your DAO with the world! Add your social media links."
+      content: getRandomMessage('dao-social')
     }
   ],
   formFields: [
     {
-      id: 'website',
+      id: 'daoWebsite',
       label: 'Website',
       type: 'text',
-      placeholder: 'Enter your website URL',
+      placeholder: 'https://yourwebsite.com',
       required: false,
-      validator: (value: string) => {
-        if (!value) return { isValid: true };
-        // Check if it's a valid URL with http/https protocol
-        const urlRegex = /^(https?:\/\/)[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/;
-        if (!urlRegex.test(value)) {
-          return {
-            isValid: false,
-            errorMessage: 'Website must start with http:// or https:// (e.g., https://example.com)'
-          };
-        }
-        return { isValid: true };
-      }
+      icon: 'globe',
+      validator: validators.website
     },
     {
-      id: 'twitter',
-      label: 'X',
+      id: 'daoTwitter',
+      label: 'X (Twitter)',
       type: 'text',
-      placeholder: 'x.com/USERNAME or twitter.com/USERNAME',
+      placeholder: 'https://twitter.com/username',
       required: false,
-      validator: (value: string) => {
-        if (!value) return { isValid: true };
-        
-        // Normalize the input
-        let normalizedValue = value.trim().toLowerCase();
-        
-        // Add https:// if missing
-        if (!normalizedValue.startsWith('http')) {
-          normalizedValue = 'https://' + normalizedValue;
-        }
-        
-        try {
-          const url = new URL(normalizedValue);
-          
-          // Check if it's x.com or twitter.com domain
-          if (!(url.hostname === 'x.com' || url.hostname === 'twitter.com')) {
-            return {
-              isValid: false,
-              errorMessage: 'X link must be in format x.com/USERNAME or twitter.com/USERNAME'
-            };
-          }
-          
-          // Check if it has a username path (not empty and not just '/')
-          const username = url.pathname.substring(1);
-          if (!username || username.length < 1) {
-            return {
-              isValid: false,
-              errorMessage: 'X link must include a USERNAME (e.g., x.com/YourUsername)'
-            };
-          }
-          
-          return { isValid: true };
-        } catch (e) {
-          return {
-            isValid: false,
-            errorMessage: 'X link must be in format x.com/USERNAME or twitter.com/USERNAME'
-          };
-        }
-      }
+      icon: 'twitter',
+      validator: validators.twitter
     },
     {
-      id: 'telegram',
+      id: 'daoTelegram',
       label: 'Telegram',
       type: 'text',
-      placeholder: 't.me/USERNAME',
+      placeholder: 'https://t.me/groupname',
       required: false,
-      validator: (value: string) => {
-        if (!value) return { isValid: true };
-        
-        // Normalize the input
-        let normalizedValue = value.trim().toLowerCase();
-        
-        // Add https:// if missing
-        if (!normalizedValue.startsWith('http')) {
-          normalizedValue = 'https://' + normalizedValue;
-        }
-        
-        try {
-          const url = new URL(normalizedValue);
-          
-          // Check if it's t.me domain
-          if (url.hostname !== 't.me') {
-            return {
-              isValid: false,
-              errorMessage: 'Telegram link must be in format t.me/USERNAME'
-            };
-          }
-          
-          // Check if it has a username path (not empty and not just '/')
-          const username = url.pathname.substring(1);
-          if (!username || username.length < 1) {
-            return {
-              isValid: false,
-              errorMessage: 'Telegram link must include a USERNAME (e.g., t.me/YourUsername)'
-            };
-          }
-          
-          return { isValid: true };
-        } catch (e) {
-          return {
-            isValid: false,
-            errorMessage: 'Telegram link must be in format t.me/USERNAME'
-          };
-        }
-      }
+      icon: 'telegram',
+      validator: validators.telegram
     },
     {
-      id: 'discord',
+      id: 'daoDiscord',
       label: 'Discord',
       type: 'text',
-      placeholder: 'discord.gg/SERVER_INVITE',
+      placeholder: 'https://discord.gg/invite',
       required: false,
-      validator: (value: string) => {
-        if (!value) return { isValid: true };
-        
-        // Normalize the input
-        let normalizedValue = value.trim().toLowerCase();
-        
-        // Add https:// if missing
-        if (!normalizedValue.startsWith('http')) {
-          normalizedValue = 'https://' + normalizedValue;
-        }
-        
-        try {
-          const url = new URL(normalizedValue);
-          
-          // Check if it's discord.gg domain
-          if (url.hostname !== 'discord.gg') {
-            return {
-              isValid: false,
-              errorMessage: 'Discord link must be in format discord.gg/SERVER_INVITE'
-            };
-          }
-          
-          // Check if it has an invite code (not empty and not just '/')
-          const inviteCode = url.pathname.substring(1);
-          if (!inviteCode || inviteCode.length < 1) {
-            return {
-              isValid: false,
-              errorMessage: 'Discord link must include a SERVER_INVITE (e.g., discord.gg/YourInviteCode)'
-            };
-          }
-          
-          return { isValid: true };
-        } catch (e) {
-          return {
-            isValid: false,
-            errorMessage: 'Discord link must be in format discord.gg/SERVER_INVITE'
-          };
-        }
-      }
+      icon: 'discord',
+      validator: validators.discord
     },
     {
-      id: 'instagram',
+      id: 'daoInstagram',
       label: 'Instagram',
       type: 'text',
-      placeholder: 'instagram.com/USERNAME',
+      placeholder: 'https://instagram.com/username',
       required: false,
-      validator: (value: string) => {
-        if (!value) return { isValid: true };
-        
-        // Normalize the input
-        let normalizedValue = value.trim().toLowerCase();
-        
-        // Add https:// if missing
-        if (!normalizedValue.startsWith('http')) {
-          normalizedValue = 'https://' + normalizedValue;
-        }
-        
-        try {
-          const url = new URL(normalizedValue);
-          
-          // Check if it's instagram.com domain
-          if (url.hostname !== 'instagram.com') {
-            return {
-              isValid: false,
-              errorMessage: 'Instagram link must be in format instagram.com/USERNAME'
-            };
-          }
-          
-          // Check if it has a username path (not empty and not just '/')
-          const username = url.pathname.substring(1);
-          if (!username || username.length < 1) {
-            return {
-              isValid: false,
-              errorMessage: 'Instagram link must include a USERNAME (e.g., instagram.com/YourUsername)'
-            };
-          }
-          
-          return { isValid: true };
-        } catch (e) {
-          return {
-            isValid: false,
-            errorMessage: 'Instagram link must be in format instagram.com/USERNAME'
-          };
-        }
-      }
+      icon: 'instagram',
+      validator: validators.instagram
     },
     {
-      id: 'tiktok',
+      id: 'daoTiktok',
       label: 'TikTok',
       type: 'text',
-      placeholder: 'tiktok.com/@USERNAME',
+      placeholder: 'https://tiktok.com/@username',
       required: false,
-      validator: (value: string) => {
-        if (!value) return { isValid: true };
-        
-        // Normalize the input
-        let normalizedValue = value.trim().toLowerCase();
-        
-        // Add https:// if missing
-        if (!normalizedValue.startsWith('http')) {
-          normalizedValue = 'https://' + normalizedValue;
-        }
-        
-        try {
-          const url = new URL(normalizedValue);
-          
-          // Check if it's tiktok.com domain
-          if (url.hostname !== 'tiktok.com') {
-            return {
-              isValid: false,
-              errorMessage: 'TikTok link must be in format tiktok.com/@USERNAME'
-            };
-          }
-          
-          // Check if it has a username path that starts with @
-          const pathname = url.pathname;
-          if (!pathname.startsWith('/@')) {
-            return {
-              isValid: false,
-              errorMessage: 'TikTok link must include @USERNAME (e.g., tiktok.com/@YourUsername)'
-            };
-          }
-          
-          // Make sure there's a username after the @
-          const username = pathname.substring(2); // Skip the /@
-          if (!username || username.length < 1) {
-            return {
-              isValid: false,
-              errorMessage: 'TikTok link must include a valid username (e.g., tiktok.com/@YourUsername)'
-            };
-          }
-          
-          return { isValid: true };
-        } catch (e) {
-          return {
-            isValid: false,
-            errorMessage: 'TikTok link must be in format tiktok.com/@USERNAME'
-          };
-        }
-      }
+      icon: 'tiktok',
+      validator: validators.tiktok
     }
   ],
   onResponse: (response: string) => {
     try {
-      // Parse social links if available
+      // Parse the JSON response from the form
       const data = JSON.parse(response);
-      const socialLinks = Object.entries(data)
-        .filter(([_, value]) => value !== '')
-        .map(([key, value]) => `${key}: ${value}`)
-        .join(', ');
 
-      console.log('Social links:', socialLinks);
-      console.log('Data:', data);
-
-      // Store social links in sessionStorage
-      if (data.website) {
-        sessionStorage.setItem('daoWebsite', data.website);
-      }
-      if (data.twitter) {
-        sessionStorage.setItem('daoTwitter', data.twitter);
-      }
-      if (data.discord) {
-        sessionStorage.setItem('daoDiscord', data.discord);
-      }
-      if (data.telegram) {
-        sessionStorage.setItem('daoTelegram', data.telegram);
-      }
-      if (data.instagram) {
-        sessionStorage.setItem('daoInstagram', data.instagram);
-      }
-      if (data.tiktok) {
-        sessionStorage.setItem('daoTiktok', data.tiktok);
+      // Normalize and store social links in sessionStorage
+      if (data.daoWebsite) {
+        const websiteValue = normalizeUrl(data.daoWebsite);
+        sessionStorage.setItem('daoWebsite', websiteValue);
       }
       
-      const responseMessage = socialLinks 
-        ? `I've saved your social links: ${socialLinks}. Now let's set up your governance model!` 
-        : "I've noted that you don't have any social links yet. No problem! Let's set up your governance model!";
+      if (data.daoTwitter) {
+        const twitterValue = normalizeTwitter(data.daoTwitter);
+        sessionStorage.setItem('daoTwitter', twitterValue);
+      }
+      
+      if (data.daoTelegram) {
+        const telegramValue = normalizeTelegram(data.daoTelegram);
+        sessionStorage.setItem('daoTelegram', telegramValue);
+      }
+      
+      if (data.daoDiscord) {
+        const discordValue = normalizeDiscord(data.daoDiscord);
+        sessionStorage.setItem('daoDiscord', discordValue);
+      }
+      
+      if (data.daoInstagram) {
+        const instagramValue = normalizeInstagram(data.daoInstagram);
+        sessionStorage.setItem('daoInstagram', instagramValue);
+      }
+      
+      if (data.daoTiktok) {
+        const tiktokValue = normalizeTiktok(data.daoTiktok);
+        sessionStorage.setItem('daoTiktok', tiktokValue);
+      }
+      
+      // Get social links for the response message
+      const socialLinks = [];
+      if (data.daoWebsite) socialLinks.push("Website");
+      if (data.daoTwitter) socialLinks.push("X (Twitter)");
+      if (data.daoTelegram) socialLinks.push("Telegram");
+      if (data.daoDiscord) socialLinks.push("Discord");
+      if (data.daoInstagram) socialLinks.push("Instagram");
+      if (data.daoTiktok) socialLinks.push("TikTok");
       
       return {
-        responseMessage,
         nextStep: 'dao-governance-model'
       };
     } catch (e) {
+      // If there's an error, just continue
       return {
-        responseMessage: "Thanks for the information. Let's move on to setting up your governance model!",
         nextStep: 'dao-governance-model' 
       };
     }
   }
 };
+
+// Helper functions to normalize social links
+function normalizeTwitter(value: string): string {
+  // If it's just a username without @, add full URL
+  if (/^[a-zA-Z0-9_]{1,15}$/.test(value)) {
+    return `https://twitter.com/${value}`;
+  }
+  
+  // If it's a handle with @, convert to URL
+  if (/^@[a-zA-Z0-9_]{1,15}$/.test(value)) {
+    return `https://twitter.com/${value.substring(1)}`;
+  }
+  
+  // If it's already a URL but missing https, add it
+  if (value.includes('twitter.com/') || value.includes('x.com/')) {
+    if (!value.startsWith('http')) {
+      return `https://${value}`;
+    }
+  }
+  
+  return value;
+}
+
+function normalizeDiscord(value: string): string {
+  // Always ensure Discord invites have https
+  if (value.startsWith('discord.gg/') || value.startsWith('www.discord.gg/')) {
+    return `https://${value.replace(/^www\./, '')}`;
+  }
+  
+  if (!value.startsWith('http')) {
+    return `https://${value}`;
+  }
+  
+  return value;
+}
+
+function normalizeUrl(value: string): string {
+  // Ensure URLs have https
+  if (!value.startsWith('http')) {
+    return `https://${value}`;
+  }
+  return value;
+}
+
+function normalizeTelegram(value: string): string {
+  // Format telegram links properly
+  if (value.startsWith('@')) {
+    return `https://t.me/${value.substring(1)}`;
+  }
+  
+  if (!value.startsWith('http') && !value.startsWith('t.me/')) {
+    return `https://t.me/${value}`;
+  }
+  
+  if (value.startsWith('t.me/')) {
+    return `https://${value}`;
+  }
+  
+  return value;
+}
+
+function normalizeInstagram(value: string): string {
+  // Format Instagram links properly
+  if (value.startsWith('@')) {
+    return `https://instagram.com/${value.substring(1)}`;
+  }
+  
+  if (!value.startsWith('http') && !value.includes('instagram.com/')) {
+    return `https://instagram.com/${value}`;
+  }
+  
+  if (value.includes('instagram.com/') && !value.startsWith('http')) {
+    return `https://${value}`;
+  }
+  
+  return value;
+}
+
+function normalizeTiktok(value: string): string {
+  // Format TikTok links properly
+  if (value.startsWith('@')) {
+    return `https://tiktok.com/${value}`;
+  }
+  
+  if (!value.startsWith('http') && !value.includes('tiktok.com/')) {
+    return `https://tiktok.com/@${value}`;
+  }
+  
+  if (value.includes('tiktok.com/') && !value.startsWith('http')) {
+    return `https://${value}`;
+  }
+  
+  return value;
+}
 
 export default DaoSocialStep; 

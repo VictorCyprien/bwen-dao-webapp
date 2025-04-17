@@ -1,10 +1,11 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
+import { getRandomMessage } from '../messages';
 
 const SurvalidationStep: OnboardingStep = {
   id: 'dao-survalidation',
   messages: [
     {
-      content: "Is there someone who has to survalidate the decisions (giving the final \"yes\")?",
+      content: getRandomMessage('dao-survalidation'),
       options: [
         "Selective - Only certain members can survalidate",
         "Election - Elected committee gives final approval",

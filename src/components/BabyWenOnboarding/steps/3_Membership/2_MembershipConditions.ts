@@ -1,10 +1,11 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
+import { getRandomMessage } from '../messages';
 
 const MembershipConditionsStep: OnboardingStep = {
   id: 'dao-membership-conditions',
   messages: [
     {
-      content: "Alright, let's set the stage for your new members!\nWhat are the conditions for someone to join your DAO?",
+      content: getRandomMessage('dao-membership-conditions'),
       options: [
         "Token Based - Members need to hold a certain amount of tokens",
         "Free (1 Token) - Anyone can join with minimal token ownership",
