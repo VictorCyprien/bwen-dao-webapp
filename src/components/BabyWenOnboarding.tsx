@@ -215,29 +215,62 @@ const BabyWenOnboarding: React.FC = () => {
     // Only play if this is a different step than the last played sound or a different variation
     if (stepId !== lastPlayedStepSound || variationIndex !== lastPlayedStepSoundIndex) {
       // Format: stepId-variationIndex.mp3 (e.g., dao-name-0.mp3)
-      const soundFileName = `${stepId}-${variationIndex}.mp3`;
+      const soundFileName = `${stepId}-${variationIndex}.wav`;
       
-      soundService.play(soundFileName)
-        .then(() => {
-          // Update last played step and variation
-          setLastPlayedStepSound(stepId);
-          setLastPlayedStepSoundIndex(variationIndex);
-        })
-        .catch(error => {
-          console.warn(`Could not play sound for step ${stepId} variation ${variationIndex}:`, error);
-          // Try to fall back to the default sound if variation doesn't exist
-          if (variationIndex > 0) {
-            soundService.play(`${stepId}-0.mp3`)
-              .then(() => {
-                setLastPlayedStepSound(stepId);
-                setLastPlayedStepSoundIndex(0);
-              })
-              .catch(fallbackError => {
-                console.warn(`Could not play fallback sound for step ${stepId}:`, fallbackError);
-              });
+      console.log(`Attempting to play sound: ${soundFileName}`);
+      
+      // Create a flag to track if this sound has been played
+      let soundPlayed = false;
+      
+      // Return a promise that resolves when the sound is played
+      return new Promise<boolean>((resolve, reject) => {
+        soundService.play(soundFileName)
+          .then((result) => {
+            console.log(`Successfully played sound: ${soundFileName}`);
+            // Update last played step and variation
+            setLastPlayedStepSound(stepId);
+            setLastPlayedStepSoundIndex(variationIndex);
+            soundPlayed = true;
+            resolve(true);
+          })
+          .catch(error => {
+            console.warn(`Could not play sound for step ${stepId} variation ${variationIndex}:`, error);
+            
+            // Try to fall back to the default sound if variation doesn't exist
+            if (variationIndex > 0) {
+              console.log(`Attempting to play fallback sound: ${stepId}-0.mp3`);
+              
+              soundService.play(`${stepId}-0.mp3`)
+                .then(() => {
+                  console.log(`Successfully played fallback sound: ${stepId}-0.mp3`);
+                  setLastPlayedStepSound(stepId);
+                  setLastPlayedStepSoundIndex(0);
+                  soundPlayed = true;
+                  resolve(true);
+                })
+                .catch(fallbackError => {
+                  console.warn(`Could not play fallback sound for step ${stepId}:`, fallbackError);
+                  // We couldn't play either sound, so resolve with false to indicate failure
+                  resolve(false);
+                });
+            } else {
+              // No fallback available, resolve with false to indicate failure
+              resolve(false);
+            }
+          });
+        
+        // Add a timeout to ensure we don't wait forever for a sound to play
+        setTimeout(() => {
+          if (!soundPlayed) {
+            console.warn(`Timed out waiting for sound ${soundFileName} to play`);
+            resolve(false);
           }
-        });
+        }, 5000); // 5 second timeout
+      });
     }
+    
+    // If the sound was already played, resolve immediately
+    return Promise.resolve(true);
   };
 
   // Check for wallet changes during onboarding
@@ -297,6 +330,11 @@ const BabyWenOnboarding: React.FC = () => {
 
   // Implement the updateCurrentStep function to handle all step transitions
   const updateCurrentStep = async (stepId: StepId) => {
+    // Stop any currently playing sound immediately
+    await soundService.stop().catch(error => {
+      console.warn('Error stopping audio playback:', error);
+    });
+    
     // Clear any previous UI state
     setIsTyping(true);
     setShowInput(false);
@@ -342,11 +380,17 @@ const BabyWenOnboarding: React.FC = () => {
           if (messageVariationIndex === -1) messageVariationIndex = 0;
         }
         
-        // Play sound for this step with the specific variation
-        playStepSound(stepId, messageVariationIndex);
+        // We no longer play sound here - moved to simulateBabyWenTyping
+        // This way sound plays after text appears
       }
       
-      await simulateBabyWenTyping(message.content, message.options, i === 0 ? undefined : stepId);
+      // Pass the variation index to simulateBabyWenTyping for first message
+      await simulateBabyWenTyping(
+        message.content, 
+        message.options, 
+        stepId,
+        i === 0 ? messageVariationIndex : undefined
+      );
     }
     
     // Show the input after all messages have been displayed (unless on final step)
@@ -357,6 +401,11 @@ const BabyWenOnboarding: React.FC = () => {
 
   // Update the processUserResponse function to use updateCurrentStep
   const processUserResponse = async (response: string) => {
+    // Stop any currently playing sound immediately
+    await soundService.stop().catch(error => {
+      console.warn('Error stopping audio playback:', error);
+    });
+    
     // Get the current step
     const step = steps[currentStep as keyof typeof steps];
     
@@ -428,6 +477,11 @@ const BabyWenOnboarding: React.FC = () => {
   const handleSendMessage = async () => {
     if (userInput.trim() === '') return;
     
+    // Stop any currently playing sound immediately
+    await soundService.stop().catch(error => {
+      console.warn('Error stopping audio playback:', error);
+    });
+    
     // Show loading immediately
     setIsTyping(true);
     setShowInput(false);
@@ -443,6 +497,11 @@ const BabyWenOnboarding: React.FC = () => {
   
   // Handle option click for multi-choice responses
   const handleOptionClick = async (option: string) => {
+    // Stop any currently playing sound immediately
+    await soundService.stop().catch(error => {
+      console.warn('Error stopping audio playback:', error);
+    });
+    
     // Show loading immediately
     setIsTyping(true);
     setShowInput(false);
@@ -456,6 +515,11 @@ const BabyWenOnboarding: React.FC = () => {
 
   // Handle form submission
   const handleFormSubmit = async (formData: Record<string, string>) => {
+    // Stop any currently playing sound immediately
+    await soundService.stop().catch(error => {
+      console.warn('Error stopping audio playback:', error);
+    });
+    
     // Show loading immediately
     setIsTyping(true);
     setShowInput(false);
@@ -476,7 +540,12 @@ const BabyWenOnboarding: React.FC = () => {
   };
 
   // Handle button action
-  const handleButtonAction = () => {
+  const handleButtonAction = async () => {
+    // Stop any currently playing sound immediately
+    await soundService.stop().catch(error => {
+      console.warn('Error stopping audio playback:', error);
+    });
+    
     const step = steps[currentStep as keyof typeof steps];
     
     if (step.buttonAction?.action === 'showAlert') {
@@ -648,11 +717,16 @@ const BabyWenOnboarding: React.FC = () => {
     }]);
     
     // Process the button action
-    processUserResponse('button_clicked');
+    await processUserResponse('button_clicked');
   };
 
   // Handle multi-select submission
-  const handleMultiSelectSubmit = (selectedOptions: string[]) => {
+  const handleMultiSelectSubmit = async (selectedOptions: string[]) => {
+    // Stop any currently playing sound immediately
+    await soundService.stop().catch(error => {
+      console.warn('Error stopping audio playback:', error);
+    });
+    
     // Show loading immediately
     setIsTyping(true);
     setShowInput(false);
@@ -673,17 +747,22 @@ const BabyWenOnboarding: React.FC = () => {
     sessionStorage.setItem(currentStep, optionsString);
     
     // Process the selected options
-    processUserResponse(optionsString);
+    await processUserResponse(optionsString);
   };
     
   // Simulate BabyWen typing with smoother transitions
-  const simulateBabyWenTyping = async (message: string, options?: string[], stepId?: StepId) => {
+  const simulateBabyWenTyping = async (
+    message: string, 
+    options?: string[], 
+    stepId?: StepId,
+    variationIndex?: number
+  ) => {
     // Show loading immediately
     setIsTyping(true);
     setShowInput(false);
     
     // Stop any currently playing sound when BabyWen starts typing
-    soundService.stop().catch(error => {
+    await soundService.stop().catch(error => {
       console.warn('Error stopping audio playback:', error);
     });
     
@@ -693,7 +772,24 @@ const BabyWenOnboarding: React.FC = () => {
     // Update messages with new content
     setMessages((prev: Message[]) => [...prev, { sender: 'babywen' as const, text: message, options }]);
     
-    // Don't play sound here, as it's handled in updateCurrentStep
+    // Wait a moment for the UI to update and show the message
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    // Play sound AFTER the text appears if this is the first message of a step and we have a stepId
+    if (stepId && variationIndex !== undefined) {
+      try {
+        // Wait a short moment for the text to be visible before playing sound
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        console.log(`Playing sound for step ${stepId} with variation ${variationIndex}`);
+        
+        // Now play the sound and await its completion
+        const result = await playStepSound(stepId, variationIndex);
+        console.log(`Sound play completed for ${stepId}-${variationIndex}:`, result);
+      } catch (error) {
+        console.error(`Error playing sound for step ${stepId}:`, error);
+      }
+    }
     
     // Immediate transition to show input
     setIsTyping(false);
@@ -746,6 +842,11 @@ const BabyWenOnboarding: React.FC = () => {
   
   // Handle going back to the previous step
   const handleGoBack = async () => {
+    // Stop any currently playing sound when going back
+    await soundService.stop().catch(error => {
+      console.warn('Error stopping audio playback:', error);
+    });
+    
     // Can't go back if we're at the first step or only have one step in history
     if (stepHistory.length <= 1) return;
     
@@ -824,6 +925,11 @@ const BabyWenOnboarding: React.FC = () => {
   
   // Handle custom component response
   const handleCustomComponentResponse = async (option: string, data?: any) => {
+    // Stop any currently playing sound immediately
+    await soundService.stop().catch(error => {
+      console.warn('Error stopping audio playback:', error);
+    });
+    
     console.log("handleCustomComponentResponse called with option:", option, "and data:", data);
     
     if (currentStepObj?.onCustomComponentResponse) {
@@ -909,7 +1015,13 @@ const BabyWenOnboarding: React.FC = () => {
           {canGoBack && (
             <div className="mt-3 flex justify-center">
               <button
-                onClick={handleGoBack}
+                onClick={() => {
+                  // Stop any sound before going back
+                  soundService.stop().catch(error => {
+                    console.warn('Error stopping audio playback:', error);
+                  });
+                  handleGoBack();
+                }}
                 className="text-xs text-indigo-400/70 hover:text-indigo-300 transition-colors"
               >
                 Go Back
@@ -977,7 +1089,13 @@ const BabyWenOnboarding: React.FC = () => {
         {canGoBack && (
           <div className="mt-3 flex justify-center">
             <button
-              onClick={handleGoBack}
+              onClick={() => {
+                // Stop any sound before going back
+                soundService.stop().catch(error => {
+                  console.warn('Error stopping audio playback:', error);
+                });
+                handleGoBack();
+              }}
               className="text-xs text-indigo-400/70 hover:text-indigo-300 transition-colors"
             >
               Go Back
