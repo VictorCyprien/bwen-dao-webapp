@@ -36,18 +36,6 @@ export class InputCreateUser {
     * Profile picture of the user
     */
     'profilePicture'?: HttpFile;
-    /**
-    * Discord username of the user
-    */
-    'discordUsername'?: string;
-    /**
-    * Twitter username of the user
-    */
-    'twitterUsername'?: string;
-    /**
-    * Telegram username of the user
-    */
-    'telegramUsername'?: string;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -83,24 +71,6 @@ export class InputCreateUser {
             "baseName": "profile_picture",
             "type": "HttpFile",
             "format": "binary"
-        },
-        {
-            "name": "discordUsername",
-            "baseName": "discord_username",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "twitterUsername",
-            "baseName": "twitter_username",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "telegramUsername",
-            "baseName": "telegram_username",
-            "type": "string",
-            "format": ""
         }    ];
 
     static getAttributeTypeMap() {

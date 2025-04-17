@@ -24,7 +24,6 @@ export class DAOUpdate {
     'website'?: string;
     'treasury'?: string;
     'profile'?: HttpFile;
-    'banner'?: HttpFile;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -94,12 +93,6 @@ export class DAOUpdate {
         {
             "name": "profile",
             "baseName": "profile",
-            "type": "HttpFile",
-            "format": "binary"
-        },
-        {
-            "name": "banner",
-            "baseName": "banner",
             "type": "HttpFile",
             "format": "binary"
         }    ];

@@ -232,7 +232,6 @@ const request: DaosApiCreateDAORequest = {
     website: "website_example",
     treasury: "treasury_example",
     profile: { data: Buffer.from(fs.readFileSync('/path/to/file', 'utf-8')), name: '/path/to/file' },
-    banner: { data: Buffer.from(fs.readFileSync('/path/to/file', 'utf-8')), name: '/path/to/file' },
   },
 };
 
@@ -1248,7 +1247,6 @@ const request: DaosApiUpdateDAORequest = {
     website: "website_example",
     treasury: "treasury_example",
     profile: { data: Buffer.from(fs.readFileSync('/path/to/file', 'utf-8')), name: '/path/to/file' },
-    banner: { data: Buffer.from(fs.readFileSync('/path/to/file', 'utf-8')), name: '/path/to/file' },
   },
 };
 
