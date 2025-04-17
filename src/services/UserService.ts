@@ -123,10 +123,7 @@ export class UserService {
       // Only set properties that are provided
       if (userData.username !== undefined) updateInput.username = userData.username;
       if (userData.email !== undefined) updateInput.email = userData.email;
-      if (userData.discordUsername !== undefined) updateInput.discordUsername = userData.discordUsername;
       if (userData.memberName !== undefined) updateInput.memberName = userData.memberName;
-      if (userData.twitterUsername !== undefined) updateInput.twitterUsername = userData.twitterUsername;
-      if (userData.telegramUsername !== undefined) updateInput.telegramUsername = userData.telegramUsername;
       
       // Process profile picture if provided
       if (userData.profilePicture) {
