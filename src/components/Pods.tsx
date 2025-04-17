@@ -42,6 +42,7 @@ const Pods = () => {
   const [podsFilter, setPodsFilter] = useState<'my' | 'available' | 'all'>('all');
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [podMembers, setPodMembers] = useState<Record<string, any[]>>({});
+  const [showNonMemberMessage, setShowNonMemberMessage] = useState<boolean>(true);
   
   // Get Solana wallet and transaction utilities
   const walletState = useWallet();
@@ -579,6 +580,8 @@ const Pods = () => {
   const renderNonMemberMessage = () => {
     // Different message if wallet is not connected
     if (!connected) {
+      if (!showNonMemberMessage) return null;
+      
       return (
         <div className="p-6">
           <div className="bg-surface-200 p-8 rounded-lg text-center">
@@ -587,6 +590,14 @@ const Pods = () => {
             <p className="text-text mb-6">
               Please connect your wallet to view and interact with PODs.
             </p>
+            <div className="flex justify-center space-x-4">
+              <button 
+                onClick={() => setShowNonMemberMessage(false)}
+                className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-8 py-3 rounded-md text-sm inline-flex items-center"
+              >
+                <X size={16} className="mr-2" /> Dismiss
+              </button>
+            </div>
           </div>
         </div>
       );
@@ -1070,7 +1081,7 @@ const Pods = () => {
         />
       )}
 
-      {!userIsDaoMember && !daoMembershipLoading && !loading && (
+      {!userIsDaoMember && !daoMembershipLoading && !loading && showNonMemberMessage && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-70 z-50">
           {renderNonMemberMessage()}
         </div>
