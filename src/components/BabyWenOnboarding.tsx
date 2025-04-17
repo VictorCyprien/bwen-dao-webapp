@@ -850,7 +850,7 @@ const BabyWenOnboarding: React.FC = () => {
           <div className="w-full mb-6">
             <DaoReviewDisplay />
           </div>
-          <div className="w-full">
+          <div className="w-full flex justify-center">
             <ButtonAction
               label={currentStepObj?.buttonAction?.label || 'Create DAO'}
               onClick={handleButtonAction}
