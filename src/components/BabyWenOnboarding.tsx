@@ -117,6 +117,9 @@ const BabyWenOnboarding: React.FC = () => {
   const [showInput, setShowInput] = React.useState<boolean>(false); // Start with input hidden
   const [inputType, setInputType] = React.useState<'text' | 'multiChoice' | 'form' | 'button' | 'multiSelect' | 'custom'>('text');
   const [redirectCountdown, setRedirectCountdown] = React.useState<number>(20); // Countdown timer for redirect
+  // Add refs to store interval and timeout IDs
+  const countdownIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const redirectTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   // Add initialFormValues state
   const [initialFormValues, setInitialFormValues] = React.useState<Record<string, string>>({});
   
@@ -606,11 +609,20 @@ const BabyWenOnboarding: React.FC = () => {
             });
           }, 1000);
           
+          // Store the interval ID
+          countdownIntervalRef.current = countdownInterval;
+          
           // Set a timeout to redirect after 20 seconds
-          setTimeout(() => {
-            clearInterval(countdownInterval);
+          const redirectTimeout = setTimeout(() => {
+            if (countdownIntervalRef.current) {
+              clearInterval(countdownIntervalRef.current);
+              countdownIntervalRef.current = null;
+            }
             navigate(`/daos/${daoId}`);
           }, 20000); // 20 second delay before redirect
+          
+          // Store the timeout ID
+          redirectTimeoutRef.current = redirectTimeout;
         } else {
           // Show error message
           simulateBabyWenTyping("I'm sorry, there was an error creating your DAO. Please try again.");
@@ -627,6 +639,17 @@ const BabyWenOnboarding: React.FC = () => {
     } else if (step.buttonAction?.action === 'goToDashboard') {
       // Get the created DAO ID
       const daoId = sessionStorage.getItem('createdDaoId') || '';
+      
+      // Clear the countdown interval and redirect timeout
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+      
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+        redirectTimeoutRef.current = null;
+      }
       
       // Clear all onboarding data except the DAO ID
       clearOnboardingData();
@@ -987,6 +1010,18 @@ const BabyWenOnboarding: React.FC = () => {
       </>
     );
   };
+  
+  // Clean up timers when component unmounts
+  React.useEffect(() => {
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+      if (redirectTimeoutRef.current) {
+        clearTimeout(redirectTimeoutRef.current);
+      }
+    };
+  }, []);
   
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white overflow-hidden relative">
