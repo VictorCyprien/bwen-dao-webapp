@@ -2,11 +2,17 @@ export * from '../models/ChallengeRequest';
 export * from '../models/ChallengeResponse';
 export * from '../models/ConnectionResponse';
 export * from '../models/ConnectionsList';
+export * from '../models/CreateDeviceRequest';
+export * from '../models/CreateDeviceResponse';
 export * from '../models/DAO';
 export * from '../models/DAOMembership';
 export * from '../models/DAOMembershipResponse';
 export * from '../models/DAOSchemaResponse';
 export * from '../models/DAOUpdate';
+export * from '../models/DeleteDeviceResponse';
+export * from '../models/Device';
+export * from '../models/DeviceList';
+export * from '../models/DeviceWithKey';
 export * from '../models/DisconnectResponse';
 export * from '../models/DiscordChannel';
 export * from '../models/DiscordChannelResponse';
@@ -57,11 +63,17 @@ import { ChallengeRequest } from '../models/ChallengeRequest';
 import { ChallengeResponse } from '../models/ChallengeResponse';
 import { ConnectionResponse } from '../models/ConnectionResponse';
 import { ConnectionsList } from '../models/ConnectionsList';
+import { CreateDeviceRequest } from '../models/CreateDeviceRequest';
+import { CreateDeviceResponse } from '../models/CreateDeviceResponse';
 import { DAO } from '../models/DAO';
 import { DAOMembership } from '../models/DAOMembership';
 import { DAOMembershipResponse } from '../models/DAOMembershipResponse';
 import { DAOSchemaResponse } from '../models/DAOSchemaResponse';
 import { DAOUpdate } from '../models/DAOUpdate';
+import { DeleteDeviceResponse } from '../models/DeleteDeviceResponse';
+import { Device } from '../models/Device';
+import { DeviceList } from '../models/DeviceList';
+import { DeviceWithKey } from '../models/DeviceWithKey';
 import { DisconnectResponse } from '../models/DisconnectResponse';
 import { DiscordChannel } from '../models/DiscordChannel';
 import { DiscordChannelResponse } from '../models/DiscordChannelResponse';
@@ -130,11 +142,17 @@ let typeMap: {[index: string]: any} = {
     "ChallengeResponse": ChallengeResponse,
     "ConnectionResponse": ConnectionResponse,
     "ConnectionsList": ConnectionsList,
+    "CreateDeviceRequest": CreateDeviceRequest,
+    "CreateDeviceResponse": CreateDeviceResponse,
     "DAO": DAO,
     "DAOMembership": DAOMembership,
     "DAOMembershipResponse": DAOMembershipResponse,
     "DAOSchemaResponse": DAOSchemaResponse,
     "DAOUpdate": DAOUpdate,
+    "DeleteDeviceResponse": DeleteDeviceResponse,
+    "Device": Device,
+    "DeviceList": DeviceList,
+    "DeviceWithKey": DeviceWithKey,
     "DisconnectResponse": DisconnectResponse,
     "DiscordChannel": DiscordChannel,
     "DiscordChannelResponse": DiscordChannelResponse,

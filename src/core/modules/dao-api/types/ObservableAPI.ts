@@ -7,11 +7,17 @@ import { ChallengeRequest } from '../models/ChallengeRequest';
 import { ChallengeResponse } from '../models/ChallengeResponse';
 import { ConnectionResponse } from '../models/ConnectionResponse';
 import { ConnectionsList } from '../models/ConnectionsList';
+import { CreateDeviceRequest } from '../models/CreateDeviceRequest';
+import { CreateDeviceResponse } from '../models/CreateDeviceResponse';
 import { DAO } from '../models/DAO';
 import { DAOMembership } from '../models/DAOMembership';
 import { DAOMembershipResponse } from '../models/DAOMembershipResponse';
 import { DAOSchemaResponse } from '../models/DAOSchemaResponse';
 import { DAOUpdate } from '../models/DAOUpdate';
+import { DeleteDeviceResponse } from '../models/DeleteDeviceResponse';
+import { Device } from '../models/Device';
+import { DeviceList } from '../models/DeviceList';
+import { DeviceWithKey } from '../models/DeviceWithKey';
 import { DisconnectResponse } from '../models/DisconnectResponse';
 import { DiscordChannel } from '../models/DiscordChannel';
 import { DiscordChannelResponse } from '../models/DiscordChannelResponse';
@@ -57,6 +63,206 @@ import { UserExistResponse } from '../models/UserExistResponse';
 import { UserInfoError } from '../models/UserInfoError';
 import { UserResponse } from '../models/UserResponse';
 import { VerifySignature } from '../models/VerifySignature';
+
+import { ApiKeysApiRequestFactory, ApiKeysApiResponseProcessor} from "../apis/ApiKeysApi";
+export class ObservableApiKeysApi {
+    private requestFactory: ApiKeysApiRequestFactory;
+    private responseProcessor: ApiKeysApiResponseProcessor;
+    private configuration: Configuration;
+
+    public constructor(
+        configuration: Configuration,
+        requestFactory?: ApiKeysApiRequestFactory,
+        responseProcessor?: ApiKeysApiResponseProcessor
+    ) {
+        this.configuration = configuration;
+        this.requestFactory = requestFactory || new ApiKeysApiRequestFactory(configuration);
+        this.responseProcessor = responseProcessor || new ApiKeysApiResponseProcessor();
+    }
+
+    /**
+     * Delete an API key
+     * @param deviceId
+     */
+    public apikeysDeviceIdDeleteWithHttpInfo(deviceId: string, _options?: ConfigurationOptions): Observable<HttpInfo<DeleteDeviceResponse>> {
+    let _config = this.configuration;
+    let allMiddleware: Middleware[] = [];
+    if (_options && _options.middleware){
+      const middlewareMergeStrategy = _options.middlewareMergeStrategy || 'replace' // default to replace behavior
+      // call-time middleware provided
+      const calltimeMiddleware: Middleware[] = _options.middleware;
+
+      switch(middlewareMergeStrategy){
+      case 'append':
+        allMiddleware = this.configuration.middleware.concat(calltimeMiddleware);
+        break;
+      case 'prepend':
+        allMiddleware = calltimeMiddleware.concat(this.configuration.middleware)
+        break;
+      case 'replace':
+        allMiddleware = calltimeMiddleware
+        break;
+      default: 
+        throw new Error(`unrecognized middleware merge strategy '${middlewareMergeStrategy}'`)
+      }
+	}
+	if (_options){
+    _config = {
+      baseServer: _options.baseServer || this.configuration.baseServer,
+      httpApi: _options.httpApi || this.configuration.httpApi,
+      authMethods: _options.authMethods || this.configuration.authMethods,
+      middleware: allMiddleware || this.configuration.middleware
+		};
+	}
+
+        const requestContextPromise = this.requestFactory.apikeysDeviceIdDelete(deviceId, _config);
+        // build promise chain
+        let middlewarePreObservable = from<RequestContext>(requestContextPromise);
+        for (const middleware of allMiddleware) {
+            middlewarePreObservable = middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => middleware.pre(ctx)));
+        }
+
+        return middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => this.configuration.httpApi.send(ctx))).
+            pipe(mergeMap((response: ResponseContext) => {
+                let middlewarePostObservable = of(response);
+                for (const middleware of allMiddleware.reverse()) {
+                    middlewarePostObservable = middlewarePostObservable.pipe(mergeMap((rsp: ResponseContext) => middleware.post(rsp)));
+                }
+                return middlewarePostObservable.pipe(map((rsp: ResponseContext) => this.responseProcessor.apikeysDeviceIdDeleteWithHttpInfo(rsp)));
+            }));
+    }
+
+    /**
+     * Delete an API key
+     * @param deviceId
+     */
+    public apikeysDeviceIdDelete(deviceId: string, _options?: ConfigurationOptions): Observable<DeleteDeviceResponse> {
+        return this.apikeysDeviceIdDeleteWithHttpInfo(deviceId, _options).pipe(map((apiResponse: HttpInfo<DeleteDeviceResponse>) => apiResponse.data));
+    }
+
+    /**
+     * Creates a new API key and returns it to the user.
+     * Create a new API key for the authenticated user
+     * @param createDeviceRequest
+     */
+    public createAPIKeyWithHttpInfo(createDeviceRequest: CreateDeviceRequest, _options?: ConfigurationOptions): Observable<HttpInfo<CreateDeviceResponse>> {
+    let _config = this.configuration;
+    let allMiddleware: Middleware[] = [];
+    if (_options && _options.middleware){
+      const middlewareMergeStrategy = _options.middlewareMergeStrategy || 'replace' // default to replace behavior
+      // call-time middleware provided
+      const calltimeMiddleware: Middleware[] = _options.middleware;
+
+      switch(middlewareMergeStrategy){
+      case 'append':
+        allMiddleware = this.configuration.middleware.concat(calltimeMiddleware);
+        break;
+      case 'prepend':
+        allMiddleware = calltimeMiddleware.concat(this.configuration.middleware)
+        break;
+      case 'replace':
+        allMiddleware = calltimeMiddleware
+        break;
+      default: 
+        throw new Error(`unrecognized middleware merge strategy '${middlewareMergeStrategy}'`)
+      }
+	}
+	if (_options){
+    _config = {
+      baseServer: _options.baseServer || this.configuration.baseServer,
+      httpApi: _options.httpApi || this.configuration.httpApi,
+      authMethods: _options.authMethods || this.configuration.authMethods,
+      middleware: allMiddleware || this.configuration.middleware
+		};
+	}
+
+        const requestContextPromise = this.requestFactory.createAPIKey(createDeviceRequest, _config);
+        // build promise chain
+        let middlewarePreObservable = from<RequestContext>(requestContextPromise);
+        for (const middleware of allMiddleware) {
+            middlewarePreObservable = middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => middleware.pre(ctx)));
+        }
+
+        return middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => this.configuration.httpApi.send(ctx))).
+            pipe(mergeMap((response: ResponseContext) => {
+                let middlewarePostObservable = of(response);
+                for (const middleware of allMiddleware.reverse()) {
+                    middlewarePostObservable = middlewarePostObservable.pipe(mergeMap((rsp: ResponseContext) => middleware.post(rsp)));
+                }
+                return middlewarePostObservable.pipe(map((rsp: ResponseContext) => this.responseProcessor.createAPIKeyWithHttpInfo(rsp)));
+            }));
+    }
+
+    /**
+     * Creates a new API key and returns it to the user.
+     * Create a new API key for the authenticated user
+     * @param createDeviceRequest
+     */
+    public createAPIKey(createDeviceRequest: CreateDeviceRequest, _options?: ConfigurationOptions): Observable<CreateDeviceResponse> {
+        return this.createAPIKeyWithHttpInfo(createDeviceRequest, _options).pipe(map((apiResponse: HttpInfo<CreateDeviceResponse>) => apiResponse.data));
+    }
+
+    /**
+     * Returns a list of API keys (with sensitive information removed)
+     * List all API keys for the authenticated user
+     */
+    public getAPIKeysWithHttpInfo(_options?: ConfigurationOptions): Observable<HttpInfo<DeviceList>> {
+    let _config = this.configuration;
+    let allMiddleware: Middleware[] = [];
+    if (_options && _options.middleware){
+      const middlewareMergeStrategy = _options.middlewareMergeStrategy || 'replace' // default to replace behavior
+      // call-time middleware provided
+      const calltimeMiddleware: Middleware[] = _options.middleware;
+
+      switch(middlewareMergeStrategy){
+      case 'append':
+        allMiddleware = this.configuration.middleware.concat(calltimeMiddleware);
+        break;
+      case 'prepend':
+        allMiddleware = calltimeMiddleware.concat(this.configuration.middleware)
+        break;
+      case 'replace':
+        allMiddleware = calltimeMiddleware
+        break;
+      default: 
+        throw new Error(`unrecognized middleware merge strategy '${middlewareMergeStrategy}'`)
+      }
+	}
+	if (_options){
+    _config = {
+      baseServer: _options.baseServer || this.configuration.baseServer,
+      httpApi: _options.httpApi || this.configuration.httpApi,
+      authMethods: _options.authMethods || this.configuration.authMethods,
+      middleware: allMiddleware || this.configuration.middleware
+		};
+	}
+
+        const requestContextPromise = this.requestFactory.getAPIKeys(_config);
+        // build promise chain
+        let middlewarePreObservable = from<RequestContext>(requestContextPromise);
+        for (const middleware of allMiddleware) {
+            middlewarePreObservable = middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => middleware.pre(ctx)));
+        }
+
+        return middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => this.configuration.httpApi.send(ctx))).
+            pipe(mergeMap((response: ResponseContext) => {
+                let middlewarePostObservable = of(response);
+                for (const middleware of allMiddleware.reverse()) {
+                    middlewarePostObservable = middlewarePostObservable.pipe(mergeMap((rsp: ResponseContext) => middleware.post(rsp)));
+                }
+                return middlewarePostObservable.pipe(map((rsp: ResponseContext) => this.responseProcessor.getAPIKeysWithHttpInfo(rsp)));
+            }));
+    }
+
+    /**
+     * Returns a list of API keys (with sensitive information removed)
+     * List all API keys for the authenticated user
+     */
+    public getAPIKeys(_options?: ConfigurationOptions): Observable<DeviceList> {
+        return this.getAPIKeysWithHttpInfo(_options).pipe(map((apiResponse: HttpInfo<DeviceList>) => apiResponse.data));
+    }
+
+}
 
 import { AuthApiRequestFactory, AuthApiResponseProcessor} from "../apis/AuthApi";
 export class ObservableAuthApi {
