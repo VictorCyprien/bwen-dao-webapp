@@ -205,8 +205,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
     }
   };
 
-
-
   // Add a ref for the 3D effect
   const logoRef = useRef<HTMLDivElement>(null);
   

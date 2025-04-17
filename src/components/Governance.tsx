@@ -166,6 +166,7 @@ const Governance = () => {
     }
   }, [isTransactionSuccess, isTransactionError, transactionSignature]);
 
+  // Fetch proposals
   const fetchProposals = async () => {
     if (!daoId) {
       console.error("No daoId available, cannot fetch proposals");
