@@ -945,11 +945,11 @@ const BabyWenOnboarding: React.FC = () => {
     <div className="min-h-screen bg-[#0a0a0a] text-white overflow-hidden relative">
       {/* Welcome Modal */}
       {showWelcomeModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] backdrop-blur-sm transition-all duration-500 ease-in-out animate-fadeIn">
-          <div className="bg-gradient-to-b from-[#1a1a1a] to-[#111] rounded-2xl p-8 max-w-2xl border border-indigo-500/30 shadow-2xl animate-scaleIn">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] backdrop-blur-sm transition-all duration-500 ease-in-out animate-fadeIn p-4">
+          <div className="bg-gradient-to-b from-[#1a1a1a] to-[#111] rounded-2xl p-4 sm:p-6 md:p-8 w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl border border-indigo-500/30 shadow-2xl animate-scaleIn">
             {/* Modal Header */}
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-white flex items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 gap-3">
+              <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center">
                 <Shield className="mr-2 text-indigo-400" size={24} /> 
                 Welcome to DAO Creation
               </h2>
@@ -966,24 +966,24 @@ const BabyWenOnboarding: React.FC = () => {
             </div>
             
             {/* Modal Content */}
-            <div className="mb-8">
-              <div className="flex items-start mb-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-                <AlertTriangle className="text-amber-500 shrink-0 mt-1 mr-3" size={20} />
+            <div className="mb-6 sm:mb-8">
+              <div className="flex flex-col sm:flex-row items-start mb-4 p-3 sm:p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                <AlertTriangle className="text-amber-500 shrink-0 mt-1 mr-0 sm:mr-3 mb-2 sm:mb-0" size={20} />
                 <div>
                   <h3 className="text-amber-400 font-medium mb-2">Important Wallet Security Notice</h3>
-                  <p className="text-white/80 text-sm leading-relaxed">
+                  <p className="text-white/80 text-xs sm:text-sm leading-relaxed">
                     You're about to begin the DAO creation process. For security best practices, we strongly 
                     recommend using a new, dedicated wallet created from a fresh seed phrase.
                   </p>
-                  <p className="text-white/80 text-sm leading-relaxed mt-2">
+                  <p className="text-white/80 text-xs sm:text-sm leading-relaxed mt-2">
                     The wallet you use will become the DAO's treasury wallet and will be used to deploy your 
                     DAO token contract. To protect your main assets, avoid using your primary wallet for this process.
                   </p>
                 </div>
               </div>
               
-              <h3 className="text-lg font-medium mb-3 text-indigo-300">What to expect:</h3>
-              <ul className="space-y-2 text-white/80 text-sm">
+              <h3 className="text-md sm:text-lg font-medium mb-2 sm:mb-3 text-indigo-300">What to expect:</h3>
+              <ul className="space-y-1 sm:space-y-2 text-white/80 text-xs sm:text-sm">
                 <li className="flex items-start">
                   <ChevronRight size={16} className="text-indigo-400 shrink-0 mt-1 mr-2" />
                   <span>A step-by-step guided process to customize your DAO</span>
@@ -1000,19 +1000,19 @@ const BabyWenOnboarding: React.FC = () => {
             </div>
             
             {/* Modal Footer */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <button
                 onClick={() => {
                   clearOnboardingData();
                   navigate('/');
                 }}
-                className="px-4 py-2 bg-[#333] hover:bg-[#444] text-white rounded-lg transition-colors"
+                className="w-full sm:w-auto px-4 py-2 bg-[#333] hover:bg-[#444] text-white rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button 
                 onClick={startOnboarding}
-                className={`px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg transition-all shadow-lg hover:shadow-indigo-500/25 font-medium ${!isWalletConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg transition-all shadow-lg hover:shadow-indigo-500/25 font-medium ${!isWalletConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
                 disabled={!isWalletConnected}
               >
                 {isWalletConnected ? 'I Understand, Let\'s Begin' : 'Connect Wallet to Begin'}
