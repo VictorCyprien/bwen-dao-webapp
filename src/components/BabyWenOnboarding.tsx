@@ -8,6 +8,7 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { soundService } from '../services/SoundService';
 import { userService } from '../services/UserService';
 import { daosService } from '../services/DaosService';
+import { onboardingMessages } from './BabyWenOnboarding/steps/messages';
 
 // Import components for the onboarding experience
 
@@ -101,6 +102,7 @@ const BabyWenOnboarding: React.FC = () => {
   
   // Track last played sound to prevent duplicates
   const [lastPlayedStepSound, setLastPlayedStepSound] = React.useState<StepId | null>(null);
+  const [lastPlayedStepSoundIndex, setLastPlayedStepSoundIndex] = React.useState<number | null>(null);
 
   // Active section for sidebar highlight
   const [activeSection, setActiveSection] = React.useState<string>('dashboard');
@@ -209,16 +211,31 @@ const BabyWenOnboarding: React.FC = () => {
   };
 
   // Function to play sound for a step and prevent duplicates
-  const playStepSound = (stepId: StepId) => {
-    // Only play if this is a different step than the last played sound
-    if (stepId !== lastPlayedStepSound) {
-      soundService.play(`${stepId}.mp3`)
+  const playStepSound = (stepId: StepId, variationIndex: number = 0) => {
+    // Only play if this is a different step than the last played sound or a different variation
+    if (stepId !== lastPlayedStepSound || variationIndex !== lastPlayedStepSoundIndex) {
+      // Format: stepId-variationIndex.mp3 (e.g., dao-name-0.mp3)
+      const soundFileName = `${stepId}-${variationIndex}.mp3`;
+      
+      soundService.play(soundFileName)
         .then(() => {
-          // Update last played step
+          // Update last played step and variation
           setLastPlayedStepSound(stepId);
+          setLastPlayedStepSoundIndex(variationIndex);
         })
         .catch(error => {
-          console.warn(`Could not play sound for step ${stepId}:`, error);
+          console.warn(`Could not play sound for step ${stepId} variation ${variationIndex}:`, error);
+          // Try to fall back to the default sound if variation doesn't exist
+          if (variationIndex > 0) {
+            soundService.play(`${stepId}-0.mp3`)
+              .then(() => {
+                setLastPlayedStepSound(stepId);
+                setLastPlayedStepSoundIndex(0);
+              })
+              .catch(fallbackError => {
+                console.warn(`Could not play fallback sound for step ${stepId}:`, fallbackError);
+              });
+          }
         });
     }
   };
@@ -292,9 +309,6 @@ const BabyWenOnboarding: React.FC = () => {
     const step = steps[stepId];
     if (!step) return;
     
-    // Play sound for this step if appropriate
-    playStepSound(stepId);
-    
     // Determine the input type for this step and update state
     const newInputType = determineInputType(step);
     setInputType(newInputType);
@@ -314,8 +328,25 @@ const BabyWenOnboarding: React.FC = () => {
     }
     
     // Display the step's messages sequentially
-    for (const message of step.messages) {
-      await simulateBabyWenTyping(message.content, message.options, stepId);
+    for (let i = 0; i < step.messages.length; i++) {
+      const message = step.messages[i];
+      // Get the message variation index (if first message of step)
+      let messageVariationIndex = 0;
+      if (i === 0) {
+        // If first message comes from messages.ts, it might be randomized
+        // We can get its index in onboardingMessages[stepId] array
+        const messageVariations = onboardingMessages[stepId];
+        if (messageVariations && messageVariations.length > 0) {
+          messageVariationIndex = messageVariations.indexOf(message.content);
+          // If not found, default to 0
+          if (messageVariationIndex === -1) messageVariationIndex = 0;
+        }
+        
+        // Play sound for this step with the specific variation
+        playStepSound(stepId, messageVariationIndex);
+      }
+      
+      await simulateBabyWenTyping(message.content, message.options, i === 0 ? undefined : stepId);
     }
     
     // Show the input after all messages have been displayed (unless on final step)
@@ -662,10 +693,7 @@ const BabyWenOnboarding: React.FC = () => {
     // Update messages with new content
     setMessages((prev: Message[]) => [...prev, { sender: 'babywen' as const, text: message, options }]);
     
-    // Play sound for the current step if a new stepId is provided
-    if (stepId) {
-      playStepSound(stepId);
-    }
+    // Don't play sound here, as it's handled in updateCurrentStep
     
     // Immediate transition to show input
     setIsTyping(false);
