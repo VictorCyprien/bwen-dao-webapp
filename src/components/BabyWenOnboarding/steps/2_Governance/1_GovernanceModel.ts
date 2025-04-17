@@ -2,6 +2,24 @@ import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
 import { OptionDetail } from '../../../BabyWenOnboarding/components/MultiChoiceInput';
 import { getRandomMessage } from '../messages';
 
+// Enum for governance model types
+export enum GovernanceModelType {
+  TOKEN_VOTE = 'token_vote',
+  MULTISIG = 'multisig',
+  REPUTATION = 'reputation',
+  QUADRATIC = 'quadratic',
+  CUSTOM = 'custom'
+}
+
+// Mapping from display name to enum value
+const governanceModelMapping: Record<string, GovernanceModelType> = {
+  'Token Vote': GovernanceModelType.TOKEN_VOTE,
+  'Multisig': GovernanceModelType.MULTISIG,
+  'Reputation': GovernanceModelType.REPUTATION,
+  'Quadratic': GovernanceModelType.QUADRATIC,
+  'Custom': GovernanceModelType.CUSTOM
+};
+
 // Detailed information for each governance model
 const governanceDetails: Record<string, OptionDetail> = {
   'Token Vote': {
@@ -85,14 +103,17 @@ const GovernanceModelStep: OnboardingStep = {
   optionDetails: governanceDetails,
   onResponse: (response: string) => {
     // Extract the governance model type from the response
-    const governanceType = response.split(' - ')[0];
+    const governanceDisplay = response.split(' - ')[0];
+    const governanceType = governanceModelMapping[governanceDisplay];
+    
+    // Store the enum value in sessionStorage
     sessionStorage.setItem('governanceModel', governanceType);
     
     // Process the selection
     let responseMessage = "";
     let nextStep: StepId = 'dao-token-existence'; // Templates go straight to token/membership
     
-    switch(governanceType) {
+    switch(governanceDisplay) {
       case "Token Vote":
         responseMessage = "You've selected Token Voting. This is a straightforward approach where voting power is proportional to token holdings.";
         break;
@@ -112,9 +133,6 @@ const GovernanceModelStep: OnboardingStep = {
       default:
         responseMessage = "Thanks for your selection! Let's continue setting up your DAO.";
     }
-    
-    // Store governance model type in context or state if needed
-    // For example: sessionStorage.setItem('governanceModel', governanceType);
     
     return {
       responseMessage,
