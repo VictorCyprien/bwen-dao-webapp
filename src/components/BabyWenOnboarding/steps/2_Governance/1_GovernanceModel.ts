@@ -1,5 +1,24 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
 import { OptionDetail } from '../../../BabyWenOnboarding/components/MultiChoiceInput';
+import { getRandomMessage } from '../messages';
+
+// Enum for governance model types
+export enum GovernanceModelType {
+  TOKEN_VOTE = 'token_vote',
+  MULTISIG = 'multisig',
+  REPUTATION = 'reputation',
+  QUADRATIC = 'quadratic',
+  CUSTOM = 'custom'
+}
+
+// Mapping from display name to enum value
+const governanceModelMapping: Record<string, GovernanceModelType> = {
+  'Token Vote': GovernanceModelType.TOKEN_VOTE,
+  'Multisig': GovernanceModelType.MULTISIG,
+  'Reputation': GovernanceModelType.REPUTATION,
+  'Quadratic': GovernanceModelType.QUADRATIC,
+  'Custom': GovernanceModelType.CUSTOM
+};
 
 // Enum for governance model types
 export enum GovernanceModelType {
@@ -88,7 +107,7 @@ const GovernanceModelStep: OnboardingStep = {
   id: 'dao-governance-model',
   messages: [
     {
-      content: "How do you want your DAO to make decisions?",
+      content: getRandomMessage('dao-governance-model'),
       options: [
         "Token Vote - Traditional token-weighted voting where 1 token equals 1 vote",
         "Multisig - A council of trusted members makes decisions by multiple signatures",

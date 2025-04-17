@@ -1,4 +1,19 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
+import { getRandomMessage } from '../messages';
+
+// Enum for vote rights options
+export enum VoteRightsType {
+  SELECTIVE = 'selective',
+  ELECTION = 'election',
+  EVERY_MEMBER = 'every_member'
+}
+
+// Mapping from display name to enum value
+const voteRightsMapping: Record<string, VoteRightsType> = {
+  "Selective - Only specific members can vote": VoteRightsType.SELECTIVE,
+  "Election - Members elect representatives who vote": VoteRightsType.ELECTION,
+  "Every Member - All members can vote on decisions": VoteRightsType.EVERY_MEMBER
+};
 
 // Enum for vote rights options
 export enum VoteRightsType {
@@ -18,7 +33,7 @@ const VoteRightsStep: OnboardingStep = {
   id: 'dao-vote-rights',
   messages: [
     {
-      content: "Who gets to cast their vote in your DAO?",
+      content: getRandomMessage('dao-vote-rights'),
       options: [
         "Selective - Only specific members can vote",
         "Election - Members elect representatives who vote",

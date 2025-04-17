@@ -1,10 +1,11 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
+import { getRandomMessage } from '../messages';
 
 const VoteDelegationStep: OnboardingStep = {
   id: 'dao-vote-delegation',
   messages: [
     {
-      content: "Can members hand over their vote to someone they trust?",
+      content: getRandomMessage('dao-vote-delegation'),
       options: [
         "Yes - Members can delegate their voting power",
         "No - Voting power cannot be transferred"

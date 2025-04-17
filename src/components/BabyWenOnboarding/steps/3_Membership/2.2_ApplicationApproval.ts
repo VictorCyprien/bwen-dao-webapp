@@ -1,4 +1,20 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
+import { getRandomMessage } from '../messages';
+
+// Enum for application approval options
+export enum ApplicationApprovalType {
+  SELECTIVE = 'selective',
+  ELECTION = 'election',
+  EVERYBODY = 'everybody'
+}
+
+// Mapping from display name to enum value
+const applicationApprovalMapping: Record<string, ApplicationApprovalType> = {
+  "Selective - Only specific members can approve applications": ApplicationApprovalType.SELECTIVE,
+  "Election - An elected committee approves new members": ApplicationApprovalType.ELECTION,
+  "Everybody - All existing members vote on new applications": ApplicationApprovalType.EVERYBODY
+};
+
 
 // Enum for application approval options
 export enum ApplicationApprovalType {
@@ -19,7 +35,7 @@ const ApplicationApprovalStep: OnboardingStep = {
   id: 'dao-application-approval',
   messages: [
     {
-      content: "Who gets to approve who joins your DAO?",
+      content: getRandomMessage('dao-application-approval'),
       options: [
         "Selective - Only specific members can approve applications",
         "Election - An elected committee approves new members",

@@ -9,5 +9,5 @@ export { RequiredError } from "./apis/baseapi";
 
 export type { PromiseMiddleware as Middleware, Middleware as ObservableMiddleware } from './middleware';
 export { Observable } from './rxjsStub';
-export { PromiseAuthApi as AuthApi,  PromiseDaosApi as DaosApi,  PromiseDiscordOauthApi as DiscordOauthApi,  PromiseProposalsApi as ProposalsApi,  PromiseSocialConnectionsApi as SocialConnectionsApi,  PromiseTelegramAuthApi as TelegramAuthApi,  PromiseTreasuryApi as TreasuryApi,  PromiseTwitterOauthApi as TwitterOauthApi,  PromiseUsersApi as UsersApi } from './types/PromiseAPI';
+export { PromiseApiKeysApi as ApiKeysApi,  PromiseAuthApi as AuthApi,  PromiseDaosApi as DaosApi,  PromiseDiscordOauthApi as DiscordOauthApi,  PromiseProposalsApi as ProposalsApi,  PromiseSocialConnectionsApi as SocialConnectionsApi,  PromiseTelegramAuthApi as TelegramAuthApi,  PromiseTreasuryApi as TreasuryApi,  PromiseTwitterOauthApi as TwitterOauthApi,  PromiseUsersApi as UsersApi } from './types/PromiseAPI';
 

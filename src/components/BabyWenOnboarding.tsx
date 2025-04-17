@@ -76,6 +76,12 @@ export interface OnboardingStep {
   multiSelectOptions?: string[];
   // Option details for MultiChoiceInput
   optionDetails?: Record<string, { title: string; description: string }>;
+  // Support for custom components
+  customComponent?: React.ComponentType<any>;
+  onCustomComponentResponse?: (option: string, data?: any) => {
+    responseMessage?: string;
+    nextStep?: StepId;
+  };
   onResponse: (response: string) => {
     responseMessage?: string;
     nextStep?: StepId;
@@ -107,7 +113,7 @@ const BabyWenOnboarding: React.FC = () => {
   const [isTyping, setIsTyping] = React.useState<boolean>(false);
   const [showExitConfirmation, setShowExitConfirmation] = React.useState<boolean>(false);
   const [showInput, setShowInput] = React.useState<boolean>(false); // Start with input hidden
-  const [inputType, setInputType] = React.useState<'text' | 'multiChoice' | 'form' | 'button' | 'multiSelect'>('text');
+  const [inputType, setInputType] = React.useState<'text' | 'multiChoice' | 'form' | 'button' | 'multiSelect' | 'custom'>('text');
   const [redirectCountdown, setRedirectCountdown] = React.useState<number>(20); // Countdown timer for redirect
   // Add initialFormValues state
   const [initialFormValues, setInitialFormValues] = React.useState<Record<string, string>>({});
@@ -195,29 +201,11 @@ const BabyWenOnboarding: React.FC = () => {
     setTimeout(() => setShowVideoAndQuestion(true), 500);
     setTimeout(() => {
       setShowInputContainer(true);
-      setShowInput(true); // Only show input after container is visible
+      
+      // Instead of manually setting up the first step, use our updateCurrentStep function
+      // This ensures consistent behavior for all step transitions
+      updateCurrentStep('dao-name');
     }, 1500); // Increased delay to ensure it appears after video/question
-    
-    // Get the first message of the dao-name step
-    const firstMessage = steps['dao-name'].messages[0];
-    
-    // Add the first message to the chat
-    setMessages([
-      {
-        sender: 'babywen',
-        text: firstMessage.content,
-        options: firstMessage.options
-      }
-    ]);
-    
-    // Play sound for the first step using the step ID
-    const firstStepId: StepId = 'dao-name';
-    
-    // Play sound and set as last played
-    playStepSound(firstStepId);
-    
-    // Determine the input type based on the step
-    determineInputType(steps['dao-name']);
   };
 
   // Function to play sound for a step and prevent duplicates
@@ -249,42 +237,30 @@ const BabyWenOnboarding: React.FC = () => {
 
   // Initialize with welcome modal
   React.useEffect(() => {
+    // Clear any previous onboarding data when component mounts
+    // But preserve the createdDaoId if it exists
+    const createdDaoId = sessionStorage.getItem('createdDaoId');
+    clearOnboardingData();
+    if (createdDaoId) {
+      sessionStorage.setItem('createdDaoId', createdDaoId);
+    }
     // Animation starts after user proceeds from welcome modal
   }, []);
 
   // Function to determine the input type based on the step
   const determineInputType = (step: OnboardingStep) => {
-    if (!step) {
-      setInputType('text'); // Default to text input if step is undefined
-      return;
-    }
-    
-    // Special handling for review step
-    if (step.id === 'dao-review') {
-      setInputType('button');
-    }
-    
-    if (step.formFields) {
-      setInputType('form');
-      
-      // Special handling for social links step
-      if (step.id === 'dao-social') {
-        // Use the specialized function to get social links
-        const socialLinks = getInitialSocialLinks();
-        setInitialFormValues(socialLinks);
-      } else {
-        // Get initial form values for other form steps from sessionStorage
-        const values = getInitialFormValues(step.formFields);
-        setInitialFormValues(values);
-      }
+    if (step.customComponent) {
+      return 'custom';
+    } else if (step.formFields && step.formFields.length > 0) {
+      return 'form';
     } else if (step.buttonAction) {
-      setInputType('button');
-    } else if (step.multiSelectOptions) {
-      setInputType('multiSelect');
-    } else if (step.messages?.[0]?.options) {
-      setInputType('multiChoice');
+      return 'button';
+    } else if (step.multiSelectOptions && step.multiSelectOptions.length > 0) {
+      return 'multiSelect';
+    } else if (step.messages[0].options && step.messages[0].options.length > 0) {
+      return 'multiChoice';
     } else {
-      setInputType('text');
+      return 'text';
     }
   };
 
@@ -302,35 +278,62 @@ const BabyWenOnboarding: React.FC = () => {
     return values;
   };
 
-  // Handle sending a message
-  const handleSendMessage = async () => {
-    if (userInput.trim() === '') return;
-    
-    // Show loading immediately
+  // Implement the updateCurrentStep function to handle all step transitions
+  const updateCurrentStep = async (stepId: StepId) => {
+    // Clear any previous UI state
     setIsTyping(true);
     setShowInput(false);
+    setMessages([]);
     
-    // Add user message to chat
-    const newUserMessage = { sender: 'user' as const, text: userInput.trim() };
-    setMessages((prev: Message[]) => [...prev, newUserMessage]);
-    setUserInput('');
+    // Update the current step state
+    setCurrentStep(stepId);
     
-    // Process user input based on current step
-    await processUserResponse(userInput.trim());
+    // Get the step object for the new step
+    const step = steps[stepId];
+    if (!step) return;
+    
+    // Play sound for this step if appropriate
+    playStepSound(stepId);
+    
+    // Determine the input type for this step and update state
+    const newInputType = determineInputType(step);
+    setInputType(newInputType);
+    
+    // Handle form data initialization if this is a form step
+    if (newInputType === 'form' && step.formFields) {
+      // Special handling for social links step
+      if (step.id === 'dao-social') {
+        // Use the specialized function to get social links
+        const socialLinks = getInitialSocialLinks();
+        setInitialFormValues(socialLinks);
+      } else {
+        // Get initial form values for other form steps from sessionStorage
+        const values = getInitialFormValues(step.formFields);
+        setInitialFormValues(values);
+      }
+    }
+    
+    // Display the step's messages sequentially
+    for (const message of step.messages) {
+      await simulateBabyWenTyping(message.content, message.options, stepId);
+    }
+    
+    // Show the input after all messages have been displayed (unless on final step)
+    if (stepId !== 'dao-success') {
+      setShowInput(true);
+    }
   };
-  
-  // Process user response based on current step
+
+  // Update the processUserResponse function to use updateCurrentStep
   const processUserResponse = async (response: string) => {
     // Get the current step
     const step = steps[currentStep as keyof typeof steps];
     
-    // Get the response message from the step
+    // Get the response from the step
     const result = step.onResponse(response);
     
     // If there's a response message, simulate BabyWen typing
     if (result.responseMessage) {
-      // For response messages, we don't change the step, so don't pass a stepId
-      // This ensures we don't play the sound again for the same step
       await simulateBabyWenTyping(result.responseMessage);
     }
     
@@ -338,7 +341,7 @@ const BabyWenOnboarding: React.FC = () => {
     const determineNextStep = () => {
       // Check if the step's onResponse returned a specific nextStep
       if (result.nextStep) {
-        return result.nextStep as StepId;
+        return result.nextStep;
       }
       
       // Define the sequence of steps (default flow)
@@ -369,7 +372,7 @@ const BabyWenOnboarding: React.FC = () => {
       ];
       
       // Find current step index
-      const currentIndex = flowOrder.indexOf(currentStep as StepId);
+      const currentIndex = flowOrder.indexOf(currentStep);
       
       // If we're at the end of the flow, go back to the beginning
       if (currentIndex === flowOrder.length - 1) {
@@ -382,21 +385,29 @@ const BabyWenOnboarding: React.FC = () => {
     
     // Get the next step based on the flow
     const nextStepId = determineNextStep();
-    const nextStep = steps[nextStepId as keyof typeof steps];
     
     // Update step history
     setStepHistory((prev: StepId[]) => [...prev, nextStepId]);
     
-    // Set the next step and show its first message immediately
-    setCurrentStep(nextStepId);
+    // Update to the next step using our new function
+    await updateCurrentStep(nextStepId);
+  };
+  
+  // Handle sending a message
+  const handleSendMessage = async () => {
+    if (userInput.trim() === '') return;
     
-    // Show next step's message immediately
-    if (nextStep) {
-      const nextMessage = nextStep.messages[0];
-      // Pass the new step ID for audio
-      await simulateBabyWenTyping(nextMessage.content, nextMessage.options, nextStepId);
-      determineInputType(nextStep);
-    }
+    // Show loading immediately
+    setIsTyping(true);
+    setShowInput(false);
+    
+    // Add user message to chat
+    const newUserMessage = { sender: 'user' as const, text: userInput.trim() };
+    setMessages((prev: Message[]) => [...prev, newUserMessage]);
+    setUserInput('');
+    
+    // Process user input based on current step
+    await processUserResponse(userInput.trim());
   };
   
   // Handle option click for multi-choice responses
@@ -468,6 +479,49 @@ const BabyWenOnboarding: React.FC = () => {
       setIsTyping(true);
       setShowInput(false);
       
+      // Handle logo file if it exists
+      let logoFile: File | undefined = undefined;
+      const logoFileString = sessionStorage.getItem('daoLogoFile');
+      const logoType = sessionStorage.getItem('daoLogoType');
+      const logoUrl = sessionStorage.getItem('daoLogoUrl');
+      
+      // Convert dataURL back to File object for uploaded files
+      if (logoFileString && logoType === 'upload') {
+        try {
+          const fileData = JSON.parse(logoFileString);
+          if (fileData.dataUrl) {
+            // Convert base64 data to blob
+            const byteString = atob(fileData.dataUrl.split(',')[1]);
+            const mimeType = fileData.dataUrl.split(',')[0].split(':')[1].split(';')[0];
+            const arrayBuffer = new ArrayBuffer(byteString.length);
+            const uint8Array = new Uint8Array(arrayBuffer);
+            
+            for (let i = 0; i < byteString.length; i++) {
+              uint8Array[i] = byteString.charCodeAt(i);
+            }
+            
+            const blob = new Blob([arrayBuffer], { type: mimeType });
+            logoFile = new File([blob], fileData.name, { type: fileData.type });
+            console.log("Restored file from sessionStorage:", fileData.name);
+          }
+        } catch (err) {
+          console.error("Error converting stored logo data to File:", err);
+        }
+      } 
+      // Handle URL-based logos
+      else if (logoType === 'url' && logoUrl) {
+        // Log that we're using a URL-based logo
+        console.log("Logo URL provided but direct file upload required:", logoUrl);
+        
+        // In a production application, we would:
+        // 1. Fetch the image from the URL
+        // 2. Convert it to a File object
+        // 3. Use it as profilePicture
+        // 
+        // For now, we'll just log it but not include it in the DAO creation
+        console.warn("URLs for logos are not fully supported in this version of the application");
+      }
+      
       // Call the DAO creation service
       daosService.createDao({
         name: collectedData.name,
@@ -479,7 +533,9 @@ const BabyWenOnboarding: React.FC = () => {
         telegram: collectedData.telegram,
         instagram: collectedData.instagram,
         tiktok: collectedData.tiktok,
-        website: collectedData.website
+        website: collectedData.website,
+        // Use the converted file if available
+        profilePicture: logoFile
       }).then(result => {
         if (result) {
           const daoId = result.daoId?.toString() || '';
@@ -488,22 +544,10 @@ const BabyWenOnboarding: React.FC = () => {
           // Store the DAO ID for the success step to use
           sessionStorage.setItem('createdDaoId', daoId);
           
-          // Clear all form data from sessionStorage but keep the created DAO ID
-          const keysToRemove = [
-            // Basic information
-            'daoName', 'daoDescription', 'daoLogo', 
-            // Social links
-            'daoTwitter', 'daoDiscord', 'daoWebsite', 'daoTelegram', 'daoInstagram', 'daoTiktok',
-            // Token information
-            'hasExistingToken', 'tokenAddress', 'tokenName', 'tokenTicker',
-            // Membership information
-            'membershipConditions', 'tokenThreshold', 'applicationApproval',
-            // Governance information
-            'governanceModel', 'ideaRights', 'voteRights', 'survalidation', 'votingPower', 'voteDelegation'
-          ];
-          
-          // Remove each key
-          keysToRemove.forEach(key => sessionStorage.removeItem(key));
+          // Clear all onboarding data but keep the created DAO ID
+          clearOnboardingData();
+          // Make sure to keep the DAO ID
+          sessionStorage.setItem('createdDaoId', daoId);
           
           // Show success message and change to success step
           setCurrentStep('dao-success');
@@ -552,6 +596,9 @@ const BabyWenOnboarding: React.FC = () => {
     } else if (step.buttonAction?.action === 'goToDashboard') {
       // Get the created DAO ID
       const daoId = sessionStorage.getItem('createdDaoId') || '';
+      
+      // Clear all onboarding data except the DAO ID
+      clearOnboardingData();
       
       // Navigate to the DAO dashboard
       if (daoId) {
@@ -625,12 +672,36 @@ const BabyWenOnboarding: React.FC = () => {
     setShowInput(true);
   };
   
+  // Function to clear all onboarding data from sessionStorage
+  const clearOnboardingData = () => {
+    const keysToRemove = [
+      // Basic information
+      'daoName', 'daoDescription', 'daoLogo',
+      // Logo-related data
+      'daoLogoType', 'daoLogoFileName', 'daoLogoUrl', 'daoLogoFile',
+      // Social links
+      'daoTwitter', 'daoDiscord', 'daoWebsite', 'daoTelegram', 'daoInstagram', 'daoTiktok',
+      // Token information
+      'hasExistingToken', 'tokenAddress', 'tokenName', 'tokenTicker',
+      // Membership information
+      'membershipConditions', 'tokenThreshold', 'applicationApproval',
+      // Governance information
+      'governanceModel', 'ideaRights', 'voteRights', 'survalidation', 'votingPower', 'voteDelegation'
+    ];
+
+    // Remove each key
+    keysToRemove.forEach(key => sessionStorage.removeItem(key));
+    console.log("Cleared all onboarding data from sessionStorage");
+  };
+
   // Handle exit confirmation dialog
   const handleExitClick = () => {
     setShowExitConfirmation(true);
   };
-  
+
   const confirmExit = () => {
+    // Clear all data before exiting
+    clearOnboardingData();
     navigate('/');
   };
   
@@ -660,20 +731,57 @@ const BabyWenOnboarding: React.FC = () => {
     
     // Update state
     setStepHistory(newHistory);
-    setCurrentStep(previousStepId);
+    
+    // Hide input while we reset
+    setShowInput(false);
     
     // Reset last played sound to ensure we can hear the previous step sound
     setLastPlayedStepSound(null);
     
-    // Clear messages and show the previous step's first message
+    // Clear messages
     setMessages([]);
     
-    // Show previous step's message
-    if (previousStep) {
-      const previousMessage = previousStep.messages[0];
-      // Pass the previous step ID for audio
-      await simulateBabyWenTyping(previousMessage.content, previousMessage.options, previousStepId);
-      determineInputType(previousStep);
+    // Determine input type for the previous step
+    const prevInputType = determineInputType(previousStep);
+    setInputType(prevInputType);
+    
+    // If the previous step is a form, initialize the form values
+    if (prevInputType === 'form' && previousStep.formFields) {
+      // Special handling for social links step
+      if (previousStep.id === 'dao-social') {
+        // Use the specialized function to get social links
+        const socialLinks = getInitialSocialLinks();
+        setInitialFormValues(socialLinks);
+      } else {
+        // Get initial form values for other form steps from sessionStorage
+        const values = getInitialFormValues(previousStep.formFields);
+        setInitialFormValues(values);
+      }
+    }
+    
+    // Now update the current step (this will trigger the display of messages and show input)
+    await updateCurrentStep(previousStepId);
+
+    // Clear specific sessionStorage variables based on which step we're going back from
+    if (previousStepId === 'dao-governance-model') {
+      // Remove all governance info variables
+      const governanceKeys = [
+        'governanceModel', 'ideaRights', 'voteRights', 
+        'survalidation', 'votingPower', 'voteDelegation',
+      ];
+      governanceKeys.forEach(key => sessionStorage.removeItem(key));
+    } else if (previousStepId === 'dao-token-existence') {
+      // Remove all token info variables
+      const tokenKeys = [
+        'hasExistingToken', 'tokenAddress', 'tokenName', 'tokenTicker'
+      ];
+      tokenKeys.forEach(key => sessionStorage.removeItem(key));
+    } else if (previousStepId === 'dao-membership-conditions') {
+      // Remove all membership info variables
+      const membershipKeys = [
+        'membershipConditions', 'membershipType', 'tokenThreshold', 'applicationApproval', 'approvalType'
+      ];
+      membershipKeys.forEach(key => sessionStorage.removeItem(key));
     }
 
     // Clear specific sessionStorage variables based on which step we're going back from
@@ -706,6 +814,32 @@ const BabyWenOnboarding: React.FC = () => {
     
     // Keep the welcome modal open so user can return to it after connecting
     setShowWelcomeModal(true);
+  };
+  
+  // Handle custom component response
+  const handleCustomComponentResponse = async (option: string, data?: any) => {
+    console.log("handleCustomComponentResponse called with option:", option, "and data:", data);
+    
+    if (currentStepObj?.onCustomComponentResponse) {
+      const result = currentStepObj.onCustomComponentResponse(option, data);
+      console.log("Custom component response result:", result);
+      
+      if (result.responseMessage) {
+        await simulateBabyWenTyping(result.responseMessage);
+      }
+      
+      if (result.nextStep) {
+        console.log("Moving to next step:", result.nextStep);
+        // Update step history
+        setStepHistory((prev: StepId[]) => [...prev, result.nextStep!]);
+        // Use the updateCurrentStep function instead of directly setting the state
+        await updateCurrentStep(result.nextStep);
+      } else {
+        console.log("No nextStep provided in result");
+      }
+    } else {
+      console.log("No onCustomComponentResponse handler found for current step");
+    }
   };
   
   // Render appropriate input component based on input type
@@ -757,7 +891,7 @@ const BabyWenOnboarding: React.FC = () => {
           <div className="w-full mb-6">
             <DaoReviewDisplay />
           </div>
-          <div className="w-full">
+          <div className="w-full flex justify-center">
             <ButtonAction
               label={currentStepObj?.buttonAction?.label || 'Create DAO'}
               onClick={handleButtonAction}
@@ -824,6 +958,13 @@ const BabyWenOnboarding: React.FC = () => {
               onSubmit={handleMultiSelectSubmit}
             />
           )}
+          
+          {inputType === 'custom' && currentStepObj?.customComponent && (
+            React.createElement(currentStepObj.customComponent, {
+              onSelectOption: handleCustomComponentResponse,
+              key: currentStep // Add key to force re-render when step changes
+            })
+          )}
         </div>
         
         {/* Back button */}
@@ -845,11 +986,11 @@ const BabyWenOnboarding: React.FC = () => {
     <div className="min-h-screen bg-[#0a0a0a] text-white overflow-hidden relative">
       {/* Welcome Modal */}
       {showWelcomeModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] backdrop-blur-sm transition-all duration-500 ease-in-out animate-fadeIn">
-          <div className="bg-gradient-to-b from-[#1a1a1a] to-[#111] rounded-2xl p-8 max-w-2xl border border-indigo-500/30 shadow-2xl animate-scaleIn">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] backdrop-blur-sm transition-all duration-500 ease-in-out animate-fadeIn p-4">
+          <div className="bg-gradient-to-b from-[#1a1a1a] to-[#111] rounded-2xl p-4 sm:p-6 md:p-8 w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl border border-indigo-500/30 shadow-2xl animate-scaleIn">
             {/* Modal Header */}
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-white flex items-center">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 gap-3">
+              <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center">
                 <Shield className="mr-2 text-indigo-400" size={24} /> 
                 Welcome to DAO Creation
               </h2>
@@ -866,24 +1007,24 @@ const BabyWenOnboarding: React.FC = () => {
             </div>
             
             {/* Modal Content */}
-            <div className="mb-8">
-              <div className="flex items-start mb-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-                <AlertTriangle className="text-amber-500 shrink-0 mt-1 mr-3" size={20} />
+            <div className="mb-6 sm:mb-8">
+              <div className="flex flex-col sm:flex-row items-start mb-4 p-3 sm:p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                <AlertTriangle className="text-amber-500 shrink-0 mt-1 mr-0 sm:mr-3 mb-2 sm:mb-0" size={20} />
                 <div>
                   <h3 className="text-amber-400 font-medium mb-2">Important Wallet Security Notice</h3>
-                  <p className="text-white/80 text-sm leading-relaxed">
+                  <p className="text-white/80 text-xs sm:text-sm leading-relaxed">
                     You're about to begin the DAO creation process. For security best practices, we strongly 
                     recommend using a new, dedicated wallet created from a fresh seed phrase.
                   </p>
-                  <p className="text-white/80 text-sm leading-relaxed mt-2">
+                  <p className="text-white/80 text-xs sm:text-sm leading-relaxed mt-2">
                     The wallet you use will become the DAO's treasury wallet and will be used to deploy your 
                     DAO token contract. To protect your main assets, avoid using your primary wallet for this process.
                   </p>
                 </div>
               </div>
               
-              <h3 className="text-lg font-medium mb-3 text-indigo-300">What to expect:</h3>
-              <ul className="space-y-2 text-white/80 text-sm">
+              <h3 className="text-md sm:text-lg font-medium mb-2 sm:mb-3 text-indigo-300">What to expect:</h3>
+              <ul className="space-y-1 sm:space-y-2 text-white/80 text-xs sm:text-sm">
                 <li className="flex items-start">
                   <ChevronRight size={16} className="text-indigo-400 shrink-0 mt-1 mr-2" />
                   <span>A step-by-step guided process to customize your DAO</span>
@@ -900,16 +1041,19 @@ const BabyWenOnboarding: React.FC = () => {
             </div>
             
             {/* Modal Footer */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <button
-                onClick={() => navigate('/')}
-                className="px-4 py-2 bg-[#333] hover:bg-[#444] text-white rounded-lg transition-colors"
+                onClick={() => {
+                  clearOnboardingData();
+                  navigate('/');
+                }}
+                className="w-full sm:w-auto px-4 py-2 bg-[#333] hover:bg-[#444] text-white rounded-lg transition-colors"
               >
                 Cancel
               </button>
               <button 
                 onClick={startOnboarding}
-                className={`px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg transition-all shadow-lg hover:shadow-indigo-500/25 font-medium ${!isWalletConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg transition-all shadow-lg hover:shadow-indigo-500/25 font-medium ${!isWalletConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
                 disabled={!isWalletConnected}
               >
                 {isWalletConnected ? 'I Understand, Let\'s Begin' : 'Connect Wallet to Begin'}

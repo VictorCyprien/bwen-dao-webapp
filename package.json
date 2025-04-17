@@ -18,6 +18,7 @@
     "@solana/wallet-adapter-react-ui": "^0.9.34",
     "@solana/wallet-adapter-wallets": "^0.19.23",
     "@solana/web3.js": "^1.87.6",
+    "axios": "^1.8.4",
     "borsh": "^2.0.0",
     "bs58": "^6.0.0",
     "chart.js": "^4.4.8",

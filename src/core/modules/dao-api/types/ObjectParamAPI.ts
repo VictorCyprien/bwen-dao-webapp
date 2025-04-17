@@ -6,11 +6,17 @@ import { ChallengeRequest } from '../models/ChallengeRequest';
 import { ChallengeResponse } from '../models/ChallengeResponse';
 import { ConnectionResponse } from '../models/ConnectionResponse';
 import { ConnectionsList } from '../models/ConnectionsList';
+import { CreateDeviceRequest } from '../models/CreateDeviceRequest';
+import { CreateDeviceResponse } from '../models/CreateDeviceResponse';
 import { DAO } from '../models/DAO';
 import { DAOMembership } from '../models/DAOMembership';
 import { DAOMembershipResponse } from '../models/DAOMembershipResponse';
 import { DAOSchemaResponse } from '../models/DAOSchemaResponse';
 import { DAOUpdate } from '../models/DAOUpdate';
+import { DeleteDeviceResponse } from '../models/DeleteDeviceResponse';
+import { Device } from '../models/Device';
+import { DeviceList } from '../models/DeviceList';
+import { DeviceWithKey } from '../models/DeviceWithKey';
 import { DisconnectResponse } from '../models/DisconnectResponse';
 import { DiscordChannel } from '../models/DiscordChannel';
 import { DiscordChannelResponse } from '../models/DiscordChannelResponse';
@@ -56,6 +62,92 @@ import { UserExistResponse } from '../models/UserExistResponse';
 import { UserInfoError } from '../models/UserInfoError';
 import { UserResponse } from '../models/UserResponse';
 import { VerifySignature } from '../models/VerifySignature';
+
+import { ObservableApiKeysApi } from "./ObservableAPI";
+import { ApiKeysApiRequestFactory, ApiKeysApiResponseProcessor} from "../apis/ApiKeysApi";
+
+export interface ApiKeysApiApikeysDeviceIdDeleteRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof ApiKeysApiapikeysDeviceIdDelete
+     */
+    deviceId: string
+}
+
+export interface ApiKeysApiCreateAPIKeyRequest {
+    /**
+     * 
+     * @type CreateDeviceRequest
+     * @memberof ApiKeysApicreateAPIKey
+     */
+    createDeviceRequest: CreateDeviceRequest
+}
+
+export interface ApiKeysApiGetAPIKeysRequest {
+}
+
+export class ObjectApiKeysApi {
+    private api: ObservableApiKeysApi
+
+    public constructor(configuration: Configuration, requestFactory?: ApiKeysApiRequestFactory, responseProcessor?: ApiKeysApiResponseProcessor) {
+        this.api = new ObservableApiKeysApi(configuration, requestFactory, responseProcessor);
+    }
+
+    /**
+     * Delete an API key
+     * @param param the request object
+     */
+    public apikeysDeviceIdDeleteWithHttpInfo(param: ApiKeysApiApikeysDeviceIdDeleteRequest, options?: ConfigurationOptions): Promise<HttpInfo<DeleteDeviceResponse>> {
+        return this.api.apikeysDeviceIdDeleteWithHttpInfo(param.deviceId,  options).toPromise();
+    }
+
+    /**
+     * Delete an API key
+     * @param param the request object
+     */
+    public apikeysDeviceIdDelete(param: ApiKeysApiApikeysDeviceIdDeleteRequest, options?: ConfigurationOptions): Promise<DeleteDeviceResponse> {
+        return this.api.apikeysDeviceIdDelete(param.deviceId,  options).toPromise();
+    }
+
+    /**
+     * Creates a new API key and returns it to the user.
+     * Create a new API key for the authenticated user
+     * @param param the request object
+     */
+    public createAPIKeyWithHttpInfo(param: ApiKeysApiCreateAPIKeyRequest, options?: ConfigurationOptions): Promise<HttpInfo<CreateDeviceResponse>> {
+        return this.api.createAPIKeyWithHttpInfo(param.createDeviceRequest,  options).toPromise();
+    }
+
+    /**
+     * Creates a new API key and returns it to the user.
+     * Create a new API key for the authenticated user
+     * @param param the request object
+     */
+    public createAPIKey(param: ApiKeysApiCreateAPIKeyRequest, options?: ConfigurationOptions): Promise<CreateDeviceResponse> {
+        return this.api.createAPIKey(param.createDeviceRequest,  options).toPromise();
+    }
+
+    /**
+     * Returns a list of API keys (with sensitive information removed)
+     * List all API keys for the authenticated user
+     * @param param the request object
+     */
+    public getAPIKeysWithHttpInfo(param: ApiKeysApiGetAPIKeysRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<DeviceList>> {
+        return this.api.getAPIKeysWithHttpInfo( options).toPromise();
+    }
+
+    /**
+     * Returns a list of API keys (with sensitive information removed)
+     * List all API keys for the authenticated user
+     * @param param the request object
+     */
+    public getAPIKeys(param: ApiKeysApiGetAPIKeysRequest = {}, options?: ConfigurationOptions): Promise<DeviceList> {
+        return this.api.getAPIKeys( options).toPromise();
+    }
+
+}
 
 import { ObservableAuthApi } from "./ObservableAPI";
 import { AuthApiRequestFactory, AuthApiResponseProcessor} from "../apis/AuthApi";

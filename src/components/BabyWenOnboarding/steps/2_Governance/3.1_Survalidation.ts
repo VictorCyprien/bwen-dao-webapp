@@ -1,4 +1,19 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
+import { getRandomMessage } from '../messages';
+
+// Enum for survalidation options
+export enum SurvalidationType {
+  SELECTIVE = 'selective',
+  ELECTION = 'election',
+  NO_SURVALIDATION = 'no_survalidation'
+}
+
+// Mapping from display name to enum value
+const survalidationMapping: Record<string, SurvalidationType> = {
+  "Selective - Only certain members can survalidate": SurvalidationType.SELECTIVE,
+  "Election - Elected committee gives final approval": SurvalidationType.ELECTION,
+  "No survalidating - Decisions pass automatically when voted": SurvalidationType.NO_SURVALIDATION
+};
 
 // Enum for survalidation options
 export enum SurvalidationType {
@@ -18,7 +33,7 @@ const SurvalidationStep: OnboardingStep = {
   id: 'dao-survalidation',
   messages: [
     {
-      content: "Is there someone who has to survalidate the decisions (giving the final \"yes\")?",
+      content: getRandomMessage('dao-survalidation'),
       options: [
         "Selective - Only certain members can survalidate",
         "Election - Elected committee gives final approval",

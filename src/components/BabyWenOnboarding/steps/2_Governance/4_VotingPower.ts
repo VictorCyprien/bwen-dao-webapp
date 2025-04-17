@@ -1,4 +1,21 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
+import { getRandomMessage } from '../messages';
+
+// Enum for voting power options
+export enum VotingPowerType {
+  TOKEN_BASED = 'token_based',
+  ONE_MEMBER_ONE_VOTE = 'one_member_one_vote',
+  QUADRATIC = 'quadratic',
+  DEFINED_POWER = 'defined_power'
+}
+
+// Mapping from display name to enum value
+const votingPowerMapping: Record<string, VotingPowerType> = {
+  "Token Based - Voting power proportional to tokens held": VotingPowerType.TOKEN_BASED,
+  "1 Member 1 Vote - Equal voting power for all members": VotingPowerType.ONE_MEMBER_ONE_VOTE,
+  "Quadratic - Voting power increases as square root of tokens": VotingPowerType.QUADRATIC,
+  "Defined Power - Manually assigned voting weights": VotingPowerType.DEFINED_POWER
+};
 
 // Enum for voting power options
 export enum VotingPowerType {
@@ -20,7 +37,7 @@ const VotingPowerStep: OnboardingStep = {
   id: 'dao-voting-power',
   messages: [
     {
-      content: "Alright, let's talk power!\nHow do you want to distribute voting power in your DAO?",
+      content: getRandomMessage('dao-voting-power'),
       options: [
         "Token Based - Voting power proportional to tokens held",
         "1 Member 1 Vote - Equal voting power for all members",

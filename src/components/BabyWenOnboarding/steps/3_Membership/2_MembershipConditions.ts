@@ -1,4 +1,19 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
+import { getRandomMessage } from '../messages';
+
+// Enum for membership conditions options
+export enum MembershipConditionsType {
+  TOKEN_BASED = 'token_based',
+  FREE = 'free',
+  APPLICATION = 'application'
+}
+
+// Mapping from display name to enum value
+const membershipConditionsMapping: Record<string, MembershipConditionsType> = {
+  "Token Based - Members need to hold a certain amount of tokens": MembershipConditionsType.TOKEN_BASED,
+  "Free (1 Token) - Anyone can join with minimal token ownership": MembershipConditionsType.FREE,
+  "Application - New members must apply and be approved": MembershipConditionsType.APPLICATION
+};
 
 // Enum for membership conditions options
 export enum MembershipConditionsType {
@@ -18,7 +33,7 @@ const MembershipConditionsStep: OnboardingStep = {
   id: 'dao-membership-conditions',
   messages: [
     {
-      content: "Alright, let's set the stage for your new members!\nWhat are the conditions for someone to join your DAO?",
+      content: getRandomMessage('dao-membership-conditions'),
       options: [
         "Token Based - Members need to hold a certain amount of tokens",
         "Free (1 Token) - Anyone can join with minimal token ownership",

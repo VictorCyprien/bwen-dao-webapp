@@ -1,10 +1,11 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
+import { getRandomMessage } from '../messages';
 
 const TokenExistenceStep: OnboardingStep = {
   id: 'dao-token-existence',
   messages: [
     {
-      content: "Let's talk membership!\nDo you already have a token for your DAO, or should we create one together?",
+      content: getRandomMessage('dao-token-existence'),
       options: [
         "Yes - I already have a token",
         "No - Let's create one"

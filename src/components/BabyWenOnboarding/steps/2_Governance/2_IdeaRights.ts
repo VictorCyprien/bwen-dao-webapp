@@ -1,4 +1,19 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
+import { getRandomMessage } from '../messages';
+
+// Enum for idea rights options
+export enum IdeaRightsType {
+  SELECTIVE = 'selective',
+  ELECTION = 'election',
+  EVERY_MEMBER = 'every_member'
+}
+
+// Mapping from display name to enum value
+const ideaRightsMapping: Record<string, IdeaRightsType> = {
+  "Selective - Only certain members can propose ideas": IdeaRightsType.SELECTIVE,
+  "Election - Members elected to a proposal committee": IdeaRightsType.ELECTION,
+  "Every Member - Any member can propose ideas": IdeaRightsType.EVERY_MEMBER
+};
 
 // Enum for idea rights options
 export enum IdeaRightsType {
@@ -18,7 +33,7 @@ const IdeaRightsStep: OnboardingStep = {
   id: 'dao-idea-rights',
   messages: [
     {
-      content: "Building time!\nWho has the right to drop ideas for the DAO to vote on?",
+      content: getRandomMessage('dao-idea-rights'),
       options: [
         "Selective - Only certain members can propose ideas",
         "Election - Members elected to a proposal committee",

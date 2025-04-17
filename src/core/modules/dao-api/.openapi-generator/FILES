@@ -1,5 +1,6 @@
 .gitattributes
 .gitignore
+ApiKeysApi.md
 AuthApi.md
 DaosApi.md
 DiscordOauthApi.md
@@ -10,6 +11,7 @@ TelegramAuthApi.md
 TreasuryApi.md
 TwitterOauthApi.md
 UsersApi.md
+apis/ApiKeysApi.ts
 apis/AuthApi.ts
 apis/DaosApi.ts
 apis/DiscordOauthApi.ts
@@ -32,11 +34,17 @@ models/ChallengeRequest.ts
 models/ChallengeResponse.ts
 models/ConnectionResponse.ts
 models/ConnectionsList.ts
+models/CreateDeviceRequest.ts
+models/CreateDeviceResponse.ts
 models/DAO.ts
 models/DAOMembership.ts
 models/DAOMembershipResponse.ts
 models/DAOSchemaResponse.ts
 models/DAOUpdate.ts
+models/DeleteDeviceResponse.ts
+models/Device.ts
+models/DeviceList.ts
+models/DeviceWithKey.ts
 models/DisconnectResponse.ts
 models/DiscordChannel.ts
 models/DiscordChannelResponse.ts
