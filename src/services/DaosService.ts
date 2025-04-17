@@ -81,13 +81,10 @@ export class DaosService {
    */
   async getAllDaos(): Promise<DAO[]> {
     try {
-      const apiClient = this.createAuthenticatedApiClient();
-      if (!apiClient) return [];
-
-      const response = await apiClient.getAllDAOs();
+      const response = await this.daosApi.getAllDAOs();
       return response || [];
     } catch (error) {
-      console.error('Error getting all DAOs:', error);
+      console.error('Error getting all DAOs (public):', error);
       return [];
     }
   }
@@ -97,13 +94,10 @@ export class DaosService {
    */
   async getDaoById(daoId: string): Promise<DAO | null> {
     try {
-      const apiClient = this.createAuthenticatedApiClient();
-      if (!apiClient) return null;
-
-      const response = await apiClient.getDAOById(daoId);
+      const response = await this.daosApi.getDAOById(daoId);
       return response || null;
     } catch (error) {
-      console.error(`Error getting DAO with ID ${daoId}:`, error);
+      console.error(`Error getting DAO with ID ${daoId} :`, error);
       return null;
     }
   }
@@ -158,10 +152,6 @@ export class DaosService {
       if (daoData.profilePicture != undefined) {
         daoInput.profile = await fileToMinioStorage(daoData.profilePicture);
       }
-      
-      if (daoData.bannerPicture != undefined) {
-        daoInput.banner = await fileToMinioStorage(daoData.bannerPicture);
-      }
 
       const response = await apiClient.createDAO(daoInput);
       console.log('DAO creation response:', response);
@@ -211,10 +201,6 @@ export class DaosService {
       // Process image fields if provided
       if (daoData.profilePicture) {
         daoUpdate.profile = await fileToMinioStorage(daoData.profilePicture);
-      }
-      
-      if (daoData.bannerPicture) {
-        daoUpdate.banner = await fileToMinioStorage(daoData.bannerPicture);
       }
 
       const response = await apiClient.updateDAO(daoId, daoUpdate);

@@ -26,7 +26,6 @@ export class DAO {
     'tiktok'?: string;
     'website'?: string;
     'profilePicture'?: string;
-    'bannerPicture'?: string;
     'treasuryAddress'?: string;
     'admins'?: Array<UserBasic>;
     'members'?: Array<UserBasic>;
@@ -105,12 +104,6 @@ export class DAO {
         {
             "name": "profilePicture",
             "baseName": "profile_picture",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "bannerPicture",
-            "baseName": "banner_picture",
             "type": "string",
             "format": ""
         },

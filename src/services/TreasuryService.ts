@@ -88,10 +88,7 @@ export class TreasuryService {
    */
   async getTreasury(daoId: string): Promise<Treasury | null> {
     try {
-      const apiClient = this.createAuthenticatedApiClient();
-      if (!apiClient) return null;
-
-      const response = await apiClient.getDAOTreasury(daoId);
+      const response = await this.treasuryApi.getDAOTreasury(daoId);
       return response || null;
     } catch (error) {
       console.error(`Error getting treasury for DAO ${daoId}:`, error);
@@ -104,10 +101,7 @@ export class TreasuryService {
    */
   async getTokens(daoId: string): Promise<Token[]> {
     try {
-      const apiClient = this.createAuthenticatedApiClient();
-      if (!apiClient) return [];
-
-      const response = await apiClient.getDAOTokens(daoId);
+      const response = await this.treasuryApi.getDAOTokens(daoId);
       return response || [];
     } catch (error) {
       console.error(`Error getting tokens for DAO ${daoId}:`, error);

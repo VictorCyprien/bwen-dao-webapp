@@ -17,6 +17,7 @@ import { containers, typography, ui, utils } from '../styles/theme';
 import Card from './common/Card';
 import Button from './common/Button';
 import Badge from './common/Badge';
+import { daosService } from '../services/DaosService';
 
 // Define refresh interval (5 minutes)
 const REFRESH_INTERVAL = 300000;

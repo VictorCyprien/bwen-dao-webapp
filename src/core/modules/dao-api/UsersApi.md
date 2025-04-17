@@ -32,9 +32,6 @@ const request: UsersApiCreateUserRequest = {
     email: "email_example",
     memberName: "memberName_example",
     profilePicture: { data: Buffer.from(fs.readFileSync('/path/to/file', 'utf-8')), name: '/path/to/file' },
-    discordUsername: "discordUsername_example",
-    twitterUsername: "twitterUsername_example",
-    telegramUsername: "telegramUsername_example",
   },
 };
 
@@ -197,9 +194,6 @@ const request: UsersApiUpdateUserRequest = {
     email: "email_example",
     memberName: "memberName_example",
     profilePicture: { data: Buffer.from(fs.readFileSync('/path/to/file', 'utf-8')), name: '/path/to/file' },
-    discordUsername: "discordUsername_example",
-    twitterUsername: "twitterUsername_example",
-    telegramUsername: "telegramUsername_example",
   },
 };
 
