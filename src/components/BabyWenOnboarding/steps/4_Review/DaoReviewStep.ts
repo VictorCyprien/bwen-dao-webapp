@@ -49,7 +49,7 @@ export const getDAOReviewData = () => {
   const membershipInfo = {
     membershipConditions: sessionStorage.getItem('membershipConditions') || 'Not specified',
     tokenThreshold: sessionStorage.getItem('tokenThreshold') || 'Not specified',
-    applicationApproval: sessionStorage.getItem('applicationApproval') === 'true'
+    applicationApproval: sessionStorage.getItem('applicationApproval') || 'Not specified'
   };
 
   // Governance information
@@ -57,9 +57,10 @@ export const getDAOReviewData = () => {
     governanceModel: sessionStorage.getItem('governanceModel') || 'Not specified',
     ideaRights: sessionStorage.getItem('ideaRights') || 'Not specified',
     voteRights: sessionStorage.getItem('voteRights') || 'Not specified',
-    survalidation: sessionStorage.getItem('survalidation') === 'true',
+    survalidation: sessionStorage.getItem('survalidation') || 'false',
+    survalidationType: sessionStorage.getItem('survalidationType') || 'Not specified',
     votingPower: sessionStorage.getItem('votingPower') || 'Not specified',
-    voteDelegation: sessionStorage.getItem('voteDelegation') === 'true'
+    voteDelegation: sessionStorage.getItem('voteDelegation') || 'false'
   };
 
   return {

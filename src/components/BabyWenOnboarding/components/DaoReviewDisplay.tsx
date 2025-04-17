@@ -1,6 +1,45 @@
 import React from 'react';
 import { getDAOReviewData } from '../steps/4_Review/DaoReviewStep';
 
+// Mapping from enum values to human-readable text
+const humanReadableText: Record<string, string> = {
+  // Governance Model
+  'token_vote': 'Token Vote',
+  'multisig': 'Multisig',
+  'reputation': 'Reputation',
+  'quadratic': 'Quadratic Voting',
+  'custom': 'Custom',
+  
+  // Rights (used for both idea and vote rights)
+  'selective': 'Selective Members Only',
+  'election': 'Elected Committee',
+  'every_member': 'Every Member',
+  
+  // Survalidation
+  'no_survalidation': 'No Survalidation',
+  
+  // Voting Power
+  'token_based': 'Token Based',
+  'one_member_one_vote': '1 Member 1 Vote',
+  'defined_power': 'Defined Power',
+  
+  // Membership Conditions
+  'free': 'Free (1 Token)',
+  'application': 'Application',
+  
+  // Application Approval
+  'everybody': 'All Members Vote',
+  
+  // Boolean values
+  'true': 'Yes',
+  'false': 'No'
+};
+
+// Helper function to get human-readable text
+const getReadableText = (value: string): string => {
+  return humanReadableText[value] || value;
+};
+
 const DaoReviewDisplay: React.FC = () => {
   const { daoInfo, tokenInfo, membershipInfo, governanceInfo } = getDAOReviewData();
 
@@ -114,21 +153,21 @@ const DaoReviewDisplay: React.FC = () => {
         <div className="grid grid-cols-1 gap-2">
           <div className="flex justify-between">
             <span className="text-white/60">Membership Condition:</span>
-            <span className="text-white font-medium">{membershipInfo.membershipConditions}</span>
+            <span className="text-white font-medium">{getReadableText(membershipInfo.membershipConditions)}</span>
           </div>
           
-          {membershipInfo.membershipConditions === 'Token Threshold' && (
+          {membershipInfo.membershipConditions === 'token_based' && (
             <div className="flex justify-between">
               <span className="text-white/60">Threshold Amount:</span>
               <span className="text-white font-medium">{membershipInfo.tokenThreshold}</span>
             </div>
           )}
           
-          {membershipInfo.membershipConditions === 'Application' && (
+          {membershipInfo.membershipConditions === 'application' && (
             <div className="flex justify-between">
               <span className="text-white/60">Application Review:</span>
               <span className="text-white font-medium">
-                {membershipInfo.applicationApproval ? 'Required' : 'Open Access'}
+                {getReadableText(membershipInfo.applicationApproval)}
               </span>
             </div>
           )}
@@ -141,32 +180,32 @@ const DaoReviewDisplay: React.FC = () => {
         <div className="grid grid-cols-1 gap-2">
           <div className="flex justify-between">
             <span className="text-white/60">Governance Model:</span>
-            <span className="text-white font-medium">{governanceInfo.governanceModel}</span>
+            <span className="text-white font-medium">{getReadableText(governanceInfo.governanceModel)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-white/60">Idea Submission:</span>
-            <span className="text-white font-medium">{governanceInfo.ideaRights}</span>
+            <span className="text-white font-medium">{getReadableText(governanceInfo.ideaRights)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-white/60">Voting Rights:</span>
-            <span className="text-white font-medium">{governanceInfo.voteRights}</span>
+            <span className="text-white font-medium">{getReadableText(governanceInfo.voteRights)}</span>
           </div>
           
-          {governanceInfo.survalidation && (
+          {governanceInfo.survalidation === 'true' && (
             <div className="flex justify-between">
               <span className="text-white/60">Survalidation:</span>
-              <span className="text-white font-medium">Enabled</span>
+              <span className="text-white font-medium">{getReadableText(governanceInfo.survalidationType)}</span>
             </div>
           )}
           
           <div className="flex justify-between">
             <span className="text-white/60">Voting Power:</span>
-            <span className="text-white font-medium">{governanceInfo.votingPower}</span>
+            <span className="text-white font-medium">{getReadableText(governanceInfo.votingPower)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-white/60">Vote Delegation:</span>
             <span className="text-white font-medium">
-              {governanceInfo.voteDelegation ? 'Allowed' : 'Not Allowed'}
+              {governanceInfo.voteDelegation === 'true' ? 'Allowed' : 'Not Allowed'}
             </span>
           </div>
         </div>

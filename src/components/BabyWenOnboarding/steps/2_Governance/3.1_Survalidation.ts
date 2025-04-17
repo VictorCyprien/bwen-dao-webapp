@@ -1,6 +1,20 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
 import { getRandomMessage } from '../messages';
 
+// Enum for survalidation options
+export enum SurvalidationType {
+  SELECTIVE = 'selective',
+  ELECTION = 'election',
+  NO_SURVALIDATION = 'no_survalidation'
+}
+
+// Mapping from display name to enum value
+const survalidationMapping: Record<string, SurvalidationType> = {
+  "Selective - Only certain members can survalidate": SurvalidationType.SELECTIVE,
+  "Election - Elected committee gives final approval": SurvalidationType.ELECTION,
+  "No survalidating - Decisions pass automatically when voted": SurvalidationType.NO_SURVALIDATION
+};
+
 const SurvalidationStep: OnboardingStep = {
   id: 'dao-survalidation',
   messages: [
@@ -14,8 +28,14 @@ const SurvalidationStep: OnboardingStep = {
     }
   ],
   onResponse: (response: string) => {
-    // Store whether survalidation is enabled
-    const survalidationEnabled = response.startsWith("Yes");
+    // Get the enum value from the mapping
+    const survalidationType = survalidationMapping[response];
+    
+    // Store the survalidation type in sessionStorage
+    sessionStorage.setItem('survalidationType', survalidationType);
+    
+    // Store whether survalidation is enabled (true for selective and election, false for no survalidation)
+    const survalidationEnabled = response !== "No survalidating - Decisions pass automatically when voted";
     sessionStorage.setItem('survalidation', survalidationEnabled.toString());
     
     let responseMessage = "";
