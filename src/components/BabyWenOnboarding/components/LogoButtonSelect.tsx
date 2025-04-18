@@ -1,5 +1,6 @@
 import React from 'react';
 import { Upload, Zap, ArrowRight } from 'lucide-react';
+import LogoGenerationModal from './LogoGenerationModal';
 
 interface LogoButtonSelectProps {
   onSelectOption: (option: string, data?: File | string) => void;
@@ -10,6 +11,7 @@ const LogoButtonSelect: React.FC<LogoButtonSelectProps> = ({ onSelectOption }: L
   const [logoFile, setLogoFile] = React.useState<File | null>(null);
   const [filePreview, setFilePreview] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [isGenerationModalOpen, setIsGenerationModalOpen] = React.useState<boolean>(false);
   
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
@@ -19,6 +21,7 @@ const LogoButtonSelect: React.FC<LogoButtonSelectProps> = ({ onSelectOption }: L
     const savedLogoType = sessionStorage.getItem('daoLogoType');
     const savedFileName = sessionStorage.getItem('daoLogoFileName');
     const savedLogoFile = sessionStorage.getItem('daoLogoFile');
+    const savedLogoUrl = sessionStorage.getItem('daoLogoUrl');
     
     if (savedLogoType) {
       setSelectedOption(savedLogoType);
@@ -57,6 +60,10 @@ const LogoButtonSelect: React.FC<LogoButtonSelectProps> = ({ onSelectOption }: L
             setFilePreview('/assets/placeholder-image.png');
           }
         }
+      }
+      // If it was a generated logo, restore from the saved URL
+      else if (savedLogoType === 'generate' && savedLogoUrl) {
+        setFilePreview(savedLogoUrl);
       }
     }
   }, []);
@@ -120,7 +127,7 @@ const LogoButtonSelect: React.FC<LogoButtonSelectProps> = ({ onSelectOption }: L
     setSelectedOption('upload');
   };
   
-  // Submit handler
+  // Submit handler for either uploaded or generated logos
   const handleSubmit = () => {
     try {
       if (selectedOption === 'upload' && logoFile) {
@@ -132,27 +139,22 @@ const LogoButtonSelect: React.FC<LogoButtonSelectProps> = ({ onSelectOption }: L
         saveFileToSessionStorage(logoFile);
         
         onSelectOption('upload', logoFile);
+      } else if (selectedOption === 'generate' && filePreview) {
+        // For a generated logo, pass the URL to the next step
+        onSelectOption('generate', filePreview);
       }
     } catch (err) {
       // Silently fail, error handling already in parent component
     }
   };
   
-  // Direct option selection handlers for generate and skip
+  // Generate logo handler
   const handleGenerateClick = () => {
     setSelectedOption('generate');
-    // Immediately submit for options that don't need additional input
-    setTimeout(() => {
-      sessionStorage.setItem('daoLogo', 'logo_generated');
-      sessionStorage.setItem('daoLogoType', 'generate');
-      
-      // For generate, we need to clear any previous file data
-      sessionStorage.removeItem('daoLogoFile');
-      
-      onSelectOption('generate');
-    }, 100);
+    setIsGenerationModalOpen(true);
   };
   
+  // Skip handler
   const handleSkipClick = () => {
     setSelectedOption('skip');
     // Immediately submit for options that don't need additional input
@@ -162,6 +164,7 @@ const LogoButtonSelect: React.FC<LogoButtonSelectProps> = ({ onSelectOption }: L
       
       // For skip, we need to clear any previous file data
       sessionStorage.removeItem('daoLogoFile');
+      sessionStorage.removeItem('daoLogoUrl');
       
       onSelectOption('skip');
     }, 100);
@@ -179,6 +182,27 @@ const LogoButtonSelect: React.FC<LogoButtonSelectProps> = ({ onSelectOption }: L
     sessionStorage.removeItem('daoLogoFileName');
     sessionStorage.removeItem('daoLogoType');
     sessionStorage.removeItem('daoLogo');
+    sessionStorage.removeItem('daoLogoUrl');
+  };
+  
+  // Handle logo selection from the modal
+  const handleSelectLogo = (logoUrl: string) => {
+    setFilePreview(logoUrl);
+    setSelectedOption('generate');
+    
+    // Store the logo URL in sessionStorage
+    sessionStorage.setItem('daoLogo', 'logo_generated');
+    sessionStorage.setItem('daoLogoType', 'generate');
+    sessionStorage.setItem('daoLogoUrl', logoUrl);
+    
+    // We don't need any file data for generated logos
+    sessionStorage.removeItem('daoLogoFile');
+    sessionStorage.removeItem('daoLogoFileName');
+    
+    // Close modal
+    setIsGenerationModalOpen(false);
+    
+    // Don't auto-proceed anymore, let the user click "Continue"
   };
   
   return (
@@ -231,6 +255,7 @@ const LogoButtonSelect: React.FC<LogoButtonSelectProps> = ({ onSelectOption }: L
         </button>
       </div>
       
+      {/* Preview for uploaded files */}
       {selectedOption === 'upload' && filePreview && (
         <div className="space-y-2">
           <div className="flex justify-center">
@@ -250,36 +275,66 @@ const LogoButtonSelect: React.FC<LogoButtonSelectProps> = ({ onSelectOption }: L
               </button>
             </div>
           </div>
+          {error && (
+            <div className="text-red-500 text-sm text-center">
+              {error}
+            </div>
+          )}
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!!error}
+              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                error
+                  ? 'bg-gray-600/50 cursor-not-allowed text-white/50'
+                  : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white'
+              }`}
+            >
+              Continue
+            </button>
+          </div>
         </div>
       )}
       
-      {selectedOption === 'generate' && (
-        <div className="text-white/70 text-sm text-center">
-          We'll automatically generate a logo for your DAO based on its name and purpose.
+      {/* Preview for generated logos */}
+      {selectedOption === 'generate' && filePreview && (
+        <div className="space-y-2">
+          <div className="flex justify-center">
+            <div className="p-3 bg-[#222] border border-indigo-500/30 rounded-lg shadow-md relative">
+              <img 
+                src={filePreview} 
+                alt="Generated logo" 
+                className="max-h-24 max-w-full rounded-lg"
+              />
+              <button
+                type="button"
+                onClick={handleResetUpload}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 focus:outline-none"
+                aria-label="Remove generated logo"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={handleSubmit}
+              className="px-6 py-2 rounded-lg font-medium bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+            >
+              Continue
+            </button>
+          </div>
         </div>
       )}
       
-      {error && (
-        <div className="text-red-500 text-sm mt-1">
-          {error}
-        </div>
-      )}
-      
-      {/* Only show Continue button for upload option */}
-      {selectedOption === 'upload' && (
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={!logoFile}
-          className={`px-4 py-3 rounded-lg text-white font-medium transition-colors mx-auto block ${
-            !logoFile
-              ? 'bg-gray-500/50 cursor-not-allowed'
-              : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
-          }`}
-        >
-          Continue
-        </button>
-      )}
+      {/* Logo Generation Modal */}
+      <LogoGenerationModal
+        isOpen={isGenerationModalOpen}
+        onClose={() => setIsGenerationModalOpen(false)}
+        onSelectLogo={handleSelectLogo}
+      />
     </div>
   );
 };

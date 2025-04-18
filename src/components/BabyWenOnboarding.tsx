@@ -611,18 +611,24 @@ const BabyWenOnboarding: React.FC = () => {
           console.error("Error converting stored logo data to File:", err);
         }
       } 
-      // Handle URL-based logos
-      else if (logoType === 'url' && logoUrl) {
-        // Log that we're using a URL-based logo
-        console.log("Logo URL provided but direct file upload required:", logoUrl);
-        
-        // In a production application, we would:
-        // 1. Fetch the image from the URL
-        // 2. Convert it to a File object
-        // 3. Use it as profilePicture
-        // 
-        // For now, we'll just log it but not include it in the DAO creation
-        console.warn("URLs for logos are not fully supported in this version of the application");
+      // Handle generated logo URLs
+      else if (logoType === 'generate' && logoUrl) {
+        try {
+          console.log("Converting generated logo URL to File:", logoUrl);
+          
+          // Fetch the image from the URL
+          const response = await fetch(logoUrl);
+          const blob = await response.blob();
+          
+          // Create a File object from the blob
+          // Use a meaningful filename with timestamp
+          const fileName = `dao_logo_${Date.now()}.png`;
+          logoFile = new File([blob], fileName, { type: 'image/png' });
+          
+          console.log("Successfully converted logo URL to File:", fileName);
+        } catch (err) {
+          console.error("Error converting logo URL to File:", err);
+        }
       }
       
       // Call the DAO creation service

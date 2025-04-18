@@ -43,6 +43,68 @@ const getReadableText = (value: string): string => {
 const DaoReviewDisplay: React.FC = () => {
   const { daoInfo, tokenInfo, membershipInfo, governanceInfo } = getDAOReviewData();
 
+  // Get the logo display based on type
+  const getLogoDisplay = () => {
+    // No logo
+    if (!daoInfo.logo) {
+      return null;
+    }
+
+    // Generated logo (URL from Replicate API)
+    if (daoInfo.logoType === 'generate' && daoInfo.logoUrl) {
+      return (
+        <div className="flex flex-col items-center mb-4">
+          <span className="text-white/60 mb-2">Logo:</span>
+          <div className="p-2 bg-[#222] border border-indigo-500/30 rounded-lg shadow-md">
+            <img
+              src={daoInfo.logoUrl}
+              alt={`${daoInfo.name} logo`}
+              className="max-h-24 max-w-full rounded-lg"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/placeholder-image.png';
+              }}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    // Uploaded logo (might have a data URL in sessionStorage)
+    if (daoInfo.logoType === 'upload') {
+      // Try to get the data URL from sessionStorage
+      try {
+        const logoFile = sessionStorage.getItem('daoLogoFile');
+        if (logoFile) {
+          const fileData = JSON.parse(logoFile);
+          if (fileData.dataUrl) {
+            return (
+              <div className="flex flex-col items-center mb-4">
+                <span className="text-white/60 mb-2">Logo:</span>
+                <div className="p-2 bg-[#222] border border-indigo-500/30 rounded-lg shadow-md">
+                  <img
+                    src={fileData.dataUrl}
+                    alt={`${daoInfo.name} logo`}
+                    className="max-h-24 max-w-full rounded-lg"
+                  />
+                </div>
+              </div>
+            );
+          }
+        }
+      } catch (error) {
+        console.error('Error displaying uploaded logo:', error);
+      }
+    }
+
+    // Default text-only display
+    return (
+      <div className="flex justify-between items-center">
+        <span className="text-white/60">Logo:</span>
+        <span className="text-white font-medium">✓ {daoInfo.logoType === 'generate' ? 'Generated' : 'Uploaded'}</span>
+      </div>
+    );
+  };
+
   return (
     <div className="w-full text-left bg-black/20 rounded-xl p-6 border border-indigo-500/20">
       <h3 className="text-center font-medium text-xl text-indigo-300 mb-6">DAO Summary</h3>
@@ -59,12 +121,9 @@ const DaoReviewDisplay: React.FC = () => {
             <span className="text-white/60">Description:</span>
             <span className="text-white font-medium">{daoInfo.description}</span>
           </div>
-          {daoInfo.logo && (
-            <div className="flex justify-between items-center">
-              <span className="text-white/60">Logo:</span>
-              <span className="text-white font-medium">✓ Uploaded</span>
-            </div>
-          )}
+          
+          {/* Logo display */}
+          {getLogoDisplay()}
         </div>
       </div>
       
