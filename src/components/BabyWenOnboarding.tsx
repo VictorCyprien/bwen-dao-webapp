@@ -5,7 +5,6 @@ import { X, Shield, Wallet, LogOut, ChevronRight, AlertTriangle, User, ChevronDo
 import useApiAndWallet from '../hooks/useApiAndWallet';
 import ApiAuthStatus from './common/ApiAuthStatus';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { soundService } from '../services/SoundService';
 import { userService } from '../services/UserService';
 import { daosService } from '../services/DaosService';
 import { onboardingMessages } from './BabyWenOnboarding/steps/messages';
@@ -103,6 +102,136 @@ const BabyWenOnboarding: React.FC = () => {
   // Track last played sound to prevent duplicates
   const [lastPlayedStepSound, setLastPlayedStepSound] = React.useState<StepId | null>(null);
   const [lastPlayedStepSoundIndex, setLastPlayedStepSoundIndex] = React.useState<number | null>(null);
+  // Reference to the current audio element and a flag to track if audio is currently playing
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
+  
+  // Audio Playback Manager - handles all audio to ensure only one sound is playing at a time
+  const audioManager = React.useMemo(() => {
+    let currentAudio: HTMLAudioElement | null = null;
+    let isPlaying = false;
+    let currentPlayPromise: Promise<boolean> | null = null;
+    let resolveCurrentPlay: ((value: boolean) => void) | null = null;
+
+    // Internal function to clean up the current audio
+    const cleanupAudio = () => {
+      if (currentAudio) {
+        console.log("Cleaning up audio");
+        currentAudio.oncanplaythrough = null;
+        currentAudio.onended = null;
+        currentAudio.onpause = null;
+        currentAudio.onerror = null;
+        
+        currentAudio.pause();
+        currentAudio.currentTime = 0;
+        currentAudio = null;
+      }
+      isPlaying = false;
+    };
+
+    return {
+      play: (stepId: StepId, variationIndex: number = 0): Promise<boolean> => {
+        // If we're already playing something, resolve it and clean up
+        if (isPlaying && resolveCurrentPlay) {
+          console.log("Stopping previous playback promise");
+          resolveCurrentPlay(false);
+        }
+        
+        // Always clean up any existing audio
+        cleanupAudio();
+        
+        console.log(`Starting new audio playback for ${stepId}-${variationIndex}`);
+        isPlaying = true;
+        
+        // Create a new promise for this play request
+        currentPlayPromise = new Promise<boolean>((resolve) => {
+          resolveCurrentPlay = resolve;
+          
+          const soundFileName = `${stepId}-${variationIndex}.wav`;
+          console.log(`Loading sound file: ${soundFileName}`);
+          
+          // Create a new audio element
+          const audio = new Audio(`/assets/sounds/${soundFileName}`);
+          currentAudio = audio;
+          
+          // Set up event handlers
+          audio.oncanplaythrough = () => {
+            // Make sure we're still the current audio before playing
+            if (currentAudio !== audio) {
+              console.log("Audio was replaced before it could play");
+              return;
+            }
+            
+            console.log(`Starting playback of: ${soundFileName}`);
+            audio.play()
+              .then(() => {
+                if (currentAudio === audio) {
+                  console.log(`Now playing: ${soundFileName}`);
+                  setLastPlayedStepSound(stepId);
+                  setLastPlayedStepSoundIndex(variationIndex);
+                } else {
+                  console.log("Audio was replaced during play()");
+                  audio.pause();
+                }
+              })
+              .catch(err => {
+                console.error(`Error playing ${soundFileName}:`, err);
+                
+                // If this is still the current audio, try the fallback
+                if (currentAudio === audio && variationIndex > 0) {
+                  console.log(`Trying fallback sound: ${stepId}-0.wav`);
+                  audioManager.play(stepId, 0).then(resolve);
+                } else {
+                  isPlaying = false;
+                  resolve(false);
+                }
+              });
+          };
+          
+          audio.onended = () => {
+            console.log(`Finished playing: ${soundFileName}`);
+            if (currentAudio === audio) {
+              cleanupAudio();
+              resolve(true);
+            }
+          };
+          
+          audio.onpause = () => {
+            console.log(`Audio paused: ${soundFileName}`);
+            if (currentAudio === audio && audio.currentTime > 0 && audio.currentTime < audio.duration) {
+              console.log(`Playback interrupted: ${soundFileName}`);
+              cleanupAudio();
+              resolve(false);
+            }
+          };
+          
+          audio.onerror = () => {
+            console.error(`Error loading sound: ${soundFileName}`);
+            
+            // If this is still the current audio, try the fallback
+            if (currentAudio === audio && variationIndex > 0) {
+              console.log(`Trying fallback sound after error: ${stepId}-0.wav`);
+              audioManager.play(stepId, 0).then(resolve);
+            } else {
+              cleanupAudio();
+              resolve(false);
+            }
+          };
+        });
+        
+        return currentPlayPromise;
+      },
+      
+      stop: (): void => {
+        console.log("Stop requested");
+        if (isPlaying && resolveCurrentPlay) {
+          resolveCurrentPlay(false);
+        }
+        cleanupAudio();
+      },
+      
+      isPlaying: (): boolean => isPlaying
+    };
+  }, []);
 
   // Active section for sidebar highlight
   const [activeSection, setActiveSection] = React.useState<string>('dashboard');
@@ -213,67 +342,17 @@ const BabyWenOnboarding: React.FC = () => {
     }, 1500); // Increased delay to ensure it appears after video/question
   };
 
-  // Function to play sound for a step and prevent duplicates
-  const playStepSound = (stepId: StepId, variationIndex: number = 0) => {
-    // Only play if this is a different step than the last played sound or a different variation
-    if (stepId !== lastPlayedStepSound || variationIndex !== lastPlayedStepSoundIndex) {
-      // Format: stepId-variationIndex.mp3 (e.g., dao-name-0.mp3)
-      const soundFileName = `${stepId}-${variationIndex}.wav`;
-      
-      console.log(`Attempting to play sound: ${soundFileName}`);
-      
-      // Create a flag to track if this sound has been played
-      let soundPlayed = false;
-      
-      // Return a promise that resolves when the sound is played
-      return new Promise<boolean>((resolve, reject) => {
-        soundService.play(soundFileName)
-          .then((result) => {
-            console.log(`Successfully played sound: ${soundFileName}`);
-            // Update last played step and variation
-            setLastPlayedStepSound(stepId);
-            setLastPlayedStepSoundIndex(variationIndex);
-            soundPlayed = true;
-            resolve(true);
-          })
-          .catch(error => {
-            console.warn(`Could not play sound for step ${stepId} variation ${variationIndex}:`, error);
-            
-            // Try to fall back to the default sound if variation doesn't exist
-            if (variationIndex > 0) {
-              console.log(`Attempting to play fallback sound: ${stepId}-0.mp3`);
-              
-              soundService.play(`${stepId}-0.mp3`)
-                .then(() => {
-                  console.log(`Successfully played fallback sound: ${stepId}-0.mp3`);
-                  setLastPlayedStepSound(stepId);
-                  setLastPlayedStepSoundIndex(0);
-                  soundPlayed = true;
-                  resolve(true);
-                })
-                .catch(fallbackError => {
-                  console.warn(`Could not play fallback sound for step ${stepId}:`, fallbackError);
-                  // We couldn't play either sound, so resolve with false to indicate failure
-                  resolve(false);
-                });
-            } else {
-              // No fallback available, resolve with false to indicate failure
-              resolve(false);
-            }
-          });
-        
-        // Add a timeout to ensure we don't wait forever for a sound to play
-        setTimeout(() => {
-          if (!soundPlayed) {
-            console.warn(`Timed out waiting for sound ${soundFileName} to play`);
-            resolve(false);
-          }
-        }, 5000); // 5 second timeout
-      });
-    }
-    
-    // If the sound was already played, resolve immediately
-    return Promise.resolve(true);
+  // Simplified function to play sound using the audio manager
+  const playStepSound = (stepId: StepId, variationIndex: number = 0): Promise<boolean> => {
+    console.log(`Request to play sound: ${stepId}-${variationIndex}`);
+    return audioManager.play(stepId, variationIndex);
+  };
+  
+  // Simplified function to stop audio using the audio manager
+  const stopAudio = (): Promise<void> => {
+    console.log("Stopping all audio");
+    audioManager.stop();
+    return Promise.resolve();
   };
 
   // Check for wallet changes during onboarding
@@ -298,6 +377,14 @@ const BabyWenOnboarding: React.FC = () => {
       sessionStorage.setItem('createdDaoId', createdDaoId);
     }
     // Animation starts after user proceeds from welcome modal
+    
+    // Clean up audio on unmount
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
   }, []);
 
   // Function to determine the input type based on the step
@@ -334,9 +421,7 @@ const BabyWenOnboarding: React.FC = () => {
   // Implement the updateCurrentStep function to handle all step transitions
   const updateCurrentStep = async (stepId: StepId) => {
     // Stop any currently playing sound immediately
-    await soundService.stop().catch(error => {
-      console.warn('Error stopping audio playback:', error);
-    });
+    await stopAudio();
     
     // Clear any previous UI state
     setIsTyping(true);
@@ -382,9 +467,6 @@ const BabyWenOnboarding: React.FC = () => {
           // If not found, default to 0
           if (messageVariationIndex === -1) messageVariationIndex = 0;
         }
-        
-        // We no longer play sound here - moved to simulateBabyWenTyping
-        // This way sound plays after text appears
       }
       
       // Pass the variation index to simulateBabyWenTyping for first message
@@ -405,9 +487,7 @@ const BabyWenOnboarding: React.FC = () => {
   // Update the processUserResponse function to use updateCurrentStep
   const processUserResponse = async (response: string) => {
     // Stop any currently playing sound immediately
-    await soundService.stop().catch(error => {
-      console.warn('Error stopping audio playback:', error);
-    });
+    await stopAudio();
     
     // Get the current step
     const step = steps[currentStep as keyof typeof steps];
@@ -481,9 +561,7 @@ const BabyWenOnboarding: React.FC = () => {
     if (userInput.trim() === '') return;
     
     // Stop any currently playing sound immediately
-    await soundService.stop().catch(error => {
-      console.warn('Error stopping audio playback:', error);
-    });
+    await stopAudio();
     
     // Show loading immediately
     setIsTyping(true);
@@ -501,9 +579,7 @@ const BabyWenOnboarding: React.FC = () => {
   // Handle option click for multi-choice responses
   const handleOptionClick = async (option: string) => {
     // Stop any currently playing sound immediately
-    await soundService.stop().catch(error => {
-      console.warn('Error stopping audio playback:', error);
-    });
+    await stopAudio();
     
     // Show loading immediately
     setIsTyping(true);
@@ -519,9 +595,7 @@ const BabyWenOnboarding: React.FC = () => {
   // Handle form submission
   const handleFormSubmit = async (formData: Record<string, string>) => {
     // Stop any currently playing sound immediately
-    await soundService.stop().catch(error => {
-      console.warn('Error stopping audio playback:', error);
-    });
+    await stopAudio();
     
     // Show loading immediately
     setIsTyping(true);
@@ -545,9 +619,7 @@ const BabyWenOnboarding: React.FC = () => {
   // Handle button action
   const handleButtonAction = async () => {
     // Stop any currently playing sound immediately
-    await soundService.stop().catch(error => {
-      console.warn('Error stopping audio playback:', error);
-    });
+    await stopAudio();
     
     const step = steps[currentStep as keyof typeof steps];
     
@@ -611,18 +683,24 @@ const BabyWenOnboarding: React.FC = () => {
           console.error("Error converting stored logo data to File:", err);
         }
       } 
-      // Handle URL-based logos
-      else if (logoType === 'url' && logoUrl) {
-        // Log that we're using a URL-based logo
-        console.log("Logo URL provided but direct file upload required:", logoUrl);
-        
-        // In a production application, we would:
-        // 1. Fetch the image from the URL
-        // 2. Convert it to a File object
-        // 3. Use it as profilePicture
-        // 
-        // For now, we'll just log it but not include it in the DAO creation
-        console.warn("URLs for logos are not fully supported in this version of the application");
+      // Handle generated logo URLs
+      else if (logoType === 'generate' && logoUrl) {
+        try {
+          console.log("Converting generated logo URL to File:", logoUrl);
+          
+          // Fetch the image from the URL
+          const response = await fetch(logoUrl);
+          const blob = await response.blob();
+          
+          // Create a File object from the blob
+          // Use a meaningful filename with timestamp
+          const fileName = `dao_logo_${Date.now()}.png`;
+          logoFile = new File([blob], fileName, { type: 'image/png' });
+          
+          console.log("Successfully converted logo URL to File:", fileName);
+        } catch (err) {
+          console.error("Error converting logo URL to File:", err);
+        }
       }
       
       // Call the DAO creation service
@@ -746,9 +824,7 @@ const BabyWenOnboarding: React.FC = () => {
   // Handle multi-select submission
   const handleMultiSelectSubmit = async (selectedOptions: string[]) => {
     // Stop any currently playing sound immediately
-    await soundService.stop().catch(error => {
-      console.warn('Error stopping audio playback:', error);
-    });
+    await stopAudio();
     
     // Show loading immediately
     setIsTyping(true);
@@ -784,10 +860,8 @@ const BabyWenOnboarding: React.FC = () => {
     setIsTyping(true);
     setShowInput(false);
     
-    // Stop any currently playing sound when BabyWen starts typing
-    await soundService.stop().catch(error => {
-      console.warn('Error stopping audio playback:', error);
-    });
+    // Always stop any currently playing sound first
+    await stopAudio();
     
     // Ensure loading shows for at least 1 second
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -795,28 +869,20 @@ const BabyWenOnboarding: React.FC = () => {
     // Update messages with new content
     setMessages((prev: Message[]) => [...prev, { sender: 'babywen' as const, text: message, options }]);
     
-    // Wait a moment for the UI to update and show the message
-    await new Promise(resolve => setTimeout(resolve, 50));
+    // Critical: Very small delay to ensure React has updated the DOM with the new message
+    await new Promise(resolve => setTimeout(resolve, 20));
     
-    // Play sound AFTER the text appears if this is the first message of a step and we have a stepId
-    if (stepId && variationIndex !== undefined) {
-      try {
-        // Wait a short moment for the text to be visible before playing sound
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        console.log(`Playing sound for step ${stepId} with variation ${variationIndex}`);
-        
-        // Now play the sound and await its completion
-        const result = await playStepSound(stepId, variationIndex);
-        console.log(`Sound play completed for ${stepId}-${variationIndex}:`, result);
-      } catch (error) {
-        console.error(`Error playing sound for step ${stepId}:`, error);
-      }
-    }
-    
-    // Immediate transition to show input
+    // IMPORTANT: Make everything appear at once - text and input field
     setIsTyping(false);
     setShowInput(true);
+    
+    // Play sound for the current step
+    if (stepId !== undefined && variationIndex !== undefined) {
+      console.log(`Playing sound for step ${stepId} with variation ${variationIndex}`);
+      playStepSound(stepId, variationIndex)
+        .then(result => console.log(`Sound play completed for ${stepId}-${variationIndex}:`, result))
+        .catch(error => console.error(`Error playing sound for step ${stepId}:`, error));
+    }
   };
   
   // Function to clear all onboarding data from sessionStorage
@@ -866,9 +932,7 @@ const BabyWenOnboarding: React.FC = () => {
   // Handle going back to the previous step
   const handleGoBack = async () => {
     // Stop any currently playing sound when going back
-    await soundService.stop().catch(error => {
-      console.warn('Error stopping audio playback:', error);
-    });
+    await stopAudio();
     
     // Can't go back if we're at the first step or only have one step in history
     if (stepHistory.length <= 1) return;
@@ -949,9 +1013,7 @@ const BabyWenOnboarding: React.FC = () => {
   // Handle custom component response
   const handleCustomComponentResponse = async (option: string, data?: any) => {
     // Stop any currently playing sound immediately
-    await soundService.stop().catch(error => {
-      console.warn('Error stopping audio playback:', error);
-    });
+    await stopAudio();
     
     console.log("handleCustomComponentResponse called with option:", option, "and data:", data);
     
@@ -1040,7 +1102,7 @@ const BabyWenOnboarding: React.FC = () => {
               <button
                 onClick={() => {
                   // Stop any sound before going back
-                  soundService.stop().catch(error => {
+                  stopAudio().catch(error => {
                     console.warn('Error stopping audio playback:', error);
                   });
                   handleGoBack();
@@ -1114,7 +1176,7 @@ const BabyWenOnboarding: React.FC = () => {
             <button
               onClick={() => {
                 // Stop any sound before going back
-                soundService.stop().catch(error => {
+                stopAudio().catch(error => {
                   console.warn('Error stopping audio playback:', error);
                 });
                 handleGoBack();
@@ -1129,7 +1191,7 @@ const BabyWenOnboarding: React.FC = () => {
     );
   };
   
-  // Clean up timers when component unmounts
+  // Clean up timers and audio when component unmounts
   React.useEffect(() => {
     return () => {
       if (countdownIntervalRef.current) {
@@ -1138,6 +1200,8 @@ const BabyWenOnboarding: React.FC = () => {
       if (redirectTimeoutRef.current) {
         clearTimeout(redirectTimeoutRef.current);
       }
+      // Stop any playing audio
+      stopAudio();
     };
   }, []);
   

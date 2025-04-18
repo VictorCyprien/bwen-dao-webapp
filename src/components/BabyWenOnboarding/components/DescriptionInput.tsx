@@ -1,5 +1,7 @@
 import React from 'react';
 import { Sparkles } from 'lucide-react';
+import { replicateService } from '../../../services/ReplicateService';
+import { toast } from 'react-hot-toast';
 
 interface DescriptionInputProps {
   onSelectOption: (option: string, data?: string) => void;
@@ -9,6 +11,7 @@ const DescriptionInput: React.FC<DescriptionInputProps> = ({ onSelectOption }: D
   const [description, setDescription] = React.useState<string>('');
   const [isImproving, setIsImproving] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string | null>(null);
+  const MIN_DESCRIPTION_LENGTH = 50; // Minimum length to attempt improvement
   
   // When component mounts, check sessionStorage for previously entered description
   React.useEffect(() => {
@@ -30,40 +33,66 @@ const DescriptionInput: React.FC<DescriptionInputProps> = ({ onSelectOption }: D
       return;
     }
     
-    if (description.length > 500) {
-      setError('Description should be less than 500 characters');
+    if (description.length > 300) {
+      setError('Description should be less than 300 characters');
       return;
     }
     
     onSelectOption('submit', description);
   };
   
-  const handleImproveWithAI = async () => {
-    if (!description.trim()) {
-      setError('Please enter a description to improve');
+  const handleImprove = React.useCallback(async () => {
+    console.log('=== Starting handleImprove function ===');
+    console.log('Current description:', description);
+    console.log('Current API token available:', !!import.meta.env.VITE_REPLICATE_API_TOKEN);
+
+    if (description.length < 50) {
+      setError('Description needs to be at least 50 characters for AI improvement');
+      console.log('Error: Description too short for improvement');
       return;
     }
-    
+
     try {
-      // Simulate improvement process
       setIsImproving(true);
-      setError(null);
-      
-      // Wait for a small delay to simulate processing
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Just update with "to do"
-      const improvedText = "to do";
-      setDescription(improvedText);
-      
-      
-    } catch (err) {
-      console.error('Error:', err);
-      setError('Failed to improve description');
+      console.log('Setting isImproving to true');
+
+      try {
+        console.log('Calling replicateService.improveText...');
+        const improvedDescription = await replicateService.improveText(description, 300);
+        console.log('Received improved description:', improvedDescription);
+        
+        // Save to session storage but don't advance
+        sessionStorage.setItem('daoDescription', improvedDescription);
+        console.log('Saved improved description to sessionStorage');
+        
+        // Update local state with improved description
+        setDescription(improvedDescription);
+        console.log('Updated state with improved description');
+        
+        // Do not call handleNextStep here as requested
+      } catch (apiError) {
+        console.error('Replicate API error:', apiError);
+        console.log('Falling back to client-side improvement');
+        
+        // Fallback to client-side improvement
+        const improved = description
+          .replace(/^\s+|\s+$/g, '')  // trim whitespace
+          .replace(/\s+/g, ' ')       // normalize spaces
+          .replace(/[,.!?]([^\s])/g, '$1 '); // add space after punctuation
+          
+        console.log('Client-side improved text:', improved);
+        sessionStorage.setItem('daoDescription', improved);
+        setDescription(improved);
+      }
+    } catch (e) {
+      console.error('Error during improvement process:', e);
+      setError('Failed to improve description. Please try again.');
     } finally {
       setIsImproving(false);
+      console.log('Setting isImproving to false');
+      console.log('=== Completed handleImprove function ===');
     }
-  };
+  }, [description]);
   
   return (
     <div className="space-y-4">
@@ -84,22 +113,17 @@ const DescriptionInput: React.FC<DescriptionInputProps> = ({ onSelectOption }: D
           </div>
         )}
         <div className="text-xs text-white/50 flex justify-between">
-          <span>{description.length}/500 characters</span>
-          {description.length > 250 && (
-            <span className="text-amber-400">
-              Recommended: Keep it under 250 characters
-            </span>
-          )}
+          <span>{description.length}/300 characters</span>
         </div>
       </div>
       
       <div className="flex flex-col sm:flex-row gap-3 justify-center">
         <button
           type="button"
-          onClick={handleImproveWithAI}
-          disabled={isImproving || !description.trim()}
+          onClick={handleImprove}
+          disabled={isImproving || !description.trim() || description.trim().length < MIN_DESCRIPTION_LENGTH}
           className={`sm:flex-shrink-0 px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors ${
-            isImproving || !description.trim()
+            isImproving || !description.trim() || description.trim().length < MIN_DESCRIPTION_LENGTH
               ? 'border border-gray-600 text-gray-500 cursor-not-allowed'
               : 'border border-indigo-500 text-indigo-400 hover:border-indigo-400 hover:text-indigo-300'
           }`}

@@ -25,6 +25,8 @@ export const getDAOReviewData = () => {
     name: sessionStorage.getItem('daoName') || 'Not specified',
     description: sessionStorage.getItem('daoDescription') || 'Not specified',
     logo: sessionStorage.getItem('daoLogo') || null,
+    logoType: sessionStorage.getItem('daoLogoType') || null,
+    logoUrl: sessionStorage.getItem('daoLogoUrl') || null,
     socials: {
       twitter: sessionStorage.getItem('daoTwitter') || undefined,
       discord: sessionStorage.getItem('daoDiscord') || undefined,
