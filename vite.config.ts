@@ -19,7 +19,7 @@ export default defineConfig(({ mode }) => {
       }
     },
     server: {
-      port: 5000,
+      port: 5001,
       strictPort: false, // Si 5010 est occupé, il prend le suivant disponible
       watch: {
         usePolling: true, // Améliore la détection des changements
@@ -36,11 +36,17 @@ export default defineConfig(({ mode }) => {
           ws: true,
         },
         '/sound': {
-          target: 'http://localhost:8500',
+          target: 'http://localhost:8000',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/sound/, ''),
           secure: false,
           ws: true,
+        },
+        '/replicate': {
+          target: 'https://api.replicate.com',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/replicate/, ''),
+          secure: true,
         }
       }
     },
