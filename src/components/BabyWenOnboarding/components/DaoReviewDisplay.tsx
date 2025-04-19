@@ -28,6 +28,7 @@ const humanReadableText: Record<string, string> = {
   'invitation': 'Invitation',
   'token_threshold': 'Token Threshold',
   'application': 'Application',
+  'open': 'Open',
   
   // Application Approval
   'everybody': 'All Members Vote',
