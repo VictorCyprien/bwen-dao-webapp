@@ -10,6 +10,7 @@ import { useEffectOnce } from '../hooks/useEffectOnce';
 import Button from './common/Button';
 import Card from './common/Card';
 import ProfileModal from './ProfileModal';
+import DAOPublicProfileModal from './DAOPublicProfileModal';
 import { 
   Clock, 
   Heart, 
@@ -153,6 +154,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
   const [currentPage, setCurrentPage] = useState(1);
   const daosPerPage = 6;
   const navigate = useNavigate();
+  const [selectedDaoId, setSelectedDaoId] = useState<string | undefined>(undefined);
+  const [isDaoProfileModalOpen, setIsDaoProfileModalOpen] = useState(false);
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -373,6 +376,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
       // Navigate to BabyWen route
       navigate('/create/babywen');
     }
+  };
+
+  const handleDaoCardClick = (daoId?: string) => {
+    setSelectedDaoId(daoId);
+    setIsDaoProfileModalOpen(true);
   };
 
   return (
@@ -705,7 +713,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
                               <div 
                                 key={dao.daoId || index} 
                                 className="group cursor-pointer h-full w-full"
-                                onClick={() => onEnterDashboard(dao.daoId)}
+                                onClick={() => handleDaoCardClick(dao.daoId)}
                               >
                                 <div className="p-4 rounded-2xl border border-indigo-800/30 bg-transparent backdrop-blur-sm hover:border-indigo-500/50 transition-all flex flex-col justify-between h-full w-full">
                                   <div className="flex flex-col items-center text-center">
@@ -1159,6 +1167,13 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
         <ProfileModal 
           isOpen={isProfileModalOpen} 
           onClose={() => setIsProfileModalOpen(false)} 
+        />
+        
+        <DAOPublicProfileModal
+          isOpen={isDaoProfileModalOpen}
+          onClose={() => setIsDaoProfileModalOpen(false)}
+          daoId={selectedDaoId}
+          onEnterDashboard={onEnterDashboard}
         />
       </div>
     </div>
