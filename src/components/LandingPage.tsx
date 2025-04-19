@@ -38,6 +38,23 @@ const logoScrollKeyframes = `
     transform: translateX(-50%);
   }
 }
+
+.logo-scroll-container {
+  display: flex;
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.logo-scroll-track {
+  display: flex;
+  animation: logoScroll 40s linear infinite;
+  width: max-content;
+}
+
+.logo-scroll-track:hover {
+  animation-play-state: paused;
+}
 `;
 
 interface LandingPageProps {
@@ -666,60 +683,42 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
           {/* Full-width Scrolling Logo Banner */}
           <div className="relative overflow-hidden py-10 w-full">
             <style dangerouslySetInnerHTML={{ __html: logoScrollKeyframes }} />
-            <div className="flex whitespace-nowrap" style={{ animation: 'logoScroll 40s linear infinite' }}>
-              {/* First set of logos - added more logos for better infinite scroll effect */}
-              {[
-                { name: "Ethereum", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Ethereum_logo_2014.svg/1257px-Ethereum_logo_2014.svg.png" },
-                { name: "Solana", logo: "https://cryptologos.cc/logos/solana-sol-logo.png" },
-                { name: "Polygon", logo: "https://cryptologos.cc/logos/polygon-matic-logo.png" },
-                { name: "Arweave", logo: "https://cryptologos.cc/logos/arweave-ar-logo.png" },
-                { name: "IPFS", logo: "https://upload.wikimedia.org/wikipedia/commons/1/18/Ipfs-logo-1024-ice-text.png" },
-                { name: "Binance", logo: "https://cryptologos.cc/logos/bnb-bnb-logo.png" },
-                { name: "Avalanche", logo: "https://cryptologos.cc/logos/avalanche-avax-logo.png" },
-                { name: "Chainlink", logo: "https://cryptologos.cc/logos/chainlink-link-logo.png" },
-                { name: "Arbitrum", logo: "https://cryptologos.cc/logos/arbitrum-arb-logo.png" },
-                { name: "Optimism", logo: "https://cryptologos.cc/logos/optimism-op-logo.png" },
-                { name: "Cardano", logo: "https://cryptologos.cc/logos/cardano-ada-logo.png" },
-                { name: "Polkadot", logo: "https://cryptologos.cc/logos/polkadot-new-dot-logo.png" },
-              ].map((partner, index) => (
-                <div key={`set1-${index}`} className="flex flex-col items-center mx-6 md:mx-8">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 flex items-center justify-center p-4 sm:p-5">
-                    <img 
-                      src={partner.logo} 
-                      alt={`${partner.name} logo`} 
-                      className="max-w-full max-h-full object-contain filter brightness-125" 
-                    />
-                  </div>
-                  <span className="text-gray-300 text-xs sm:text-sm mt-2">{partner.name}</span>
-                </div>
-              ))}
-              
-              {/* Duplicated set for infinite scroll effect */}
-              {[
-                { name: "Ethereum", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Ethereum_logo_2014.svg/1257px-Ethereum_logo_2014.svg.png" },
-                { name: "Solana", logo: "https://cryptologos.cc/logos/solana-sol-logo.png" },
-                { name: "Polygon", logo: "https://cryptologos.cc/logos/polygon-matic-logo.png" },
-                { name: "Arweave", logo: "https://cryptologos.cc/logos/arweave-ar-logo.png" },
-                { name: "IPFS", logo: "https://upload.wikimedia.org/wikipedia/commons/1/18/Ipfs-logo-1024-ice-text.png" },
-                { name: "Binance", logo: "https://cryptologos.cc/logos/bnb-bnb-logo.png" },
-                { name: "Avalanche", logo: "https://cryptologos.cc/logos/avalanche-avax-logo.png" },
-                { name: "Chainlink", logo: "https://cryptologos.cc/logos/chainlink-link-logo.png" },
-                { name: "Arbitrum", logo: "https://cryptologos.cc/logos/arbitrum-arb-logo.png" },
-                { name: "Optimism", logo: "https://cryptologos.cc/logos/optimism-op-logo.png" },
-                { name: "Cardano", logo: "https://cryptologos.cc/logos/cardano-ada-logo.png" },
-                { name: "Polkadot", logo: "https://cryptologos.cc/logos/polkadot-new-dot-logo.png" },
-              ].map((partner, index) => (
-                <div key={`set2-${index}`} className="flex flex-col items-center mx-6 md:mx-8">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 flex items-center justify-center p-4 sm:p-5">
-                    <img 
-                      src={partner.logo} 
-                      alt={`${partner.name} logo`} 
-                      className="max-w-full max-h-full object-contain filter brightness-125" 
-                    />
-                  </div>
-                  <span className="text-gray-300 text-xs sm:text-sm mt-2">{partner.name}</span>
-                </div>
-              ))}
+            <div className="logo-scroll-container">
+              <div className="logo-scroll-track">
+                {/* Define the logos once in an array */}
+                {(() => {
+                  const logos = [
+                    { name: "partner1", logo: "/assets/logos/logoplaceholder.svg", url: "https://example.com/partner1" },
+                    { name: "partner2", logo: "/assets/logos/logoplaceholder2.svg", url: "https://example.com/partner2" }
+                  ];
+                  
+                  // Generate multiple sets of logos for a smoother infinite scroll
+                  // Creating 20 sets ensures there's always enough logos visible
+                  const repeatedLogos = [];
+                  for (let i = 0; i < 20; i++) {
+                    repeatedLogos.push(
+                      ...logos.map((partner, index) => (
+                        <div key={`logo-${i}-${index}`} className="flex flex-col items-center mx-6 md:mx-8">
+                          <a 
+                            href={partner.url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 flex items-center justify-center p-4 sm:p-5 hover:opacity-80 transition-opacity"
+                          >
+                            <img 
+                              src={partner.logo} 
+                              alt={`${partner.name} logo`} 
+                              className="max-w-full max-h-full object-contain filter brightness-125" 
+                            />
+                          </a>
+                        </div>
+                      ))
+                    );
+                  }
+                  
+                  return repeatedLogos;
+                })()}
+              </div>
             </div>
           </div>
         </section>
