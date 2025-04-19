@@ -715,7 +715,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
                                 className="group cursor-pointer h-full w-full"
                                 onClick={() => handleDaoCardClick(dao.daoId)}
                               >
-                                <div className="p-4 rounded-2xl border border-indigo-800/30 bg-transparent backdrop-blur-sm hover:border-indigo-500/50 transition-all flex flex-col justify-between h-full w-full">
+                                <div className="py-8 px-4 rounded-2xl border border-indigo-800/30 bg-transparent backdrop-blur-sm hover:border-indigo-500/50 transition-all flex flex-col justify-between h-full w-full">
                                   <div className="flex flex-col items-center text-center">
                                     {/* Circular logo */}
                                     <div className="h-16 w-16 rounded-full overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-medium text-xl mb-3">
