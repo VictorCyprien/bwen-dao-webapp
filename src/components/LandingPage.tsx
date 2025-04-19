@@ -232,7 +232,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
     return 6; // Mobile default
   };
   
-  // Create pages based on screen size with fixed page sizes
+  // Create pages based on screen size
   const createPages = (items: DAO[]) => {
     const itemsPerPage = getItemsPerPage();
     const pages: DAO[][] = [];
@@ -250,52 +250,42 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
   };
   
   const [daoPages, setDaoPages] = useState<DAO[][]>([]);
-  const [itemsPerPage, setItemsPerPage] = useState(6); // Track current items per page
+  const [itemsPerPage, setItemsPerPage] = useState<number>(6); // Default to mobile view
   
   // Update pages when filtered DAOs change or on window resize
   useEffect(() => {
-    const newItemsPerPage = getItemsPerPage();
-    setItemsPerPage(newItemsPerPage);
+    const updatePages = () => {
+      const newItemsPerPage = getItemsPerPage();
+      setItemsPerPage(newItemsPerPage);
+      
+      // Create pages with consistent itemsPerPage
+      const pages: DAO[][] = [];
+      for (let i = 0; i < filteredDaos.length; i += newItemsPerPage) {
+        pages.push(filteredDaos.slice(i, i + newItemsPerPage));
+      }
+      
+      // Add an empty page if no results
+      if (pages.length === 0) {
+        pages.push([]);
+      }
+      
+      setDaoPages(pages);
+      
+      // Reset current page if needed
+      if (currentPage > pages.length && pages.length > 0) {
+        setCurrentPage(1);
+      }
+    };
     
-    // Create pages with consistent size
-    const pages: DAO[][] = [];
-    for (let i = 0; i < filteredDaos.length; i += newItemsPerPage) {
-      pages.push(filteredDaos.slice(i, i + newItemsPerPage));
-    }
-    
-    // Add an empty page if no results
-    if (pages.length === 0) {
-      pages.push([]);
-    }
-    
-    setDaoPages(pages);
-    
-    // Reset to first page when filter changes
-    setCurrentPage(1);
+    updatePages();
     
     const handleResize = () => {
-      const updatedItemsPerPage = getItemsPerPage();
-      if (updatedItemsPerPage !== itemsPerPage) {
-        setItemsPerPage(updatedItemsPerPage);
-        
-        // Recalculate pages with new size
-        const updatedPages: DAO[][] = [];
-        for (let i = 0; i < filteredDaos.length; i += updatedItemsPerPage) {
-          updatedPages.push(filteredDaos.slice(i, i + updatedItemsPerPage));
-        }
-        
-        if (updatedPages.length === 0) {
-          updatedPages.push([]);
-        }
-        
-        setDaoPages(updatedPages);
-        setCurrentPage(1); // Reset to first page on resize
-      }
+      updatePages();
     };
     
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [filteredDaos]);
+  }, [filteredDaos, currentPage]);
   
   // Reference for scroll container
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -414,15 +404,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
         <div className="absolute bottom-[20%] right-[15%] w-[35%] h-[25%] bg-gradient-to-l from-emerald-600/10 to-green-600/5 rounded-full blur-[80px] animate-float-delayed"></div>
         
         {/* Aurora particles */}
-        <div className="absolute inset-0 opacity-30">
-          {[...Array(20)].map((_, i) => (
+        <div className="absolute inset-0 opacity-20">
+          {[...Array(5)].map((_, i) => (
             <div 
               key={i}
-              className="absolute w-10 h-10 rounded-full bg-white"
+              className="absolute w-1 h-1 rounded-full bg-white"
               style={{
                 top: `${Math.random() * 100}%`,
                 left: `${Math.random() * 100}%`,
-                animation: `twinkle ${6 + Math.random() * 8}s infinite ${Math.random() * 8}s`
+                animation: `twinkle ${20 + Math.random() * 30}s infinite ${Math.random() * 15}s`,
+                animationTimingFunction: 'ease-in-out'
               }}
             ></div>
           ))}
@@ -712,94 +703,79 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
                         >
                           {/* Responsive Grid - Changes columns based on screen size and items per page */}
                           <div 
-                            className="grid gap-4 md:gap-6"
+                            className={`grid gap-4 md:gap-6`}
                             style={{ 
                               minHeight: '280px',
-                              gridTemplateRows: `repeat(${typeof window !== 'undefined' && window.innerWidth >= 1280 && itemsPerPage > 8 ? '2' : '3'}, minmax(220px, 1fr))`,
                               gridTemplateColumns: `repeat(${
-                                // 2 columns on mobile, 4 on tablet, 6 on desktop
-                                typeof window !== 'undefined' && window.innerWidth >= 1280 ? 
-                                  '6' : 
-                                  typeof window !== 'undefined' && window.innerWidth >= 768 ? 
-                                    '4' : '2'
-                              }, 1fr)`,
-                              width: '100%'
+                                // 2 columns on mobile, 4 on tablet, 4 or 6 on desktop depending on items per page
+                                itemsPerPage === 12 ? '6' : 
+                                itemsPerPage === 8 ? '4' : '2'
+                              }, 1fr)`, // Equal width columns
+                              gridAutoRows: 'minmax(220px, 1fr)' // Ensure consistent row height
                             }}
                           >
-                            {/* Map all possible card slots for consistent layout */}
-                            {[...Array(itemsPerPage)].map((_, slotIndex: number) => {
-                              // Show real DAO if available for this slot, otherwise placeholder
-                              const dao = page[slotIndex];
-                              
-                              return dao ? (
-                                // Actual DAO card
-                                <div 
-                                  key={dao.daoId || slotIndex} 
-                                  className="group cursor-pointer h-full w-full"
-                                  onClick={() => onEnterDashboard(dao.daoId)}
-                                >
-                                  <div className="p-4 rounded-2xl border border-indigo-800/30 bg-transparent backdrop-blur-sm hover:border-indigo-500/50 transition-all flex flex-col justify-between h-full w-full">
-                                    <div className="flex flex-col items-center text-center">
-                                      {/* Circular logo */}
-                                      <div className="h-16 w-16 rounded-full overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-medium text-xl mb-3">
-                                        {dao.profilePicture ? (
-                                          <img 
-                                            src={dao.profilePicture} 
-                                            alt={`${dao.name} logo`}
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                              // Fallback to first letter if image fails to load
-                                              e.currentTarget.style.display = 'none';
-                                              if (e.currentTarget.parentElement) {
-                                                e.currentTarget.parentElement.textContent = dao.name.charAt(0);
-                                              }
-                                            }}
-                                          />
-                                        ) : (
-                                          dao.name.charAt(0)
-                                        )}
-                                      </div>
-                                      
-                                      {/* Name */}
-                                      <h3 className="text-base font-medium text-white group-hover:text-indigo-400 transition-colors line-clamp-2 mb-2 w-full">
-                                        {dao.name}
-                                      </h3>
+                            {page.map((dao: DAO, index: number) => (
+                              <div 
+                                key={dao.daoId || index} 
+                                className="group cursor-pointer h-full w-full"
+                                onClick={() => onEnterDashboard(dao.daoId)}
+                              >
+                                <div className="p-4 rounded-2xl border border-indigo-800/30 bg-transparent backdrop-blur-sm hover:border-indigo-500/50 transition-all flex flex-col justify-between h-full w-full">
+                                  <div className="flex flex-col items-center text-center">
+                                    {/* Circular logo */}
+                                    <div className="h-16 w-16 rounded-full overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-medium text-xl mb-3">
+                                      {dao.profilePicture ? (
+                                        <img 
+                                          src={dao.profilePicture} 
+                                          alt={`${dao.name} logo`}
+                                          className="w-full h-full object-cover"
+                                          onError={(e) => {
+                                            // Fallback to first letter if image fails to load
+                                            e.currentTarget.style.display = 'none';
+                                            if (e.currentTarget.parentElement) {
+                                              e.currentTarget.parentElement.textContent = dao.name.charAt(0);
+                                            }
+                                          }}
+                                        />
+                                      ) : (
+                                        dao.name.charAt(0)
+                                      )}
                                     </div>
                                     
-                                    {/* Description - only visible on larger screens */}
-                                    <div className="hidden md:block overflow-hidden mt-auto w-full">
-                                      <p className="text-xs text-gray-300 line-clamp-3">
-                                        {dao.description || "This DAO hasn't provided a description yet."}
-                                      </p>
-                                    </div>
-                                    
-                                    {/* Member count */}
-                                    <div className="text-xs text-gray-400 flex items-center justify-center mt-3 w-full">
-                                      <Users size={14} className="mr-1" />
-                                      <span>{dao.members?.length || '0'} Members</span>
-                                    </div>
+                                    {/* Name */}
+                                    <h3 className="text-base font-medium text-white group-hover:text-indigo-400 transition-colors line-clamp-2 mb-2 w-full">
+                                      {dao.name}
+                                    </h3>
+                                  </div>
+                                  
+                                  {/* Description - only visible on larger screens */}
+                                  <div className="hidden md:block overflow-hidden mt-auto w-full">
+                                    <p className="text-xs text-gray-300 line-clamp-3">
+                                      {dao.description || "This DAO hasn't provided a description yet."}
+                                    </p>
+                                  </div>
+                                  
+                                  {/* Member count */}
+                                  <div className="text-xs text-gray-400 flex items-center justify-center mt-3 w-full">
+                                    <Users size={14} className="mr-1" />
+                                    <span>{dao.members?.length || '0'} Members</span>
                                   </div>
                                 </div>
-                              ) : (
-                                // Empty placeholder with exact same dimensions
-                                <div 
-                                  key={`empty-${slotIndex}`} 
-                                  className="h-full w-full" 
-                                  style={{ visibility: 'hidden' }}
-                                >
-                                  <div className="p-4 rounded-2xl border border-indigo-800/30 bg-transparent h-full w-full">
-                                    <div className="flex flex-col items-center text-center">
-                                      <div className="h-16 w-16 rounded-full mb-3"></div>
-                                      <h3 className="text-base mb-2 w-full h-6"></h3>
-                                    </div>
-                                    <div className="mt-auto w-full">
-                                      <p className="text-xs h-12"></p>
-                                    </div>
-                                    <div className="mt-3 w-full h-4"></div>
-                                  </div>
-                                </div>
-                              );
-                            })}
+                              </div>
+                            ))}
+                            
+                            {/* Add empty placeholders to maintain grid structure */}
+                            {(() => {
+                              // Add placeholders if needed - using the consistent itemsPerPage state
+                              return [...Array(Math.max(0, itemsPerPage - page.length))].map((_, i: number) => (
+                                <div key={`empty-${i}`} className="h-full w-full" 
+                                  style={{ 
+                                    minHeight: '220px',
+                                    visibility: 'hidden'
+                                  }}
+                                ></div>
+                              ));
+                            })()}
                           </div>
                         </div>
                       ))}
