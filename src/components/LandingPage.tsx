@@ -55,6 +55,28 @@ const logoScrollKeyframes = `
 .logo-scroll-track:hover {
   animation-play-state: paused;
 }
+
+/* Hide scrollbar but keep scrolling functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+.dao-scroll-container {
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dao-scroll-page {
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  width: 100%;
+}
 `;
 
 interface LandingPageProps {
@@ -129,6 +151,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
   const [animationComplete, setAnimationComplete] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const daosPerPage = 6;
   const navigate = useNavigate();
   
   // Check for Telegram auth parameters
@@ -198,6 +222,134 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
     return passesFilter && matchesSearch;
   });
   
+  // Group DAOs into pages of 6 items for mobile, 8 for tablet, 12 for desktop
+  const getItemsPerPage = () => {
+    // We'll use window.innerWidth if available (client-side)
+    if (typeof window !== 'undefined') {
+      if (window.innerWidth >= 1280) return 12; // Large desktop
+      if (window.innerWidth >= 768) return 8;   // Tablet/small desktop
+    }
+    return 6; // Mobile default
+  };
+  
+  // Create pages based on screen size with fixed page sizes
+  const createPages = (items: DAO[]) => {
+    const itemsPerPage = getItemsPerPage();
+    const pages: DAO[][] = [];
+    
+    for (let i = 0; i < items.length; i += itemsPerPage) {
+      pages.push(items.slice(i, i + itemsPerPage));
+    }
+    
+    // Add an empty page if no results
+    if (pages.length === 0) {
+      pages.push([]);
+    }
+    
+    return pages;
+  };
+  
+  const [daoPages, setDaoPages] = useState<DAO[][]>([]);
+  const [itemsPerPage, setItemsPerPage] = useState(6); // Track current items per page
+  
+  // Update pages when filtered DAOs change or on window resize
+  useEffect(() => {
+    const newItemsPerPage = getItemsPerPage();
+    setItemsPerPage(newItemsPerPage);
+    
+    // Create pages with consistent size
+    const pages: DAO[][] = [];
+    for (let i = 0; i < filteredDaos.length; i += newItemsPerPage) {
+      pages.push(filteredDaos.slice(i, i + newItemsPerPage));
+    }
+    
+    // Add an empty page if no results
+    if (pages.length === 0) {
+      pages.push([]);
+    }
+    
+    setDaoPages(pages);
+    
+    // Reset to first page when filter changes
+    setCurrentPage(1);
+    
+    const handleResize = () => {
+      const updatedItemsPerPage = getItemsPerPage();
+      if (updatedItemsPerPage !== itemsPerPage) {
+        setItemsPerPage(updatedItemsPerPage);
+        
+        // Recalculate pages with new size
+        const updatedPages: DAO[][] = [];
+        for (let i = 0; i < filteredDaos.length; i += updatedItemsPerPage) {
+          updatedPages.push(filteredDaos.slice(i, i + updatedItemsPerPage));
+        }
+        
+        if (updatedPages.length === 0) {
+          updatedPages.push([]);
+        }
+        
+        setDaoPages(updatedPages);
+        setCurrentPage(1); // Reset to first page on resize
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [filteredDaos]);
+  
+  // Reference for scroll container
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Function to handle scroll events to update current page
+  const handleScroll = () => {
+    if (!scrollContainerRef.current) return;
+    
+    const scrollContainer = scrollContainerRef.current;
+    const scrollPosition = scrollContainer.scrollLeft;
+    const containerWidth = scrollContainer.clientWidth;
+    
+    // Calculate which page is most visible
+    const newPage = Math.round(scrollPosition / containerWidth) + 1;
+    
+    if (newPage !== currentPage && newPage > 0 && newPage <= daoPages.length) {
+      setCurrentPage(newPage);
+    }
+  };
+  
+  // Navigate to previous/next page
+  const navigatePage = (direction: 'prev' | 'next') => {
+    if (!scrollContainerRef.current) return;
+    
+    const scrollContainer = scrollContainerRef.current;
+    const containerWidth = scrollContainer.clientWidth;
+    
+    let newPage = currentPage;
+    if (direction === 'prev' && currentPage > 1) {
+      newPage = currentPage - 1;
+    } else if (direction === 'next' && currentPage < daoPages.length) {
+      newPage = currentPage + 1;
+    }
+    
+    scrollContainer.scrollTo({
+      left: (newPage - 1) * containerWidth,
+      behavior: 'smooth'
+    });
+    
+    setCurrentPage(newPage);
+  };
+  
+  // Add scroll event listener
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+    
+    scrollContainer.addEventListener('scroll', handleScroll);
+    
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+    };
+  }, [currentPage, daoPages.length]);
+  
   // Get top 4 DAOs for featured section
   const featuredDaos = daos.slice(0, 4);
   
@@ -266,11 +418,11 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
           {[...Array(20)].map((_, i) => (
             <div 
               key={i}
-              className="absolute w-1 h-1 rounded-full bg-white"
+              className="absolute w-10 h-10 rounded-full bg-white"
               style={{
                 top: `${Math.random() * 100}%`,
                 left: `${Math.random() * 100}%`,
-                animation: `twinkle ${3 + Math.random() * 5}s infinite ${Math.random() * 5}s`
+                animation: `twinkle ${6 + Math.random() * 8}s infinite ${Math.random() * 8}s`
               }}
             ></div>
           ))}
@@ -445,22 +597,51 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
               <p className="text-gray-400 max-w-2xl mx-auto text-sm sm:text-base">Discover and join decentralized autonomous organizations that align with your interests and values.</p>
             </div>
             
-            {/* Filter tabs - centered */}
+            {/* Search bar - updated styling to match cards */}
             <div className="mb-10 flex flex-col items-center gap-4">
-              <div className="bg-[#151515] inline-flex p-1 rounded-lg">
-                {['featured', 'active', 'new'].map((filter) => (
-                  <button
-                    key={filter}
-                    className={`px-6 py-2 rounded-md transition-all ${
-                      activeFilter === filter 
-                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-medium' 
-                        : 'text-gray-300 hover:text-white'
-                    }`}
-                    onClick={() => setActiveFilter(filter)}
-                  >
-                    {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                  </button>
-                ))}
+              {/* Filter tabs - moved above search bar */}
+              <div className="flex gap-2 flex-wrap justify-center mb-4">
+                <button
+                  onClick={() => setActiveFilter('featured')}
+                  className={`px-3 py-1.5 rounded-full text-sm transition-all ${
+                    activeFilter === 'featured'
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
+                      : 'bg-transparent border border-indigo-800/30 hover:border-indigo-500/50 text-gray-300'
+                  }`}
+                >
+                  <span className="flex items-center">
+                    <Sparkles size={14} className="mr-1.5" />
+                    Featured
+                  </span>
+                </button>
+                
+                <button
+                  onClick={() => setActiveFilter('active')}
+                  className={`px-3 py-1.5 rounded-full text-sm transition-all ${
+                    activeFilter === 'active'
+                      ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white'
+                      : 'bg-transparent border border-indigo-800/30 hover:border-indigo-500/50 text-gray-300'
+                  }`}
+                >
+                  <span className="flex items-center">
+                    <Users size={14} className="mr-1.5" />
+                    Active
+                  </span>
+                </button>
+                
+                <button
+                  onClick={() => setActiveFilter('new')}
+                  className={`px-3 py-1.5 rounded-full text-sm transition-all ${
+                    activeFilter === 'new'
+                      ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white'
+                      : 'bg-transparent border border-indigo-800/30 hover:border-indigo-500/50 text-gray-300'
+                  }`}
+                >
+                  <span className="flex items-center">
+                    <Clock size={14} className="mr-1.5" />
+                    New
+                  </span>
+                </button>
               </div>
               
               <div className="relative w-full max-w-md">
@@ -469,7 +650,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
                   placeholder="Search DAOs..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-[#151515] border border-indigo-700/30 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                  className="w-full bg-transparent backdrop-blur-sm border border-indigo-800/30 hover:border-indigo-500/50 rounded-lg py-2 pl-10 pr-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm transition-all"
                 />
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
               </div>
@@ -516,90 +697,175 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
             {/* DAO Grid */}
             {!isLoading && !error && filteredDaos.length > 0 && (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {(showAllDAOs ? filteredDaos : filteredDaos.slice(0, 8)).map((dao: DAO, index: number) => (
-                    <div 
-                      key={dao.daoId} 
-                      className="group cursor-pointer"
-                      onClick={() => onEnterDashboard(dao.daoId)}
-                    >
-                      <Card className="h-full transition-all hover:border-indigo-500 overflow-hidden flex flex-col bg-[#151515] border-indigo-800/30 backdrop-blur-sm hover:shadow-lg hover:shadow-indigo-500/10">
-                        {/* Card Header */}
-                        <div className="p-5 border-b border-[#222] flex items-center">
-                          <div className="h-12 w-12 rounded-full overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center mr-4 text-white font-medium text-lg">
-                            {dao.profilePicture ? (
-                              <img 
-                                src={dao.profilePicture} 
-                                alt={`${dao.name} logo`}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  // Fallback to first letter if image fails to load
-                                  e.currentTarget.style.display = 'none';
-                                  if (e.currentTarget.parentElement) {
-                                    e.currentTarget.parentElement.textContent = dao.name.charAt(0);
-                                  }
-                                }}
-                              />
-                            ) : (
-                              dao.name.charAt(0)
-                            )}
-                          </div>
-                          <div>
-                            <h3 className="text-xl font-semibold text-white group-hover:text-indigo-400 transition-colors">
-                              {dao.name}
-                            </h3>
-                            <div className="flex mt-1 space-x-2">
-                              {getDAOBadges(dao, index).map((badge) => (
-                                <Badge key={badge} type={badge} />
-                              ))}
-                            </div>
+                {/* Horizontal scrollable container with scroll snap */}
+                <div className="relative w-full overflow-hidden">
+                  {/* Mobile and Desktop View - Horizontal scroll container */}
+                  <div 
+                    className="w-full overflow-x-auto scrollbar-hide pb-6 dao-scroll-container" 
+                    ref={scrollContainerRef}
+                  >
+                    <div className="flex">
+                      {daoPages.map((page: DAO[], pageIndex: number) => (
+                        <div 
+                          key={`page-${pageIndex}`}
+                          className="dao-scroll-page px-2"
+                        >
+                          {/* Responsive Grid - Changes columns based on screen size and items per page */}
+                          <div 
+                            className="grid gap-4 md:gap-6"
+                            style={{ 
+                              minHeight: '280px',
+                              gridTemplateRows: `repeat(${typeof window !== 'undefined' && window.innerWidth >= 1280 && itemsPerPage > 8 ? '2' : '3'}, minmax(220px, 1fr))`,
+                              gridTemplateColumns: `repeat(${
+                                // 2 columns on mobile, 4 on tablet, 6 on desktop
+                                typeof window !== 'undefined' && window.innerWidth >= 1280 ? 
+                                  '6' : 
+                                  typeof window !== 'undefined' && window.innerWidth >= 768 ? 
+                                    '4' : '2'
+                              }, 1fr)`,
+                              width: '100%'
+                            }}
+                          >
+                            {/* Map all possible card slots for consistent layout */}
+                            {[...Array(itemsPerPage)].map((_, slotIndex: number) => {
+                              // Show real DAO if available for this slot, otherwise placeholder
+                              const dao = page[slotIndex];
+                              
+                              return dao ? (
+                                // Actual DAO card
+                                <div 
+                                  key={dao.daoId || slotIndex} 
+                                  className="group cursor-pointer h-full w-full"
+                                  onClick={() => onEnterDashboard(dao.daoId)}
+                                >
+                                  <div className="p-4 rounded-2xl border border-indigo-800/30 bg-transparent backdrop-blur-sm hover:border-indigo-500/50 transition-all flex flex-col justify-between h-full w-full">
+                                    <div className="flex flex-col items-center text-center">
+                                      {/* Circular logo */}
+                                      <div className="h-16 w-16 rounded-full overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-medium text-xl mb-3">
+                                        {dao.profilePicture ? (
+                                          <img 
+                                            src={dao.profilePicture} 
+                                            alt={`${dao.name} logo`}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                              // Fallback to first letter if image fails to load
+                                              e.currentTarget.style.display = 'none';
+                                              if (e.currentTarget.parentElement) {
+                                                e.currentTarget.parentElement.textContent = dao.name.charAt(0);
+                                              }
+                                            }}
+                                          />
+                                        ) : (
+                                          dao.name.charAt(0)
+                                        )}
+                                      </div>
+                                      
+                                      {/* Name */}
+                                      <h3 className="text-base font-medium text-white group-hover:text-indigo-400 transition-colors line-clamp-2 mb-2 w-full">
+                                        {dao.name}
+                                      </h3>
+                                    </div>
+                                    
+                                    {/* Description - only visible on larger screens */}
+                                    <div className="hidden md:block overflow-hidden mt-auto w-full">
+                                      <p className="text-xs text-gray-300 line-clamp-3">
+                                        {dao.description || "This DAO hasn't provided a description yet."}
+                                      </p>
+                                    </div>
+                                    
+                                    {/* Member count */}
+                                    <div className="text-xs text-gray-400 flex items-center justify-center mt-3 w-full">
+                                      <Users size={14} className="mr-1" />
+                                      <span>{dao.members?.length || '0'} Members</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                // Empty placeholder with exact same dimensions
+                                <div 
+                                  key={`empty-${slotIndex}`} 
+                                  className="h-full w-full" 
+                                  style={{ visibility: 'hidden' }}
+                                >
+                                  <div className="p-4 rounded-2xl border border-indigo-800/30 bg-transparent h-full w-full">
+                                    <div className="flex flex-col items-center text-center">
+                                      <div className="h-16 w-16 rounded-full mb-3"></div>
+                                      <h3 className="text-base mb-2 w-full h-6"></h3>
+                                    </div>
+                                    <div className="mt-auto w-full">
+                                      <p className="text-xs h-12"></p>
+                                    </div>
+                                    <div className="mt-3 w-full h-4"></div>
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
-                        
-                        {/* Card Body */}
-                        <div className="p-5 flex-1">
-                          <p className="text-gray-300 mb-4 line-clamp-3">
-                            {dao.description || "This DAO hasn't provided a description yet."}
-                          </p>
-                          
-                          {/* Stats */}
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-[#1a1a1a] p-3 rounded-lg">
-                              <div className="text-sm text-gray-400 mb-1">Members</div>
-                              <div className="font-semibold">{dao.members?.length || '0'}</div>
-                            </div>
-                            <div className="bg-[#1a1a1a] p-3 rounded-lg">
-                              <div className="text-sm text-gray-400 mb-1">Proposals</div>
-                              <div className="font-semibold">0</div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Card Footer */}
-                        <div className="p-5 border-t border-[#222] flex justify-between items-center">
-                          <span className="text-sm text-gray-400">
-                            {dao.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                          <div className="flex items-center text-indigo-500 font-medium">
-                            <span className="mr-2">Enter DAO</span>
-                            <ArrowRight size={16} />
-                          </div>
-                        </div>
-                      </Card>
+                      ))}
                     </div>
-                  ))}
-                </div>
-                
-                {filteredDaos.length > 8 && (
-                  <div className="flex justify-center mt-10">
-                    <Button 
-                      variant="outline"
-                      onClick={() => setShowAllDAOs(!showAllDAOs)}
-                    >
-                      {showAllDAOs ? 'Show Less' : 'Load More'}
-                    </Button>
                   </div>
-                )}
+                  
+                  {/* Page indicator dots with arrow buttons */}
+                  {daoPages.length > 1 && (
+                    <div className="flex justify-center items-center mt-6 gap-2">
+                      {/* Previous arrow for desktop */}
+                      <button
+                        onClick={() => navigatePage('prev')}
+                        disabled={currentPage === 1}
+                        className={`hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-transparent border border-indigo-800/30 hover:border-indigo-500/50 transition-colors ${
+                          currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                        }`}
+                        aria-label="Previous page"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M15 18l-6-6 6-6" />
+                        </svg>
+                      </button>
+                      
+                      {/* Page indicator dots */}
+                      <div className="flex gap-1">
+                        {daoPages.map((_: DAO[], i: number) => (
+                          <button
+                            key={i}
+                            onClick={() => {
+                              // Find the scroll container and scroll to the correct page
+                              const scrollContainer = scrollContainerRef.current;
+                              if (scrollContainer) {
+                                const pageWidth = scrollContainer.clientWidth;
+                                scrollContainer.scrollTo({
+                                  left: i * pageWidth,
+                                  behavior: 'smooth'
+                                });
+                                setCurrentPage(i + 1); // Update current page immediately
+                              }
+                            }}
+                            className={`w-2 h-2 rounded-full transition-all ${
+                              currentPage === i + 1
+                                ? 'bg-indigo-600 w-4' 
+                                : 'bg-gray-600 hover:bg-gray-500'
+                            }`}
+                            aria-label={`Go to page ${i + 1}`}
+                          />
+                        ))}
+                      </div>
+                      
+                      {/* Next arrow for desktop */}
+                      <button
+                        onClick={() => navigatePage('next')}
+                        disabled={currentPage === daoPages.length}
+                        className={`hidden sm:flex items-center justify-center w-8 h-8 rounded-full bg-transparent border border-indigo-800/30 hover:border-indigo-500/50 transition-colors ${
+                          currentPage === daoPages.length ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                        }`}
+                        aria-label="Next page"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M9 18l6-6-6-6" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </>
             )}
           </div>
@@ -724,7 +990,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
         </section>
         
         {/* Testimonials */}
-        <section className="py-16 sm:py-24 px-4 sm:px-8 bg-transparent">
+        <section className=" sm:py-24 px-4 sm:px-8 bg-transparent">
           <div className="container mx-auto">
             <div className="text-center mb-12 sm:mb-16">
               <h2 className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4">What Our Users Say</h2>
