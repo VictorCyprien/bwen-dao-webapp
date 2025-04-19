@@ -1,6 +1,6 @@
 import React from 'react';
-import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import Modal from './common/Modal';
 
 interface CreateMethodModalProps {
   isOpen: boolean;
@@ -32,27 +32,6 @@ const CreateMethodModal: React.FC<CreateMethodModalProps> = ({
       setAnimationStarted(false);
     }
   }, [isOpen]);
-
-  // Handle ESC key to close modal
-  React.useEffect(() => {
-    const handleEsc = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    };
-    
-    window.addEventListener('keydown', handleEsc);
-    
-    // Prevent scrolling when modal is open
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    }
-    
-    return () => {
-      window.removeEventListener('keydown', handleEsc);
-      document.body.style.overflow = 'auto';
-    };
-  }, [isOpen, onClose]);
 
   // Add keyframes for gradual inflation animation
   React.useEffect(() => {
@@ -90,8 +69,6 @@ const CreateMethodModal: React.FC<CreateMethodModalProps> = ({
       };
     }
   }, [showJoke]);
-
-  if (!isOpen) return null;
 
   const handleSelectBabyWen = () => {
     if (onSelectMethod) {
@@ -149,24 +126,13 @@ const CreateMethodModal: React.FC<CreateMethodModalProps> = ({
     setEmojis(newEmojis);
   };
 
-  // Custom close handler to reset state
-  const handleClose = () => {
-    onClose();
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Overlay */}
-      <div 
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm" 
-        onClick={handleClose}
-      />
-      
-      {/* Joke emojis */}
-      {showJoke && emojis.map((emoji: EmojiPosition) => (
+    <>
+      {/* Joke emojis - keep these outside the Modal component */}
+      {isOpen && showJoke && emojis.map((emoji: EmojiPosition) => (
         <div 
           key={emoji.id}
-          className="absolute text-4xl z-20 animate-bounce"
+          className="fixed text-4xl z-[51] animate-bounce"
           style={{ 
             left: emoji.left, 
             top: emoji.top,
@@ -177,25 +143,15 @@ const CreateMethodModal: React.FC<CreateMethodModalProps> = ({
         </div>
       ))}
       
-      {/* Modal content */}
-      <div 
-        className="relative bg-[#111] border border-gray-800 rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] z-10"
-        style={animationStarted ? { animation: 'fadeAndOverflow 5s forwards' } : { overflow: 'hidden' }}
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="Create DAO"
+        maxWidth="max-w-lg"
       >
-        {/* Modal header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-800">
-          <h2 className="text-xl font-semibold text-white">Create DAO</h2>
-          <button 
-            onClick={handleClose}
-            className="text-gray-400 hover:text-white transition-colors"
-            aria-label="Close"
-          >
-            <X size={20} />
-          </button>
-        </div>
-        
-        {/* Modal body - Choose method */}
-        <div className="p-6">
+        <div
+          style={animationStarted ? { animation: 'fadeAndOverflow 5s forwards' } : { overflow: 'hidden' }}
+        >
           <p className="text-gray-300 mb-6 text-center">Choose how you want to create your DAO:</p>
           
           <div className="space-y-4">
@@ -251,8 +207,8 @@ const CreateMethodModal: React.FC<CreateMethodModalProps> = ({
             </button>
           </div>
         </div>
-      </div>
-    </div>
+      </Modal>
+    </>
   );
 };
 

@@ -4,7 +4,7 @@ import Modal from './common/Modal';
 import { DAO } from '../core/modules/dao-api';
 import { daosService } from '../services/DaosService';
 import { ProposalService } from '../services/ProposalService';
-import { Users, FileText, Globe, Sparkles, ArrowUpRight, Rocket, Check, UserPlus } from 'lucide-react';
+import { Users, FileText, Globe, Sparkles, ArrowUpRight, Rocket, Check, UserPlus, X } from 'lucide-react';
 import Button from './common/Button';
 import { useNavigate } from 'react-router-dom';
 import useApiAndWallet from '../hooks/useApiAndWallet';
@@ -255,6 +255,7 @@ const DAOPublicProfileModal: React.FC<DAOPublicProfileModalProps> = ({
       isOpen={isOpen} 
       onClose={onClose}
       maxWidth="max-w-3xl"
+      title={null}
     >
       {isLoading ? (
         <div className="flex justify-center py-12">
@@ -266,167 +267,166 @@ const DAOPublicProfileModal: React.FC<DAOPublicProfileModalProps> = ({
           <Button variant="primary" onClick={onClose}>Close</Button>
         </div>
       ) : dao ? (
-        <div className="space-y-6">
-          {/* Header with profile info */}
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
-            {/* DAO Logo */}
-            <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-medium text-4xl">
-              {dao.profilePicture ? (
-                <img 
-                  src={dao.profilePicture} 
-                  alt={`${dao.name} logo`}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    if (e.currentTarget.parentElement) {
-                      e.currentTarget.parentElement.textContent = dao.name.charAt(0);
-                    }
-                  }}
-                />
-              ) : (
-                dao.name.charAt(0)
-              )}
-            </div>
-            
-            {/* DAO Info */}
-            <div className="flex-1 text-center md:text-left">
-              <h1 className="text-2xl md:text-3xl font-bold mb-2">{dao.name}</h1>
-              <p className="text-gray-300 mb-4 max-w-xl">
-                {dao.description || "This DAO hasn't provided a description yet."}
-              </p>
-              
-              {/* Social links */}
-              {renderSocialLinks()}
-            </div>
-          </div>
+        <div className="relative">
+          {/* Close button in top right corner - Removed since it's now in Modal component */}
           
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {/* Members */}
-            <div className={`p-4 rounded-xl bg-[#1a1a1a] border border-indigo-800/30 backdrop-blur-sm transition-all duration-500 ${showJoinAnimation ? 'border-indigo-500/70 shadow-lg shadow-indigo-500/20' : 'hover:border-indigo-500/50'}`}>
-              <div className="flex items-center">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 transition-all duration-500 ${showJoinAnimation ? 'bg-indigo-500/30' : 'bg-indigo-500/10'}`}>
-                  <Users size={20} className={`transition-all duration-500 ${showJoinAnimation ? 'text-indigo-300' : 'text-indigo-400'}`} />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold flex items-center">
-                    <span className={`transition-all duration-300 ${showJoinAnimation ? 'scale-110' : ''}`}>
-                      {memberCount}
-                    </span>
-                    {showJoinAnimation && (
-                      <span className="ml-1 text-green-400 text-sm inline-flex items-center opacity-0 animate-fadeIn">
-                        <span className="animate-slideInFromBottom">+1</span>
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-sm text-gray-400">Members</div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Proposals */}
-            <div className="p-4 rounded-xl bg-[#1a1a1a] border border-purple-800/30 backdrop-blur-sm hover:border-purple-500/50 transition-all">
-              <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center mr-3">
-                  <FileText size={20} className="text-purple-400" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{proposalCount}</div>
-                  <div className="text-sm text-gray-400">Proposals</div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Status */}
-            <div className="p-4 rounded-xl bg-[#1a1a1a] border border-pink-800/30 backdrop-blur-sm hover:border-pink-500/50 transition-all">
-              <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-pink-500/10 flex items-center justify-center mr-3">
-                  <Sparkles size={20} className="text-pink-400" />
-                </div>
-                <div>
-                  <div className="text-sm font-medium px-2 py-1 rounded-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white inline-flex items-center">
-                    {dao.isActive ? 'Active' : 'Inactive'}
-                  </div>
-                  <div className="text-sm text-gray-400 mt-1">Status</div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* CTA Button - Centered and changed based on membership */}
-          <div className="flex justify-center mt-8">
-            <style>{`
-              @keyframes gradientShift {
-                0% { background-position: 0% 50%; }
-                50% { background-position: 100% 50%; }
-                100% { background-position: 0% 50%; }
-              }
-              
-              @keyframes fadeIn {
-                from { opacity: 0; transform: translateY(5px); }
-                to { opacity: 1; transform: translateY(0); }
-              }
-              
-              @keyframes slideInFromBottom {
-                from { opacity: 0; transform: translateY(5px); }
-                to { opacity: 1; transform: translateY(0); }
-              }
-              
-              .animate-gradientShift {
-                background-size: 200% 200%;
-                animation: gradientShift 1.5s ease infinite;
-              }
-              
-              .animate-fadeIn {
-                animation: fadeIn 0.3s ease-out forwards;
-              }
-              
-              .animate-slideInFromBottom {
-                animation: slideInFromBottom 0.3s ease-out forwards;
-              }
-            `}</style>
-            <Button 
-              variant="primary"
-              className={`px-6 py-3 text-base transition-all duration-300 ${
-                showJoinAnimation ? 
-                'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 animate-gradientShift scale-105 shadow-lg shadow-green-500/30' : 
-                ''
-              }`}
-              onClick={handleAction}
-              disabled={membershipLoading}
-            >
-              <span className="flex items-center">
-                {membershipLoading ? (
-                  <>
-                    <span className="mr-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    {userIsDaoMember ? 'Loading...' : 'Joining...'}
-                  </>
-                ) : showJoinAnimation ? (
-                  <div className="flex items-center overflow-hidden">
-                    <div className="flex items-center opacity-0 animate-fadeIn" style={{ animationDelay: '0.1s', animationFillMode: 'forwards' }}>
-                      <Check className="mr-2 h-4 w-4" />
-                    </div>
-                    <div className="flex items-center">
-                      <span className="opacity-0 animate-fadeIn" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>Joined&nbsp;</span>
-                      <span className="opacity-0 animate-fadeIn" style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}>DAO!</span>
-                      <span className="ml-1 opacity-0 animate-fadeIn" style={{ animationDelay: '0.4s', animationFillMode: 'forwards' }}>
-                        <UserPlus size={14} className="text-green-300" />
-                      </span>
-                    </div>
-                  </div>
-                ) : userIsDaoMember ? (
-                  <>
-                    Enter Dashboard
-                    <ArrowUpRight className="ml-2 h-4 w-4" />
-                  </>
+          <div className="space-y-6">
+            {/* DAO Info - restructured for better responsiveness */}
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
+              {/* DAO Logo */}
+              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-medium text-4xl shrink-0">
+                {dao.profilePicture ? (
+                  <img 
+                    src={dao.profilePicture} 
+                    alt={`${dao.name} logo`}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      if (e.currentTarget.parentElement) {
+                        e.currentTarget.parentElement.textContent = dao.name.charAt(0);
+                      }
+                    }}
+                  />
                 ) : (
-                  <>
-                    Join DAO
-                    <Rocket className="ml-2 h-4 w-4" />
-                  </>
+                  dao.name.charAt(0)
                 )}
-              </span>
-            </Button>
+              </div>
+              
+              {/* DAO Info */}
+              <div className="flex-1 text-center sm:text-left">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">{dao.name}</h1>
+                <p className="text-sm md:text-base text-gray-300 mb-4 max-w-xl">
+                  {dao.description || "This DAO hasn't provided a description yet."}
+                </p>
+                
+                {/* Social links */}
+                {renderSocialLinks()}
+              </div>
+            </div>
+            
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+              {/* Members */}
+              <div className={`p-3 sm:p-4 rounded-xl bg-[#1a1a1a] border border-indigo-800/30 backdrop-blur-sm transition-all duration-500 ${showJoinAnimation ? 'border-indigo-500/70 shadow-lg shadow-indigo-500/20' : 'hover:border-indigo-500/50'}`}>
+                <div className="flex items-center">
+                  <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center mr-3 transition-all duration-500 ${showJoinAnimation ? 'bg-indigo-500/30' : 'bg-indigo-500/10'}`}>
+                    <Users size={18} className={`transition-all duration-500 ${showJoinAnimation ? 'text-indigo-300' : 'text-indigo-400'}`} />
+                  </div>
+                  <div>
+                    <div className="text-xl sm:text-2xl font-bold flex items-center">
+                      <span className={`transition-all duration-300 ${showJoinAnimation ? 'scale-110' : ''}`}>
+                        {memberCount}
+                      </span>
+                    </div>
+                    <div className="text-xs sm:text-sm text-gray-400">Members</div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Proposals */}
+              <div className="p-3 sm:p-4 rounded-xl bg-[#1a1a1a] border border-purple-800/30 backdrop-blur-sm hover:border-purple-500/50 transition-all">
+                <div className="flex items-center">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-purple-500/10 flex items-center justify-center mr-3">
+                    <FileText size={18} className="text-purple-400" />
+                  </div>
+                  <div>
+                    <div className="text-xl sm:text-2xl font-bold">{proposalCount}</div>
+                    <div className="text-xs sm:text-sm text-gray-400">Proposals</div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Status */}
+              <div className="p-3 sm:p-4 rounded-xl bg-[#1a1a1a] border border-pink-800/30 backdrop-blur-sm hover:border-pink-500/50 transition-all">
+                <div className="flex items-center">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-pink-500/10 flex items-center justify-center mr-3">
+                    <Sparkles size={18} className="text-pink-400" />
+                  </div>
+                  <div>
+                    <div className="text-xs sm:text-sm font-medium px-2 py-1 rounded-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white inline-flex items-center">
+                      {dao.isActive ? 'Active' : 'Inactive'}
+                    </div>
+                    <div className="text-xs sm:text-sm text-gray-400 mt-1">Status</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* CTA Button - Centered and changed based on membership */}
+            <div className="flex justify-center mt-6 sm:mt-8">
+              <style>{`
+                @keyframes gradientShift {
+                  0% { background-position: 0% 50%; }
+                  50% { background-position: 100% 50%; }
+                  100% { background-position: 0% 50%; }
+                }
+                
+                @keyframes fadeIn {
+                  from { opacity: 0; transform: translateY(5px); }
+                  to { opacity: 1; transform: translateY(0); }
+                }
+                
+                @keyframes slideInFromBottom {
+                  from { opacity: 0; transform: translateY(5px); }
+                  to { opacity: 1; transform: translateY(0); }
+                }
+                
+                .animate-gradientShift {
+                  background-size: 200% 200%;
+                  animation: gradientShift 1.5s ease infinite;
+                }
+                
+                .animate-fadeIn {
+                  animation: fadeIn 0.3s ease-out forwards;
+                }
+                
+                .animate-slideInFromBottom {
+                  animation: slideInFromBottom 0.3s ease-out forwards;
+                }
+              `}</style>
+              <Button 
+                variant="primary"
+                className={`px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base transition-all duration-300 ${
+                  showJoinAnimation ? 
+                  'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 animate-gradientShift scale-105 shadow-lg shadow-green-500/30' : 
+                  ''
+                }`}
+                onClick={handleAction}
+                disabled={membershipLoading}
+              >
+                <span className="flex items-center">
+                  {membershipLoading ? (
+                    <>
+                      <span className="mr-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      {userIsDaoMember ? 'Loading...' : 'Joining...'}
+                    </>
+                  ) : showJoinAnimation ? (
+                    <div className="flex items-center overflow-hidden">
+                      <div className="flex items-center opacity-0 animate-fadeIn" style={{ animationDelay: '0.1s', animationFillMode: 'forwards' }}>
+                        <Check className="mr-2 h-4 w-4" />
+                      </div>
+                      <div className="flex items-center">
+                        <span className="opacity-0 animate-fadeIn" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>Joined&nbsp;</span>
+                        <span className="opacity-0 animate-fadeIn" style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}>DAO!</span>
+                        <span className="ml-1 opacity-0 animate-fadeIn" style={{ animationDelay: '0.4s', animationFillMode: 'forwards' }}>
+                          <UserPlus size={14} className="text-green-300" />
+                        </span>
+                      </div>
+                    </div>
+                  ) : userIsDaoMember ? (
+                    <>
+                      Enter Dashboard
+                      <ArrowUpRight className="ml-2 h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      Join DAO
+                      <Rocket className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </span>
+              </Button>
+            </div>
           </div>
         </div>
       ) : (
