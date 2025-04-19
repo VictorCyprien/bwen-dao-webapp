@@ -15,25 +15,65 @@ export function getInitialSocialLinks() {
 
 // Validators for different social links
 const validators = {
-  twitter: (value: string) => {
+  twitter: (value: string, allValues?: Record<string, any>) => {
     // Accept either a Twitter/X handle (@username) or URL
     const twitterRegex = /^(?:@[\w]{1,15}|(?:https?:\/\/)?(?:www\.)?(?:twitter\.com|x\.com)\/[\w]{1,15}\/?(?:\?.*)?$)/;
     
-    if (!value || twitterRegex.test(value)) {
+    // If Discord is filled, Twitter is optional
+    if (allValues?.daoDiscord) {
+      if (!value || twitterRegex.test(value)) {
+        return { isValid: true };
+      }
+      return { 
+        isValid: false, 
+        errorMessage: 'Please enter a valid Twitter/X URL (e.g., https://twitter.com/username)' 
+      };
+    }
+    
+    // Otherwise Twitter is required if Discord is empty
+    if (!value) {
+      return {
+        isValid: false,
+        errorMessage: 'Either Twitter or Discord must be provided'
+      };
+    }
+    
+    if (twitterRegex.test(value)) {
       return { isValid: true };
     }
+    
     return { 
       isValid: false, 
       errorMessage: 'Please enter a valid Twitter/X URL (e.g., https://twitter.com/username)' 
     };
   },
-  discord: (value: string) => {
+  discord: (value: string, allValues?: Record<string, any>) => {
     // Accept a Discord invite link
     const discordRegex = /^(?:https?:\/\/)?(?:www\.)?discord(?:app)?\.(?:com|gg)\/(?:invite\/)?([a-zA-Z0-9-]+)$/;
     
-    if (!value || discordRegex.test(value)) {
+    // If Twitter is filled, Discord is optional
+    if (allValues?.daoTwitter) {
+      if (!value || discordRegex.test(value)) {
+        return { isValid: true };
+      }
+      return { 
+        isValid: false, 
+        errorMessage: 'Please enter a valid Discord invite URL' 
+      };
+    }
+    
+    // Otherwise Discord is required if Twitter is empty
+    if (!value) {
+      return {
+        isValid: false,
+        errorMessage: 'Either Discord or Twitter must be provided'
+      };
+    }
+    
+    if (discordRegex.test(value)) {
       return { isValid: true };
     }
+    
     return { 
       isValid: false, 
       errorMessage: 'Please enter a valid Discord invite URL' 
@@ -108,10 +148,10 @@ const DaoSocialStep: OnboardingStep = {
     },
     {
       id: 'daoTwitter',
-      label: 'X (Twitter)',
+      label: 'X (Twitter)*',
       type: 'text',
       placeholder: 'https://twitter.com/username',
-      required: false,
+      required: false, // Set as false but validation will enforce either this or Discord
       icon: 'twitter',
       validator: validators.twitter
     },
@@ -126,10 +166,10 @@ const DaoSocialStep: OnboardingStep = {
     },
     {
       id: 'daoDiscord',
-      label: 'Discord',
+      label: 'Discord*',
       type: 'text',
       placeholder: 'https://discord.gg/invite',
-      required: false,
+      required: false, // Set as false but validation will enforce either this or Twitter
       icon: 'discord',
       validator: validators.discord
     },
