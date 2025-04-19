@@ -11,7 +11,6 @@ import Button from './common/Button';
 import Card from './common/Card';
 import ProfileModal from './ProfileModal';
 import { 
-  ArrowRight, 
   Clock, 
   Heart, 
   Sparkles, 
@@ -155,6 +154,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
   const daosPerPage = 6;
   const navigate = useNavigate();
   
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
   // Check for Telegram auth parameters
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -165,7 +166,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
       searchParams.has('hash');
 
     if (hasTelegramAuth) {
-      // Simply open the profile modal
       setIsProfileModalOpen(true);
     }
   }, []);
@@ -196,7 +196,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
     };
     
     fetchDAOs();
-  }, []);
+  });
   
   const handleCreateDaoSuccess = (daoId: string) => {
     setTimeout(() => {
@@ -222,9 +222,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
     return passesFilter && matchesSearch;
   });
   
-  // Group DAOs into pages of 6 items for mobile, 8 for tablet, 12 for desktop
+  // Group DAOs into pages based on screen size
   const getItemsPerPage = () => {
-    // We'll use window.innerWidth if available (client-side)
     if (typeof window !== 'undefined') {
       if (window.innerWidth >= 1280) return 12; // Large desktop
       if (window.innerWidth >= 768) return 8;   // Tablet/small desktop
@@ -251,44 +250,56 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
   
   const [daoPages, setDaoPages] = useState<DAO[][]>([]);
   const [itemsPerPage, setItemsPerPage] = useState<number>(6); // Default to mobile view
+  const [hasInitialized, setHasInitialized] = useState(false);
   
-  // Update pages when filtered DAOs change or on window resize
+  // Update pages when filtered DAOs change or on window resize - with safety checks
   useEffect(() => {
-    const updatePages = () => {
-      const newItemsPerPage = getItemsPerPage();
+    if (!hasInitialized) {
+      setHasInitialized(true);
+    }
+    
+    const newItemsPerPage = getItemsPerPage();
+    
+    // Only update if itemsPerPage changed to prevent unnecessary re-renders
+    if (newItemsPerPage !== itemsPerPage) {
       setItemsPerPage(newItemsPerPage);
-      
-      // Create pages with consistent itemsPerPage
-      const pages: DAO[][] = [];
-      for (let i = 0; i < filteredDaos.length; i += newItemsPerPage) {
-        pages.push(filteredDaos.slice(i, i + newItemsPerPage));
-      }
-      
-      // Add an empty page if no results
-      if (pages.length === 0) {
-        pages.push([]);
-      }
-      
+    }
+    
+    // Create pages with consistent itemsPerPage
+    const pages: DAO[][] = [];
+    for (let i = 0; i < filteredDaos.length; i += newItemsPerPage) {
+      pages.push(filteredDaos.slice(i, i + newItemsPerPage));
+    }
+    
+    // Add an empty page if no results
+    if (pages.length === 0) {
+      pages.push([]);
+    }
+    
+    // Update pages only if they've changed to prevent infinite loops
+    if (JSON.stringify(pages) !== JSON.stringify(daoPages)) {
       setDaoPages(pages);
       
-      // Reset current page if needed
+      // Reset current page if it's now invalid
       if (currentPage > pages.length && pages.length > 0) {
         setCurrentPage(1);
       }
-    };
+    }
     
-    updatePages();
-    
-    const handleResize = () => {
-      updatePages();
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [filteredDaos, currentPage]);
-  
-  // Reference for scroll container
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+    // Handle resize only for browser environment
+    if (typeof window !== 'undefined') {
+      const handleResize = () => {
+        const resizeItemsPerPage = getItemsPerPage();
+        if (resizeItemsPerPage !== itemsPerPage) {
+          // Force re-render by updating a different state
+          setHasInitialized((prev: boolean) => !prev);
+        }
+      };
+      
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, [filteredDaos, hasInitialized, itemsPerPage, daoPages, currentPage]);
   
   // Function to handle scroll events to update current page
   const handleScroll = () => {
@@ -305,6 +316,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
       setCurrentPage(newPage);
     }
   };
+  
+  // Add scroll event listener
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+    
+    scrollContainer.addEventListener('scroll', handleScroll);
+    
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+    };
+  }, [currentPage, daoPages.length]);
+  
+  // Get top 4 DAOs for featured section
+  const featuredDaos = daos.slice(0, 4);
   
   // Navigate to previous/next page
   const navigatePage = (direction: 'prev' | 'next') => {
@@ -328,21 +354,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
     setCurrentPage(newPage);
   };
   
-  // Add scroll event listener
-  useEffect(() => {
-    const scrollContainer = scrollContainerRef.current;
-    if (!scrollContainer) return;
-    
-    scrollContainer.addEventListener('scroll', handleScroll);
-    
-    return () => {
-      scrollContainer.removeEventListener('scroll', handleScroll);
-    };
-  }, [currentPage, daoPages.length]);
-  
-  // Get top 4 DAOs for featured section
-  const featuredDaos = daos.slice(0, 4);
-  
   const scrollToDAOs = () => {
     document.getElementById('daos-section')?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -359,37 +370,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
       // Open traditional form
       setIsCreateDaoModalOpen(true);
     } else {
-      // Navigate to BabyWen route instead of opening modal
+      // Navigate to BabyWen route
       navigate('/create/babywen');
     }
   };
-
-  // Add a ref for the 3D effect
-  const logoRef = useRef<HTMLDivElement>(null);
-  
-  // Handle mouse movement for 3D effect
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!logoRef.current) return;
-      
-      const { clientX, clientY } = e;
-      const { left, top, width, height } = logoRef.current.getBoundingClientRect();
-      
-      const x = (clientX - left) / width;
-      const y = (clientY - top) / height;
-      
-      const rotateX = (y - 0.5) * 20;
-      const rotateY = (x - 0.5) * 20;
-      
-      logoRef.current.style.transform = `perspective(1000px) rotateX(${-rotateX}deg) rotateY(${rotateY}deg)`;
-    };
-    
-    window.addEventListener('mousemove', handleMouseMove);
-    
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, []);
 
   return (
     <div className="bg-[#0a0a0a] min-h-screen text-white overflow-x-hidden">
@@ -412,7 +396,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
               style={{
                 top: `${Math.random() * 100}%`,
                 left: `${Math.random() * 100}%`,
-                animation: `twinkle ${20 + Math.random() * 30}s infinite ${Math.random() * 15}s`,
+                animationName: 'twinkle',
+                animationDuration: `${20 + Math.random() * 30}s`,
+                animationIterationCount: 'infinite',
+                animationDelay: `${Math.random() * 15}s`,
                 animationTimingFunction: 'ease-in-out'
               }}
             ></div>
