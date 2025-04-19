@@ -1,11 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { typography, ui, containers } from '../styles/theme';
-import { X, Shield, Wallet, LogOut, ChevronRight, AlertTriangle, User, ChevronDown } from 'lucide-react';
+import { X, Shield, ChevronRight, AlertTriangle } from 'lucide-react';
 import useApiAndWallet from '../hooks/useApiAndWallet';
 import ApiAuthStatus from './common/ApiAuthStatus';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import { userService } from '../services/UserService';
 import { daosService } from '../services/DaosService';
 import { onboardingMessages } from './BabyWenOnboarding/steps/messages';
 
@@ -1001,15 +999,6 @@ const BabyWenOnboarding: React.FC = () => {
     }
   };
   
-  // Handle wallet connection
-  const handleConnectWallet = () => {
-    // Redirect to wallet connection page - update this to the correct wallet connection route
-    navigate('/wallet-connect');
-    
-    // Keep the welcome modal open so user can return to it after connecting
-    setShowWelcomeModal(true);
-  };
-  
   // Handle custom component response
   const handleCustomComponentResponse = async (option: string, data?: any) => {
     // Stop any currently playing sound immediately
@@ -1117,8 +1106,6 @@ const BabyWenOnboarding: React.FC = () => {
       );
     }
     
-    // Get any previously selected option for the current step
-    const previouslySelectedOption = sessionStorage.getItem(currentStep);
     
     return (
       <>
