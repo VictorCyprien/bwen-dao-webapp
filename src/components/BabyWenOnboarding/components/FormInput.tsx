@@ -18,7 +18,7 @@ export interface FormField {
   type: string;
   placeholder?: string;
   required: boolean;
-  validator?: (value: string) => { isValid: boolean; errorMessage?: string };
+  validator?: (value: string, formData: Record<string, string>) => { isValid: boolean; errorMessage?: string };
   icon?: string; // Path to icon image or SVG content
   options?: SelectOption[]; // For select inputs
   defaultValue?: string; // Default value for the field
@@ -149,9 +149,9 @@ const FormInput: React.FC<FormInputProps> = ({
       return false;
     }
     
-    // Run validator if provided
-    if (field?.validator && value.trim()) {
-      const result = field.validator(value);
+    // Run validator if provided, regardless of whether the field has a value
+    if (field?.validator) {
+      const result = field.validator(value, formData);
       if (!result.isValid) {
         setErrors((prev: Record<string, string>) => ({ ...prev, [id]: result.errorMessage || 'Invalid input' }));
         return false;

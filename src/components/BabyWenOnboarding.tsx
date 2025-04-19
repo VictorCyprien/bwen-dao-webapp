@@ -280,6 +280,11 @@ const BabyWenOnboarding: React.FC = () => {
     connected: true
   });
   
+  // Blockchain transaction state
+  const [blockchainTxInProgress, setBlockchainTxInProgress] = React.useState<boolean>(false);
+  const [blockchainTxCompleted, setBlockchainTxCompleted] = React.useState<boolean>(false);
+  const [blockchainTxError, setBlockchainTxError] = React.useState<string | null>(null);
+  
   // Handle disconnect wallet
   const handleDisconnect = () => {
     // Add your wallet disconnect logic here
@@ -714,8 +719,10 @@ const BabyWenOnboarding: React.FC = () => {
         tiktok: collectedData.tiktok,
         website: collectedData.website,
         // Use the converted file if available
-        profilePicture: logoFile
-      }).then(result => {
+        profilePicture: logoFile,
+        // Add blockchain DAO address if transaction was successful
+        blockchainAddress: sessionStorage.getItem('blockchainDaoAddress') || undefined
+      } as any).then(result => {
         if (result) {
           const daoId = result.daoId?.toString() || '';
           console.log('DAO created with ID:', daoId);
@@ -728,6 +735,11 @@ const BabyWenOnboarding: React.FC = () => {
           // Make sure to keep the DAO ID
           sessionStorage.setItem('createdDaoId', daoId);
           
+          // Store blockchain DAO address if available
+          if (sessionStorage.getItem('blockchainDaoAddress')) {
+            sessionStorage.setItem('blockchainDaoAddress', sessionStorage.getItem('blockchainDaoAddress') || '');
+          }
+          
           // Show success message and change to success step
           setCurrentStep('dao-success');
           
@@ -735,7 +747,10 @@ const BabyWenOnboarding: React.FC = () => {
           setStepHistory((prev: StepId[]) => [...prev, 'dao-success']);
           
           // Show the success message
-          simulateBabyWenTyping(steps['dao-success'].messages[0].content, undefined, 'dao-success');
+          const successMsg = blockchainTxCompleted 
+            ? `${steps['dao-success'].messages[0].content} Your DAO was also successfully created on the blockchain!` 
+            : steps['dao-success'].messages[0].content;
+          simulateBabyWenTyping(successMsg, undefined, 'dao-success');
           
           // Determine the input type for the success step
           determineInputType(steps['dao-success']);
@@ -1028,6 +1043,145 @@ const BabyWenOnboarding: React.FC = () => {
     }
   };
   
+  // Handle creating a blockchain transaction
+  const handleCreateBlockchainTransaction = async () => {
+    // Stop any currently playing sound immediately
+    await stopAudio();
+    
+    // Make sure we have a public key
+    if (!publicKey) {
+      setBlockchainTxError("Wallet not connected");
+      return;
+    }
+    
+    // Update state to show we're working on the transaction
+    setBlockchainTxInProgress(true);
+    setBlockchainTxCompleted(false);
+    setBlockchainTxError(null);
+    
+    try {
+      simulateBabyWenTyping("Creating blockchain transaction for your DAO...");
+      
+      // Get data from sessionStorage
+      const daoName = sessionStorage.getItem('daoName') || '';
+      const daoDescription = sessionStorage.getItem('daoDescription') || '';
+      const discordServer = sessionStorage.getItem('daoDiscord') || '';
+      const twitter = sessionStorage.getItem('daoTwitter') || '';
+      const website = sessionStorage.getItem('daoWebsite') || '';
+      const telegram = sessionStorage.getItem('daoTelegram') || '';
+      const tiktok = sessionStorage.getItem('daoTiktok') || '';
+      const instagram = sessionStorage.getItem('daoInstagram') || '';
+      
+      // Handle logo file if it exists
+      let logoFile: File | undefined = undefined;
+      const logoFileString = sessionStorage.getItem('daoLogoFile');
+      const logoType = sessionStorage.getItem('daoLogoType');
+      const logoUrl = sessionStorage.getItem('daoLogoUrl');
+      
+      // Convert dataURL back to File object for uploaded files
+      if (logoFileString && logoType === 'upload') {
+        try {
+          const fileData = JSON.parse(logoFileString);
+          if (fileData.dataUrl) {
+            // Convert base64 data to blob
+            const byteString = atob(fileData.dataUrl.split(',')[1]);
+            const mimeType = fileData.dataUrl.split(',')[0].split(':')[1].split(';')[0];
+            const arrayBuffer = new ArrayBuffer(byteString.length);
+            const uint8Array = new Uint8Array(arrayBuffer);
+            
+            for (let i = 0; i < byteString.length; i++) {
+              uint8Array[i] = byteString.charCodeAt(i);
+            }
+            
+            const blob = new Blob([arrayBuffer], { type: mimeType });
+            logoFile = new File([blob], fileData.name, { type: fileData.type });
+            console.log("Restored file from sessionStorage:", fileData.name);
+          }
+        } catch (err) {
+          console.error("Error converting stored logo data to File:", err);
+        }
+      } 
+      // Handle generated logo URLs
+      else if (logoType === 'generate' && logoUrl) {
+        try {
+          console.log("Converting generated logo URL to File:", logoUrl);
+          
+          // Fetch the image from the URL
+          const response = await fetch(logoUrl);
+          const blob = await response.blob();
+          
+          // Create a File object from the blob
+          // Use a meaningful filename with timestamp
+          const fileName = `dao_logo_${Date.now()}.png`;
+          logoFile = new File([blob], fileName, { type: 'image/png' });
+          
+          console.log("Successfully converted logo URL to File:", fileName);
+        } catch (err) {
+          console.error("Error converting logo URL to File:", err);
+        }
+      }
+      
+      // Import necessary functions and create the connection
+      const { Connection } = await import('@solana/web3.js');
+      const { createDaoTransaction, signAndSendTransaction } = await import('../utils/solanaTransactions');
+      const { SOLANA_RPC_ENDPOINT } = await import('../config/solana');
+      
+      // Create a Solana connection
+      const connection = new Connection(SOLANA_RPC_ENDPOINT, 'confirmed');
+      
+      // Create the transaction for DAO creation
+      const { transaction, daoAccount } = await createDaoTransaction(
+        connection,
+        publicKey,
+        {
+          name: daoName,
+          description: daoDescription,
+          discord_server: discordServer,
+          twitter: twitter,
+          telegram: telegram,
+          instagram: instagram,
+          tiktok: tiktok,
+          website: website,
+          profile_picture: logoFile ? URL.createObjectURL(logoFile) : undefined,
+          // Add any admin wallets if you have them
+          // admins: [],
+        }
+      );
+      
+      // Get the wallet from the context or appropriate source
+      const wallet = window.solana;
+      
+      if (wallet && wallet.signTransaction) {
+        // Send the transaction
+        const txSignature = await signAndSendTransaction(
+          wallet,
+          connection,
+          transaction
+        );
+        
+        console.log('DAO created on blockchain with transaction:', txSignature);
+        console.log('DAO account public key:', daoAccount.publicKey.toString());
+        
+        // Store blockchain DAO address in session storage
+        sessionStorage.setItem('blockchainDaoAddress', daoAccount.publicKey.toString());
+        
+        // Update state to show success
+        setBlockchainTxInProgress(false);
+        setBlockchainTxCompleted(true);
+        
+        simulateBabyWenTyping("Blockchain transaction successful! You can now create your DAO in our database.");
+      } else {
+        console.error('Wallet not available or does not support signing');
+        setBlockchainTxInProgress(false);
+        setBlockchainTxError("Your wallet doesn't support transaction signing");
+      }
+    } catch (txError: any) {
+      console.error('Error creating DAO on blockchain:', txError);
+      setBlockchainTxInProgress(false);
+      setBlockchainTxError(txError.message || 'Unknown error');
+    }
+  };
+  
   // Render appropriate input component based on input type
   const renderInputComponent = () => {
     if (!showInput) return null;
@@ -1077,11 +1231,67 @@ const BabyWenOnboarding: React.FC = () => {
           <div className="w-full mb-6">
             <DaoReviewDisplay />
           </div>
-          <div className="w-full flex justify-center">
+          
+          {/* Blockchain Transaction Status */}
+          {blockchainTxInProgress && !blockchainTxCompleted && !blockchainTxError && (
+            <div className="w-full mb-4">
+              <div className="bg-blue-500/20 rounded-xl p-4 border border-blue-500/30">
+                <div className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <p className="text-blue-200">Creating blockchain transaction... Please wait</p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {blockchainTxCompleted && (
+            <div className="w-full mb-4">
+              <div className="bg-green-500/20 rounded-xl p-4 border border-green-500/30">
+                <div className="flex items-center">
+                  <svg className="h-5 w-5 text-green-500 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <p className="text-green-200">Blockchain transaction successful! You can now create your DAO</p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {blockchainTxError && (
+            <div className="w-full mb-4">
+              <div className="bg-red-500/20 rounded-xl p-4 border border-red-500/30">
+                <div className="flex items-center">
+                  <svg className="h-5 w-5 text-red-500 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div>
+                    <p className="text-red-200">Transaction failed: {blockchainTxError}</p>
+                    <p className="text-red-300 text-xs mt-1">You can still create your DAO without blockchain integration</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <div className="w-full flex flex-col gap-3 sm:flex-row sm:justify-center">
+            {/* Show Create Transaction button if connected and transaction not started */}
+            {connected && publicKey && !blockchainTxInProgress && !blockchainTxCompleted && (
+              <ButtonAction
+                label="Create Blockchain Transaction"
+                onClick={handleCreateBlockchainTransaction}
+                variant="secondary"
+              />
+            )}
+            
+            {/* Main Create DAO button */}
             <ButtonAction
               label={currentStepObj?.buttonAction?.label || 'Create DAO'}
               onClick={handleButtonAction}
               variant={currentStepObj?.buttonAction?.variant as ButtonVariant || 'primary'}
+              disabled={connected && publicKey && !blockchainTxCompleted}
             />
           </div>
           

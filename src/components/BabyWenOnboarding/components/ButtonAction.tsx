@@ -1,16 +1,22 @@
-import * as React from 'react';
+import React from 'react';
 import { ButtonVariant } from '../../BabyWenOnboarding';
 
 interface ButtonActionProps {
   label: string;
   onClick: () => void;
   variant?: ButtonVariant;
+  disabled?: boolean;
 }
 
 /**
  * Button component that can trigger an action
  */
-const ButtonAction: React.FC<ButtonActionProps> = ({ label, onClick, variant = 'primary' }) => {
+const ButtonAction: React.FC<ButtonActionProps> = ({ 
+  label, 
+  onClick, 
+  variant = 'primary',
+  disabled = false 
+}: ButtonActionProps) => {
   const getButtonStyle = () => {
     switch (variant) {
       case 'primary':
@@ -27,7 +33,10 @@ const ButtonAction: React.FC<ButtonActionProps> = ({ label, onClick, variant = '
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2 ${getButtonStyle()} text-white text-sm rounded-md transition-colors`}
+      disabled={disabled}
+      className={`px-4 py-2 ${getButtonStyle()} text-white text-sm rounded-md transition-colors ${
+        disabled ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg'
+      }`}
     >
       {label}
     </button>

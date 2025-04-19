@@ -18,6 +18,7 @@ const DAO_PROGRAM_PUBLIC_KEY = new PublicKey(DAO_PROGRAM_ID);
 const INSTRUCTION_CREATE_PROPOSAL = 0;
 const INSTRUCTION_VOTE = 1;
 const INSTRUCTION_FINALIZE_PROPOSAL = 2;
+const INSTRUCTION_CREATE_DAO = 3;
 
 // Define instruction classes for Borsh serialization
 class CreateProposalArgs {
@@ -44,6 +45,38 @@ class FinalizeProposalArgs {
   constructor() {}
 }
 
+// New class for DAO creation arguments
+class CreateDaoArgs {
+  name: string;
+  description: string;
+  discord_server: string;
+  twitter: string;
+  website: string;
+  telegram: string;
+  instagram: string;
+  tiktok: string;
+
+  constructor(args: {
+    name: string;
+    description: string;
+    discord_server?: string;
+    twitter?: string;
+    website?: string;
+    telegram?: string;
+    instagram?: string;
+    tiktok?: string;
+  }) {
+    this.name = args.name;
+    this.description = args.description;
+    this.discord_server = args.discord_server || '';
+    this.twitter = args.twitter || '';
+    this.website = args.website || '';
+    this.telegram = args.telegram || '';
+    this.instagram = args.instagram || '';
+    this.tiktok = args.tiktok || '';
+  }
+}
+
 // Define the serialization schemas correctly for Borsh
 const createProposalSchema = {
   struct: {
@@ -61,6 +94,20 @@ const voteSchema = {
 
 const finalizeProposalSchema = {
   struct: {}
+};
+
+// Schema for DAO creation
+const createDaoSchema = {
+  struct: {
+    name: 'string',
+    description: 'string',
+    discord_server: 'string',
+    twitter: 'string',
+    website: 'string',
+    telegram: 'string',
+    instagram: 'string',
+    tiktok: 'string',
+  }
 };
 
 /**
@@ -270,6 +317,75 @@ export const createVoteTransaction = async (
     };
   } catch (error) {
     console.error('Error creating vote transaction:', error);
+    throw error;
+  }
+};
+
+/**
+ * Creates a transaction for creating a new DAO
+ * @param connection Solana connection
+ * @param walletPubkey User's wallet public key
+ * @param daoData DAO information
+ * @returns Transaction for creating a DAO
+ */
+export const createDaoTransaction = async (
+  connection: Connection,
+  walletPubkey: PublicKey,
+  daoData: {
+    name: string;
+    description: string;
+    discord_server?: string;
+    twitter?: string;
+    website?: string;
+    telegram?: string;
+    instagram?: string;
+    tiktok?: string;
+    profile_picture?: string;
+    admins?: PublicKey[];
+  }
+) => {
+  try {
+    console.log('Creating DAO account on Solana with program ID:', DAO_PROGRAM_ID);
+    
+    // Create a new account for the DAO
+    const daoAccount = Keypair.generate();
+    
+    // Calculate size needed for the DAO data
+    const daoSize = 128; // Small size just for proof of concept
+    
+    // Get minimum lamports needed for rent exemption
+    const lamports = await connection.getMinimumBalanceForRentExemption(daoSize);
+    
+    // Create account instruction that transfers ownership to the program
+    // This simply creates an account owned by the DAO program without calling any program instructions
+    const createAccountInstruction = SystemProgram.createAccount({
+      fromPubkey: walletPubkey,
+      newAccountPubkey: daoAccount.publicKey,
+      lamports,
+      space: daoSize,
+      programId: DAO_PROGRAM_PUBLIC_KEY,
+    });
+    
+    // Create transaction with just the account creation
+    const transaction = new Transaction();
+    transaction.add(createAccountInstruction);
+    
+    // Get the latest blockhash
+    const { blockhash } = await connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = walletPubkey;
+    
+    // Sign with the DAO account
+    transaction.partialSign(daoAccount);
+    
+    console.log('DAO account created with address:', daoAccount.publicKey.toString());
+    
+    return {
+      transaction,
+      daoAccount,
+    };
+  } catch (error) {
+    console.error('Error creating DAO transaction:', error);
     throw error;
   }
 };
