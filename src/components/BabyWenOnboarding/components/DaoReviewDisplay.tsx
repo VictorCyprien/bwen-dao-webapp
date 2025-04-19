@@ -25,10 +25,15 @@ const humanReadableText: Record<string, string> = {
   
   // Membership Conditions
   'free': 'Free (1 Token)',
+  'invitation': 'Invitation',
+  'token_threshold': 'Token Threshold',
   'application': 'Application',
   
   // Application Approval
   'everybody': 'All Members Vote',
+  'automatic': 'Automatic Vote',
+  'existing_members': 'Existing Members Vote',
+  'council': 'Council Vote',
   
   // Boolean values
   'true': 'Yes',
