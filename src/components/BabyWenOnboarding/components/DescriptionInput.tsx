@@ -1,7 +1,7 @@
 import React from 'react';
 import { Sparkles } from 'lucide-react';
 import { replicateService } from '../../../services/ReplicateService';
-import { toast } from 'react-hot-toast';
+
 
 interface DescriptionInputProps {
   onSelectOption: (option: string, data?: string) => void;
@@ -11,7 +11,7 @@ const DescriptionInput: React.FC<DescriptionInputProps> = ({ onSelectOption }: D
   const [description, setDescription] = React.useState<string>('');
   const [isImproving, setIsImproving] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string | null>(null);
-  const MIN_DESCRIPTION_LENGTH = 50; // Minimum length to attempt improvement
+  const MIN_DESCRIPTION_LENGTH = 25; // Minimum length to attempt improvement
   
   // When component mounts, check sessionStorage for previously entered description
   React.useEffect(() => {
@@ -46,7 +46,7 @@ const DescriptionInput: React.FC<DescriptionInputProps> = ({ onSelectOption }: D
     console.log('Current description:', description);
     console.log('Current API token available:', !!import.meta.env.VITE_REPLICATE_API_TOKEN);
 
-    if (description.length < 50) {
+    if (description.length < 25) {
       setError('Description needs to be at least 50 characters for AI improvement');
       console.log('Error: Description too short for improvement');
       return;
