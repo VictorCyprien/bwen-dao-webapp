@@ -498,7 +498,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       }
       
       // Clear local auth state
-      walletAuthService.clearAccessToken();
+      walletAuthService.clearTokens();
       userService.clearUserCache(); // Clear user cache
       setIsAuthenticated(false);
       setToken(null);
@@ -569,7 +569,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       setApiError(null);
       
       // Clear localStorage and service data
-      walletAuthService.clearAccessToken();
+      walletAuthService.clearTokens();
       userService.clearUserCache(); // Clear user cache on logout
       localStorage.removeItem('authenticatedWalletAddress');
 

@@ -18,6 +18,7 @@ export class WalletAuthService {
   private authApi: AuthApi;
   private usersApi: UsersApi;
   private accessToken: string | null = null;
+  private refreshToken: string | null = null;
 
   constructor(apiEndpoint: string = DEFAULT_API_ENDPOINT) {
     this.apiEndpoint = apiEndpoint;
@@ -94,7 +95,7 @@ export class WalletAuthService {
   /**
    * Verify a signed message and get an access token
    */
-  async verifySignature(walletAddress: string, signature: string, message: string): Promise<{token: string | null, user?: any}> {
+  async verifySignature(walletAddress: string, signature: string, message: string): Promise<{token: string | null, refreshToken: string | null, user?: any}> {
     try {
       // Create the verify signature request object using the SDK model
       const verifyRequest = new VerifySignature();
@@ -110,34 +111,40 @@ export class WalletAuthService {
       // Call the SDK method to verify the wallet signature
       const response = await this.authApi.verifyWalletSignature(verifyRequest);
       
-      // Extract the token from the response
-      // LoginResponse only has 'token' field according to the SDK model
+      // Extract the tokens from the response
       const token = response.token;
+      const refreshToken = response.refreshToken || null ;
       
       if (token) {
-        this.setAccessToken(token);
+        this.setTokens(token, refreshToken);
         
         // Log full response for debugging
         console.log('Authentication response:', response);
       }
       
-      // Return both token and user info if available
+      // Return tokens and user info if available
       return { 
         token: token || null,
+        refreshToken: refreshToken || null,
         user: (response as any).user || { walletAddress } // Use type assertion for potentially missing properties
       };
     } catch (error) {
       console.error('Error verifying signature:', error);
-      return { token: null };
+      return { token: null, refreshToken: null };
     }
   }
 
   /**
-   * Set the access token after login
+   * Set the access token and refresh token after login
    */
-  setAccessToken(token: string): void {
+  setTokens(token: string, refreshToken: string | null): void {
     this.accessToken = token;
+    this.refreshToken = refreshToken;
     localStorage.setItem('daoAccessToken', token);
+    
+    if (refreshToken) {
+      localStorage.setItem('daoRefreshToken', refreshToken);
+    }
   }
 
   /**
@@ -151,11 +158,23 @@ export class WalletAuthService {
   }
 
   /**
-   * Clear the access token (logout)
+   * Get the stored refresh token
    */
-  clearAccessToken(): void {
+  getRefreshToken(): string | null {
+    if (!this.refreshToken) {
+      this.refreshToken = localStorage.getItem('daoRefreshToken');
+    }
+    return this.refreshToken;
+  }
+
+  /**
+   * Clear all tokens (logout)
+   */
+  clearTokens(): void {
     this.accessToken = null;
+    this.refreshToken = null;
     localStorage.removeItem('daoAccessToken');
+    localStorage.removeItem('daoRefreshToken');
   }
 
   /**
@@ -167,12 +186,80 @@ export class WalletAuthService {
   }
 
   /**
-   * Check if the current token is valid
-   * This now only checks for token existence, without making API calls
+   * Refresh the access token using the refresh token
+   */
+  async refreshAccessToken(): Promise<boolean> {
+    const refreshToken = this.getRefreshToken();
+    
+    if (!refreshToken) {
+      console.error('No refresh token available');
+      return false;
+    }
+    
+    try {
+      // Create a configuration with the refresh token in the authorization header
+      const serverConfig = new ServerConfiguration(this.apiEndpoint, {});
+      const configuration = createConfiguration({
+        baseServer: serverConfig,
+        authMethods: {
+          default: {
+            getName: () => 'Bearer',
+            applySecurityAuthentication: (context: any) => {
+              context.setHeaderParam('Authorization', `Bearer ${refreshToken}`);
+            }
+          }
+        }
+      });
+      
+      // Create temporary API with the refresh token auth
+      const tempAuthApi = new AuthApi(configuration);
+      
+      // Call the refreshAccessToken method
+      const response = await tempAuthApi.refreshAccessToken();
+      
+      // Extract tokens from response
+      const newAccessToken = response.token;
+      const newRefreshToken = response.refreshToken || null;
+      
+      if (newAccessToken) {
+        this.setTokens(newAccessToken, newRefreshToken || refreshToken);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      
+      // If refresh fails, clear tokens as they might be expired/invalid
+      this.clearTokens();
+      return false;
+    }
+  }
+
+  /**
+   * Check if the current token is valid, attempting a refresh if needed
    */
   async validateToken(): Promise<boolean> {
-    // Simply check if a token exists
-    return this.hasAccessToken();
+    // First check if a token exists
+    if (!this.hasAccessToken()) {
+      return false;
+    }
+    
+    try {
+      // We need to validate the token by making a request to a protected endpoint
+      // For now we'll use the /auth/me endpoint if available, or just check if we have a refresh token
+      if (this.getRefreshToken()) {
+        // We have both an access token and a refresh token, so we're good
+        return true;
+      } else {
+        // Try to refresh the token
+        return this.refreshAccessToken();
+      }
+    } catch (error) {
+      // If validation fails, try to refresh the token
+      console.log('Token validation failed, attempting to refresh');
+      return this.refreshAccessToken();
+    }
   }
 
   /**
@@ -200,15 +287,22 @@ export class WalletAuthService {
     error?: string;
     user?: any;
     token?: string;
+    refreshToken?: string;
   }> {
-    // If we already have a token, consider it valid and skip everything
+    // If we already have a token, validate or refresh it
     if (this.hasAccessToken()) {
-      console.log('Already have access token, skipping authentication');
-      return {
-        success: true,
-        newUser: false,
-        requiresSignature: false
-      };
+      const isValid = await this.validateToken();
+      if (isValid) {
+        console.log('Access token is valid or was refreshed successfully');
+        return {
+          success: true,
+          newUser: false,
+          requiresSignature: false,
+          token: this.getAccessToken() || undefined,
+          refreshToken: this.getRefreshToken() || undefined
+        };
+      }
+      // If token validation/refresh failed, continue with the authentication flow
     }
     
     try {
@@ -224,7 +318,8 @@ export class WalletAuthService {
           requiresSignature: false,
           error: result.token ? undefined : 'Failed to verify signature',
           user: result.user,
-          token: result.token || undefined // Convert null to undefined
+          token: result.token || undefined, // Convert null to undefined
+          refreshToken: result.refreshToken || undefined
         };
       }
       
@@ -278,7 +373,7 @@ export class WalletAuthService {
       // Only attempt to logout if we have an access token
       if (this.accessToken) {
         await this.authApi.logout();
-        this.clearAccessToken();
+        this.clearTokens();
         return true;
       }
       return false;
