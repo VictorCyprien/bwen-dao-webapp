@@ -714,17 +714,6 @@ const Pods = () => {
                   <div className="text-center py-8 text-gray-400">
                     <Layers size={32} className="mx-auto mb-2 opacity-50" />
                     <p>No pods have been created yet.</p>
-                    {userIsDaoMember && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="mt-4"
-                        leftIcon={<Plus size={14} />}
-                        onClick={() => setIsCreateModalOpen(true)}
-                      >
-                        Create First Pod
-                      </Button>
-                    )}
                   </div>
                 ) : (
                   <>
