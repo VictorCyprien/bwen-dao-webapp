@@ -4,7 +4,7 @@ import Modal from './common/Modal';
 import { DAO } from '../core/modules/dao-api';
 import { daosService } from '../services/DaosService';
 import { ProposalService } from '../services/ProposalService';
-import { Users, FileText, Globe, Sparkles, ArrowUpRight, Rocket, Check, UserPlus, X } from 'lucide-react';
+import { Users, FileText, Globe, Sparkles, ArrowUpRight, Rocket, Check, UserPlus, Twitter, Instagram, MessageCircle } from 'lucide-react';
 import Button from './common/Button';
 import { useNavigate } from 'react-router-dom';
 import useApiAndWallet from '../hooks/useApiAndWallet';
@@ -194,13 +194,13 @@ const DAOPublicProfileModal: React.FC<DAOPublicProfileModalProps> = ({
       socialLinks.push(
         <a 
           key="website" 
-          href={dao.website.startsWith('http') ? dao.website : `https://${dao.website}`} 
+          href={dao.website} 
           target="_blank" 
           rel="noopener noreferrer"
-          className="text-gray-400 hover:text-white transition-colors inline-flex items-center gap-1 mr-4"
+          className="text-gray-400 hover:text-white transition-colors p-2"
+          title="Website"
         >
-          <Globe size={14} />
-          <span>Website</span>
+          <Globe size={18} />
         </a>
       );
     }
@@ -209,15 +209,13 @@ const DAOPublicProfileModal: React.FC<DAOPublicProfileModalProps> = ({
       socialLinks.push(
         <a 
           key="twitter" 
-          href={`https://twitter.com/${dao.twitter}`} 
+          href={dao.twitter} 
           target="_blank" 
           rel="noopener noreferrer"
-          className="text-gray-400 hover:text-white transition-colors inline-flex items-center gap-1 mr-4"
+          className="text-gray-400 hover:text-white transition-colors p-2"
+          title="X (Twitter)"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
-          </svg>
-          <span>Twitter</span>
+          <Twitter size={18} />
         </a>
       );
     }
@@ -229,20 +227,67 @@ const DAOPublicProfileModal: React.FC<DAOPublicProfileModalProps> = ({
           href={dao.discordServer} 
           target="_blank" 
           rel="noopener noreferrer"
-          className="text-gray-400 hover:text-white transition-colors inline-flex items-center gap-1 mr-4"
+          className="text-gray-400 hover:text-white transition-colors p-2"
+          title="Discord"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M9 6h6m-6 12h6m-6-6h6"></path>
-            <path d="M5.5 16.5a4.5 4.5 0 0 1-1.8-8.7A5.5 5.5 0 1 1 12 4a6.5 6.5 0 1 1-2.5 12.3" stroke="none"></path>
-            <circle cx="12" cy="12" r="3"></circle>
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.39-.444.977-.608 1.414a15.932 15.932 0 0 0-4.746 0 9.698 9.698 0 0 0-.616-1.414.077.077 0 0 0-.079-.036c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055c1.998 1.483 3.948 2.388 5.851 2.98a.075.075 0 0 0 .082-.026c.446-.61.847-1.254 1.194-1.932a.075.075 0 0 0-.041-.104 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.127c.126-.095.252-.193.372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.099.246.198.373.292a.077.077 0 0 1-.006.127c-.598.35-1.22.645-1.873.892a.075.075 0 0 0-.041.105c.348.678.747 1.323 1.194 1.932a.076.076 0 0 0 .082.026c1.904-.592 3.854-1.497 5.852-2.98a.077.077 0 0 0 .032-.055c.505-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z" />
           </svg>
-          <span>Discord</span>
+        </a>
+      );
+    }
+    
+    if (dao.telegram) {
+      socialLinks.push(
+        <a 
+          key="telegram" 
+          href={dao.telegram} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-gray-400 hover:text-white transition-colors p-2"
+          title="Telegram"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.96 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.064-1.225-.346-1.9-.685-1.056-.53-1.65-.856-2.676-1.362-1.186-.586-.417-1.033.26-1.632.177-.159 3.247-2.974 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+          </svg>
+        </a>
+      );
+    }
+
+    if (dao.instagram) {
+      socialLinks.push(
+        <a 
+          key="instagram" 
+          href={dao.instagram} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-gray-400 hover:text-white transition-colors p-2"
+          title="Instagram"
+        >
+          <Instagram size={18} />
+        </a>
+      );
+    }
+
+    if (dao.tiktok) {
+      socialLinks.push(
+        <a 
+          key="tiktok" 
+          href={dao.tiktok} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="text-gray-400 hover:text-white transition-colors p-2"
+          title="TikTok"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z" />
+          </svg>
         </a>
       );
     }
     
     return socialLinks.length > 0 ? (
-      <div className="flex flex-wrap mt-4">
+      <div className="flex flex-wrap mt-1 mb-3 justify-center sm:justify-start gap-1">
         {socialLinks}
       </div>
     ) : null;
@@ -295,17 +340,18 @@ const DAOPublicProfileModal: React.FC<DAOPublicProfileModalProps> = ({
               {/* DAO Info */}
               <div className="flex-1 text-center sm:text-left">
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">{dao.name}</h1>
+                
+                {/* Social links moved here, right below the name */}
+                {renderSocialLinks()}
+                
                 <p className="text-sm md:text-base text-gray-300 mb-4 max-w-xl">
                   {dao.description || "This DAO hasn't provided a description yet."}
                 </p>
-                
-                {/* Social links */}
-                {renderSocialLinks()}
               </div>
             </div>
             
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
               {/* Members */}
               <div className={`p-3 sm:p-4 rounded-xl bg-[#1a1a1a] border border-indigo-800/30 backdrop-blur-sm transition-all duration-500 ${showJoinAnimation ? 'border-indigo-500/70 shadow-lg shadow-indigo-500/20' : 'hover:border-indigo-500/50'}`}>
                 <div className="flex items-center">
@@ -332,21 +378,6 @@ const DAOPublicProfileModal: React.FC<DAOPublicProfileModalProps> = ({
                   <div>
                     <div className="text-xl sm:text-2xl font-bold">{proposalCount}</div>
                     <div className="text-xs sm:text-sm text-gray-400">Proposals</div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Status */}
-              <div className="p-3 sm:p-4 rounded-xl bg-[#1a1a1a] border border-pink-800/30 backdrop-blur-sm hover:border-pink-500/50 transition-all">
-                <div className="flex items-center">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-pink-500/10 flex items-center justify-center mr-3">
-                    <Sparkles size={18} className="text-pink-400" />
-                  </div>
-                  <div>
-                    <div className="text-xs sm:text-sm font-medium px-2 py-1 rounded-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white inline-flex items-center">
-                      {dao.isActive ? 'Active' : 'Inactive'}
-                    </div>
-                    <div className="text-xs sm:text-sm text-gray-400 mt-1">Status</div>
                   </div>
                 </div>
               </div>
