@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* New Proposal informations
+*/
 export class ProposalUpdate {
     'name'?: string;
     'description'?: string;

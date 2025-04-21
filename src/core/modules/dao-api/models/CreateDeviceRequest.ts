@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* Input information needed to create a new API key
+*/
 export class CreateDeviceRequest {
     /**
     * Name for the API key

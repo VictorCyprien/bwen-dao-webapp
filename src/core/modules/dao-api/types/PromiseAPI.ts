@@ -306,6 +306,46 @@ export class PromiseAuthApi {
     }
 
     /**
+     * Refresh access token using a valid refresh token
+     */
+    public refreshAccessTokenWithHttpInfo(_options?: PromiseConfigurationOptions): Promise<HttpInfo<LoginResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.refreshAccessTokenWithHttpInfo(observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Refresh access token using a valid refresh token
+     */
+    public refreshAccessToken(_options?: PromiseConfigurationOptions): Promise<LoginResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.refreshAccessToken(observableOptions);
+        return result.toPromise();
+    }
+
+    /**
      * Verify a Solana wallet signature and authenticate the user
      * @param verifySignature
      */

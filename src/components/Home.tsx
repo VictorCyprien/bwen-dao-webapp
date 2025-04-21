@@ -1159,16 +1159,19 @@ const Dashboard = () => {
         return null;
       }
       
+      const { transaction, voteAccount } = result;
+
       // Send transaction to be signed and processed
-      const signature = await sendTransaction(result.transaction);
+      const signature = await sendTransaction(transaction);
       
       if (!signature) {
         console.error("Failed to sign and send transaction");
         return null;
       }
+
       
       // Update the API with the vote information
-      await proposalService.voteOnProposal(daoId, proposalId, vote, signature);
+      await proposalService.voteOnProposal(daoId, proposalId, vote, signature, voteAccount.publicKey.toString());
       
       // Refresh proposals data
       await fetchProposalsData();

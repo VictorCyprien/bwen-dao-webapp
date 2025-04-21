@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* Discord channel informations
+*/
 export class DiscordChannel {
     'channelId'?: string;
     'name': string;

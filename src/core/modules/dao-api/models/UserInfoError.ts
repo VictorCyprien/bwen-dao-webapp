@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* User info retrieval error
+*/
 export class UserInfoError {
     /**
     * User info retrieval error

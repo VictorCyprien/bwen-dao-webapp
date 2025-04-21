@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* Input information needed to create a POD
+*/
 export class InputCreatePOD {
     'name': string;
     'description': string;

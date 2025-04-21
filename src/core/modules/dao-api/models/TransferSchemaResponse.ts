@@ -13,6 +13,9 @@
 import { Transfer } from '../models/Transfer';
 import { HttpFile } from '../http/http';
 
+/**
+* Create/Update a Transfer
+*/
 export class TransferSchemaResponse {
     'action': string;
     'transfer': Transfer;

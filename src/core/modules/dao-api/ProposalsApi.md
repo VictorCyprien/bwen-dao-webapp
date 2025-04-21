@@ -4,24 +4,24 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
-[**createProposalForDAO**](ProposalsApi.md#createProposalForDAO) | **POST** /proposals/dao/{dao_id}/proposals | Create a new proposal for this specific DAO
-[**createProposalForPOD**](ProposalsApi.md#createProposalForPOD) | **POST** /proposals/dao/{dao_id}/pod/{pod_id}/proposals | Create a new proposal for this specific POD
-[**deleteDAOProposal**](ProposalsApi.md#deleteDAOProposal) | **DELETE** /proposals/dao/{dao_id}/proposals/{proposal_id} | Delete a proposal for a DAO
-[**deletePODProposal**](ProposalsApi.md#deletePODProposal) | **DELETE** /proposals/dao/{dao_id}/pod/{pod_id}/proposals/{proposal_id} | Delete a proposal for a POD
-[**getActiveProposalsByDAO**](ProposalsApi.md#getActiveProposalsByDAO) | **GET** /proposals/dao/{dao_id}/proposals/active | Get all active proposals for a specific DAO
-[**getActiveProposalsByPOD**](ProposalsApi.md#getActiveProposalsByPOD) | **GET** /proposals/dao/{dao_id}/pod/{pod_id}/proposals/active | Get all active proposals for a specific POD
-[**getDAOProposalById**](ProposalsApi.md#getDAOProposalById) | **GET** /proposals/dao/{dao_id}/proposals/{proposal_id} | Get a specific proposal for a DAO
-[**getPODProposalById**](ProposalsApi.md#getPODProposalById) | **GET** /proposals/dao/{dao_id}/pod/{pod_id}/proposals/{proposal_id} | Get a specific proposal for a POD
-[**getPODProposalVotes**](ProposalsApi.md#getPODProposalVotes) | **GET** /proposals/dao/{dao_id}/pod/{pod_id}/proposals/{proposal_id}/vote | Get vote counts for a POD proposal
-[**getProposalVotes**](ProposalsApi.md#getProposalVotes) | **GET** /proposals/dao/{dao_id}/proposals/{proposal_id}/vote | Get vote counts for a proposal
-[**getProposalsByDAO**](ProposalsApi.md#getProposalsByDAO) | **GET** /proposals/dao/{dao_id}/proposals | Get all proposals for a specific DAO
-[**getProposalsByPOD**](ProposalsApi.md#getProposalsByPOD) | **GET** /proposals/dao/{dao_id}/pod/{pod_id}/proposals | Get all proposals for a specific POD
-[**removeVoteFromDAOProposal**](ProposalsApi.md#removeVoteFromDAOProposal) | **DELETE** /proposals/dao/{dao_id}/proposals/{proposal_id}/vote | Remove vote from a proposal for a DAO
-[**removeVoteFromPODProposal**](ProposalsApi.md#removeVoteFromPODProposal) | **DELETE** /proposals/dao/{dao_id}/pod/{pod_id}/proposals/{proposal_id}/vote | Remove a vote from a POD proposal
-[**updateDAOProposal**](ProposalsApi.md#updateDAOProposal) | **PUT** /proposals/dao/{dao_id}/proposals/{proposal_id} | Update a proposal for a DAO
-[**updatePODProposal**](ProposalsApi.md#updatePODProposal) | **PUT** /proposals/dao/{dao_id}/pod/{pod_id}/proposals/{proposal_id} | Update a proposal for a POD
-[**voteOnDAOProposal**](ProposalsApi.md#voteOnDAOProposal) | **POST** /proposals/dao/{dao_id}/proposals/{proposal_id}/vote | Vote on a proposal for a DAO
-[**voteOnPODProposal**](ProposalsApi.md#voteOnPODProposal) | **POST** /proposals/dao/{dao_id}/pod/{pod_id}/proposals/{proposal_id}/vote | Vote on a POD proposal
+[**createProposalForDAO**](ProposalsApi.md#createProposalForDAO) | **POST** /proposals/dao/{dao_id} | Create a new proposal for this specific DAO
+[**createProposalForPOD**](ProposalsApi.md#createProposalForPOD) | **POST** /proposals/dao/{dao_id}/pod/{pod_id} | Create a new proposal for this specific POD
+[**deleteDAOProposal**](ProposalsApi.md#deleteDAOProposal) | **DELETE** /proposals/dao/{dao_id}/{proposal_id} | Delete a proposal for a DAO
+[**deletePODProposal**](ProposalsApi.md#deletePODProposal) | **DELETE** /proposals/dao/{dao_id}/pod/{pod_id}/{proposal_id} | Delete a proposal for a POD
+[**getActiveProposalsByDAO**](ProposalsApi.md#getActiveProposalsByDAO) | **GET** /proposals/dao/{dao_id}/active | Get all active proposals for a specific DAO
+[**getActiveProposalsByPOD**](ProposalsApi.md#getActiveProposalsByPOD) | **GET** /proposals/dao/{dao_id}/pod/{pod_id}/active | Get all active proposals for a specific POD
+[**getDAOProposalById**](ProposalsApi.md#getDAOProposalById) | **GET** /proposals/dao/{dao_id}/{proposal_id} | Get a specific proposal for a DAO
+[**getPODProposalById**](ProposalsApi.md#getPODProposalById) | **GET** /proposals/dao/{dao_id}/pod/{pod_id}/{proposal_id} | Get a specific proposal for a POD
+[**getPODProposalVotes**](ProposalsApi.md#getPODProposalVotes) | **GET** /proposals/dao/{dao_id}/pod/{pod_id}/{proposal_id}/vote | Get vote counts for a POD proposal
+[**getProposalVotes**](ProposalsApi.md#getProposalVotes) | **GET** /proposals/dao/{dao_id}/{proposal_id}/vote | Get vote counts for a proposal
+[**getProposalsByDAO**](ProposalsApi.md#getProposalsByDAO) | **GET** /proposals/dao/{dao_id} | Get all proposals for a specific DAO
+[**getProposalsByPOD**](ProposalsApi.md#getProposalsByPOD) | **GET** /proposals/dao/{dao_id}/pod/{pod_id} | Get all proposals for a specific POD
+[**removeVoteFromDAOProposal**](ProposalsApi.md#removeVoteFromDAOProposal) | **DELETE** /proposals/dao/{dao_id}/{proposal_id}/vote | Remove vote from a proposal for a DAO
+[**removeVoteFromPODProposal**](ProposalsApi.md#removeVoteFromPODProposal) | **DELETE** /proposals/dao/{dao_id}/pod/{pod_id}/{proposal_id}/vote | Remove a vote from a POD proposal
+[**updateDAOProposal**](ProposalsApi.md#updateDAOProposal) | **PUT** /proposals/dao/{dao_id}/{proposal_id} | Update a proposal for a DAO
+[**updatePODProposal**](ProposalsApi.md#updatePODProposal) | **PUT** /proposals/dao/{dao_id}/pod/{pod_id}/{proposal_id} | Update a proposal for a POD
+[**voteOnDAOProposal**](ProposalsApi.md#voteOnDAOProposal) | **POST** /proposals/dao/{dao_id}/{proposal_id}/vote | Vote on a proposal for a DAO
+[**voteOnPODProposal**](ProposalsApi.md#voteOnPODProposal) | **POST** /proposals/dao/{dao_id}/pod/{pod_id}/{proposal_id}/vote | Vote on a POD proposal
 
 
 # **createProposalForDAO**
@@ -52,6 +52,8 @@ const request: ProposalsApiCreateProposalForDAORequest = {
     actions: {
       "key": null,
     },
+    pubkey: "pubkey_example",
+    transaction: "transaction_example",
   },
 };
 
@@ -125,6 +127,8 @@ const request: ProposalsApiCreateProposalForPODRequest = {
     actions: {
       "key": null,
     },
+    pubkey: "pubkey_example",
+    transaction: "transaction_example",
   },
 };
 
@@ -1046,6 +1050,8 @@ const request: ProposalsApiVoteOnDAOProposalRequest = {
   
   proposalVote: {
     vote: "for",
+    pubkey: "pubkey_example",
+    transaction: "transaction_example",
   },
 };
 
@@ -1114,6 +1120,8 @@ const request: ProposalsApiVoteOnPODProposalRequest = {
   
   proposalVote: {
     vote: "for",
+    pubkey: "pubkey_example",
+    transaction: "transaction_example",
   },
 };
 

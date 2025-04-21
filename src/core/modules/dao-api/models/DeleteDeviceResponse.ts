@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* Delete an API key
+*/
 export class DeleteDeviceResponse {
     /**
     * Success message

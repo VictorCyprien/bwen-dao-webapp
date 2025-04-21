@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* Input information needed to create a Transfer
+*/
 export class TransferCreate {
     'daoId': string;
     'tokenId': string;

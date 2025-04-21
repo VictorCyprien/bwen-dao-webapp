@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* Telegram authentication informations
+*/
 export class TelegramAuth {
     /**
     * Telegram user ID

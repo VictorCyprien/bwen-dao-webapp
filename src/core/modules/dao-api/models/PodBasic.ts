@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* Basic pod information for nested DAO relationships
+*/
 export class PodBasic {
     'podId'?: string;
     'name'?: string;

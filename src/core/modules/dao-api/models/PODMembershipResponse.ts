@@ -13,6 +13,9 @@
 import { POD } from '../models/POD';
 import { HttpFile } from '../http/http';
 
+/**
+* Create/Update a POD membership
+*/
 export class PODMembershipResponse {
     'action': string;
     'pod': POD;

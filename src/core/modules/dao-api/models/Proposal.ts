@@ -13,6 +13,9 @@
 import { UserBasic1 } from '../models/UserBasic1';
 import { HttpFile } from '../http/http';
 
+/**
+* Proposal informations
+*/
 export class Proposal {
     'proposalId'?: string;
     'name': string;
@@ -26,6 +29,8 @@ export class Proposal {
     'actions'?: { [key: string]: any; } | null;
     'forVotesCount'?: number;
     'againstVotesCount'?: number;
+    'pubkey': string;
+    'transaction': string;
     'forVoters'?: Array<UserBasic1>;
     'againstVoters'?: Array<UserBasic1>;
     'isActive'?: any | null;
@@ -106,6 +111,18 @@ export class Proposal {
             "name": "againstVotesCount",
             "baseName": "against_votes_count",
             "type": "number",
+            "format": ""
+        },
+        {
+            "name": "pubkey",
+            "baseName": "pubkey",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "transaction",
+            "baseName": "transaction",
+            "type": "string",
             "format": ""
         },
         {

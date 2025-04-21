@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* Provide a user id to add/remove the user from the POD. (Only for admins)
+*/
 export class PODMembership {
     'userId': string;
 

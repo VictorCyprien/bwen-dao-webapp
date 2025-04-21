@@ -12,10 +12,12 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* Input information needed to create DAO.
+*/
 export class InputCreateDAO {
     'name': string;
     'description': string;
-    'ownerId': string;
     'discordServer'?: string;
     'twitter'?: string;
     'telegram'?: string;
@@ -23,6 +25,8 @@ export class InputCreateDAO {
     'tiktok'?: string;
     'website'?: string;
     'treasury'?: string;
+    'pubkey': string;
+    'transaction': string;
     'profile'?: HttpFile;
 
     static readonly discriminator: string | undefined = undefined;
@@ -39,12 +43,6 @@ export class InputCreateDAO {
         {
             "name": "description",
             "baseName": "description",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "ownerId",
-            "baseName": "owner_id",
             "type": "string",
             "format": ""
         },
@@ -87,6 +85,18 @@ export class InputCreateDAO {
         {
             "name": "treasury",
             "baseName": "treasury",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "pubkey",
+            "baseName": "pubkey",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "transaction",
+            "baseName": "transaction",
             "type": "string",
             "format": ""
         },

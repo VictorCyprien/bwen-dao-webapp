@@ -13,6 +13,9 @@
 import { Device } from '../models/Device';
 import { HttpFile } from '../http/http';
 
+/**
+* List of Devices/API keys
+*/
 export class DeviceList {
     /**
     * List of API keys

@@ -14,6 +14,9 @@ import { Token } from '../models/Token';
 import { Transfer } from '../models/Transfer';
 import { HttpFile } from '../http/http';
 
+/**
+* Treasury informations
+*/
 export class Treasury {
     'totalValue'?: any | null;
     'dailyChange'?: any | null;

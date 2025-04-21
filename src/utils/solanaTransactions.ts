@@ -1,394 +1,329 @@
 import { 
   Connection, 
+  Keypair, 
   PublicKey, 
-  Transaction, 
   SystemProgram, 
-  TransactionInstruction,
-  sendAndConfirmTransaction,
-  Keypair
+  Transaction, 
+  TransactionInstruction 
 } from '@solana/web3.js';
-import { useWallet } from '@solana/wallet-adapter-react';
-import { DAO_PROGRAM_ID, TRANSACTION_TIMEOUT } from '../config/solana';
-import * as borsh from 'borsh';
+import BN from 'bn.js';
+import { DAO_PROGRAM_ID, TRANSACTION_TIMEOUT, TREASURY_ADDRESS } from '../config/solana';
 
-// Use the DAO program ID from the configuration
-const DAO_PROGRAM_PUBLIC_KEY = new PublicKey(DAO_PROGRAM_ID);
+// Program ID from config
+const PROGRAM_ID = new PublicKey(DAO_PROGRAM_ID);
 
-// Define instruction enum values to match Rust program
-const INSTRUCTION_CREATE_PROPOSAL = 0;
-const INSTRUCTION_VOTE = 1;
-const INSTRUCTION_FINALIZE_PROPOSAL = 2;
-const INSTRUCTION_CREATE_DAO = 3;
+// Fee recipient address - should be configurable in a real app
+const FEE_ADDRESS = new PublicKey(TREASURY_ADDRESS);
 
-// Define instruction classes for Borsh serialization
-class CreateProposalArgs {
-  title: string;
-  description: string;
-  voting_period: bigint;
-
-  constructor(args: { title: string, description: string, voting_period: bigint }) {
-    this.title = args.title;
-    this.description = args.description;
-    this.voting_period = args.voting_period;
-  }
+// Helper function for string serialization
+function serializeString(str: string): Buffer {
+  const buf = Buffer.alloc(4 + str.length);
+  buf.writeUInt32LE(str.length, 0);
+  buf.write(str, 4);
+  return buf;
 }
 
-class VoteArgs {
-  approve: boolean;
-
-  constructor(args: { approve: boolean }) {
-    this.approve = args.approve;
-  }
+// Serialize DAO creation instruction data
+export function serializeCreateDaoInstruction(
+  name: string, 
+  description: string, 
+  discordServer: string, 
+  twitter: string, 
+  telegram: string, 
+  instagram: string, 
+  tiktok: string, 
+  website: string, 
+  treasury: string, 
+  profile: string, 
+  solPriceUsd: number
+): Buffer {
+  // Instruction index (0 for CreateDao)
+  const instructionBuf = Buffer.alloc(1);
+  instructionBuf.writeUInt8(0, 0);
+  
+  // Serialize all strings
+  const nameBuf = serializeString(name);
+  const descriptionBuf = serializeString(description);
+  const discordServerBuf = serializeString(discordServer);
+  const twitterBuf = serializeString(twitter);
+  const telegramBuf = serializeString(telegram);
+  const instagramBuf = serializeString(instagram);
+  const tiktokBuf = serializeString(tiktok);
+  const websiteBuf = serializeString(website);
+  const treasuryBuf = serializeString(treasury);
+  const profileBuf = serializeString(profile);
+  
+  // Serialize u64 sol price (8 bytes, little-endian)
+  const solPriceBuf = Buffer.alloc(8);
+  
+  // Convert to u64 (BN)
+  const solPriceBN = new BN(solPriceUsd.toString());
+  solPriceBN.toArray('le', 8).forEach((byte: number, index: number) => {
+    solPriceBuf[index] = byte;
+  });
+  
+  // Concat all buffers
+  return Buffer.concat([
+    instructionBuf,
+    nameBuf,
+    descriptionBuf,
+    discordServerBuf,
+    twitterBuf,
+    telegramBuf,
+    instagramBuf,
+    tiktokBuf,
+    websiteBuf,
+    treasuryBuf,
+    profileBuf,
+    solPriceBuf
+  ]);
 }
 
-class FinalizeProposalArgs {
-  constructor() {}
-}
-
-// New class for DAO creation arguments
-class CreateDaoArgs {
-  name: string;
-  description: string;
-  discord_server: string;
-  twitter: string;
-  website: string;
-  telegram: string;
-  instagram: string;
-  tiktok: string;
-
-  constructor(args: {
-    name: string;
-    description: string;
-    discord_server?: string;
-    twitter?: string;
-    website?: string;
-    telegram?: string;
-    instagram?: string;
-    tiktok?: string;
-  }) {
-    this.name = args.name;
-    this.description = args.description;
-    this.discord_server = args.discord_server || '';
-    this.twitter = args.twitter || '';
-    this.website = args.website || '';
-    this.telegram = args.telegram || '';
-    this.instagram = args.instagram || '';
-    this.tiktok = args.tiktok || '';
-  }
-}
-
-// Define the serialization schemas correctly for Borsh
-const createProposalSchema = {
-  struct: {
-    title: 'string',
-    description: 'string',
-    voting_period: 'u64',
-  }
-};
-
-const voteSchema = {
-  struct: {
-    approve: 'bool',
-  }
-};
-
-const finalizeProposalSchema = {
-  struct: {}
-};
-
-// Schema for DAO creation
-const createDaoSchema = {
-  struct: {
-    name: 'string',
-    description: 'string',
-    discord_server: 'string',
-    twitter: 'string',
-    website: 'string',
-    telegram: 'string',
-    instagram: 'string',
-    tiktok: 'string',
-  }
-};
-
-/**
- * Serializes instruction data for a Solana program
- * @param schema Borsh schema
- * @param instruction Instruction enum value
- * @param args Arguments to serialize
- * @returns Buffer containing instruction data
- */
-function serializeInstructionData(schema: any, instruction: number, args: any): Buffer {
-  try {
-    // Create a buffer for the instruction tag (first byte)
-    const instructionBuffer = Buffer.alloc(1);
-    instructionBuffer.writeUInt8(instruction, 0);
-    
-    // Serialize the arguments using borsh
-    let dataBuffer;
-    if (Object.keys(schema.struct).length === 0) {
-      // For instructions with no arguments (like FinalizeProposal)
-      dataBuffer = Buffer.alloc(0);
-    } else {
-      // Use borsh to serialize the arguments with the schema
-      dataBuffer = Buffer.from(borsh.serialize(schema, args));
-    }
-    
-    // Combine the instruction tag and serialized arguments
-    return Buffer.concat([instructionBuffer, dataBuffer]);
-  } catch (error) {
-    console.error('Error serializing instruction data:', error);
-    throw error;
-  }
-}
-
-/**
- * Creates a proposal creation transaction
- * @param connection Solana connection
- * @param wallet User's wallet
- * @param daoId DAO identifier (not a PublicKey)
- * @param proposalData Proposal data (title, description, etc.)
- * @returns Transaction for creating a proposal
- */
-export const createProposalTransaction = async (
-  connection: Connection,
-  walletPubkey: PublicKey,
+// Serialize proposal creation instruction data
+export function serializeCreateProposalInstruction(
+  name: string,
+  description: string,
   daoId: string,
-  proposalData: {
-    title: string;
-    description: string;
-    startTime: Date;
-    endTime: Date;
-    actions?: any[];
-  }
-) => {
-  try {
-    // Create a new account for the proposal
-    const proposalAccount = Keypair.generate();
-    
-    // Calculate voting period in seconds
-    const votingPeriodSeconds = BigInt(
-      Math.floor((proposalData.endTime.getTime() - proposalData.startTime.getTime()) / 1000)
-    );
-    
-    // Create proposal arguments that matches the Rust program's expectation
-    const args = {
-      title: proposalData.title,
-      description: proposalData.description,
-      voting_period: votingPeriodSeconds,
-    };
-    
-    // Serialize the instruction data using our schema and tag
-    const data = serializeInstructionData(
-      createProposalSchema, 
-      INSTRUCTION_CREATE_PROPOSAL, 
-      args
-    );
-    
-    // Calculate size needed for the proposal data
-    // Title and description as strings + u64 for dates + space for votes and voters
-    const proposalSize = 1000; // Allocate enough space for the proposal data
-    
-    // Get minimum lamports needed for rent exemption
-    const lamports = await connection.getMinimumBalanceForRentExemption(proposalSize);
-    
-    // Create the instruction to create the new account
-    const createAccountInstruction = SystemProgram.createAccount({
-      fromPubkey: walletPubkey,
-      newAccountPubkey: proposalAccount.publicKey,
-      lamports,
-      space: proposalSize,
-      programId: DAO_PROGRAM_PUBLIC_KEY,
-    });
-    
-    // Create the instruction to initialize the proposal
-    const createProposalInstruction = new TransactionInstruction({
-      keys: [
-        { pubkey: walletPubkey, isSigner: true, isWritable: true }, // User wallet
-        { pubkey: proposalAccount.publicKey, isSigner: true, isWritable: true }, // New proposal account (signer because it's new)
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // System program
-      ],
-      programId: DAO_PROGRAM_PUBLIC_KEY,
-      data
-    });
-    
-    // Create a transaction with both instructions
-    const transaction = new Transaction();
-    transaction.add(createAccountInstruction);
-    transaction.add(createProposalInstruction);
-    
-    // Get the latest blockhash
-    const { blockhash } = await connection.getLatestBlockhash();
-    transaction.recentBlockhash = blockhash;
-    transaction.feePayer = walletPubkey;
-    
-    // Sign with the proposal account
-    transaction.partialSign(proposalAccount);
-    
-    console.log('Transaction created with instructions:', transaction.instructions.length);
-    
-    return {
-      transaction,
-      proposalAccount,
-    };
-  } catch (error) {
-    console.error('Error creating proposal transaction:', error);
-    throw error;
-  }
-};
+  podId: string,
+  startTime: number,
+  endTime: number
+): Buffer {
+  // Instruction index (1 for CreateProposal)
+  const instructionBuf = Buffer.alloc(1);
+  instructionBuf.writeUInt8(1, 0);
+  
+  // Serialize all strings
+  const nameBuf = serializeString(name);
+  const descriptionBuf = serializeString(description);
+  const daoIdBuf = serializeString(daoId);
+  const podIdBuf = serializeString(podId);
+  
+  // Serialize i64 timestamps (8 bytes each, little-endian)
+  const startTimeBuf = Buffer.alloc(8);
+  const endTimeBuf = Buffer.alloc(8);
+  
+  const startTimeBN = new BN(startTime.toString());
+  const endTimeBN = new BN(endTime.toString());
+  
+  startTimeBN.toArray('le', 8).forEach((byte: number, index: number) => {
+    startTimeBuf[index] = byte;
+  });
+  
+  endTimeBN.toArray('le', 8).forEach((byte: number, index: number) => {
+    endTimeBuf[index] = byte;
+  });
+  
+  // Concat all buffers
+  return Buffer.concat([
+    instructionBuf,
+    nameBuf,
+    descriptionBuf,
+    daoIdBuf,
+    podIdBuf,
+    startTimeBuf,
+    endTimeBuf
+  ]);
+}
 
-/**
- * Creates a vote transaction for a proposal
- * @param connection Solana connection
- * @param wallet User's wallet
- * @param daoId DAO identifier (not a PublicKey)
- * @param proposalId Proposal identifier (not a PublicKey)
- * @param vote Vote choice ('for', 'against', 'abstain')
- * @returns Transaction for voting on a proposal
- */
-export const createVoteTransaction = async (
+// Serialize vote instruction data
+export function serializeVoteInstruction(
+  voteValue: string,
+  proposalId: string
+): Buffer {
+  // Instruction index (2 for Vote)
+  const instructionBuf = Buffer.alloc(1);
+  instructionBuf.writeUInt8(2, 0);
+  
+  // Serialize strings
+  const voteBuf = serializeString(voteValue);
+  const proposalIdBuf = serializeString(proposalId);
+  
+  // Concat all buffers
+  return Buffer.concat([
+    instructionBuf,
+    voteBuf,
+    proposalIdBuf
+  ]);
+}
+
+// Fetch current SOL price from an API
+export async function getSolPrice(): Promise<number> {
+  try {
+    const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+    const data = await response.json();
+    const solPriceUsd = data.solana.usd;
+    
+    // Convert to cents and return as integer (e.g., $100.50 => 10050)
+    return Math.round(solPriceUsd * 100);
+  } catch (error) {
+    console.error('Error fetching SOL price:', error);
+    throw new Error('Failed to fetch SOL price. Please try again.');
+  }
+}
+
+// Create a new DAO transaction
+export async function createDaoTransaction(
   connection: Connection,
-  walletPubkey: PublicKey,
+  wallet: { publicKey: PublicKey },
+  name: string,
+  description: string,
+  discordServer: string = '',
+  twitter: string = '',
+  telegram: string = '',
+  instagram: string = '',
+  tiktok: string = '',
+  website: string = '',
+  treasury: string = '',
+  profile: string = '',
+  solPriceUsd?: number // Optional - will fetch current price if not provided
+): Promise<{ transaction: Transaction, daoAccount: Keypair }> {
+  if (!wallet.publicKey) throw new Error("Wallet not connected");
+  
+  // Get current SOL price if not provided
+  if (!solPriceUsd) {
+    solPriceUsd = await getSolPrice();
+  }
+  
+  // Generate a new keypair for the DAO
+  const daoAccount = Keypair.generate();
+  
+  // Serialize instruction data
+  const data = serializeCreateDaoInstruction(
+    name,
+    description,
+    discordServer,
+    twitter,
+    telegram,
+    instagram,
+    tiktok,
+    website,
+    treasury,
+    profile,
+    solPriceUsd
+  );
+  
+  // Create instruction
+  const instruction = new TransactionInstruction({
+    keys: [
+      { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+      { pubkey: daoAccount.publicKey, isSigner: true, isWritable: true },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      { pubkey: FEE_ADDRESS, isSigner: false, isWritable: true },
+    ],
+    programId: PROGRAM_ID,
+    data,
+  });
+  
+  // Create transaction
+  const transaction = new Transaction().add(instruction);
+  
+  // Set recent blockhash
+  transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+  transaction.feePayer = wallet.publicKey;
+  
+  // Partially sign with the DAO account
+  transaction.partialSign(daoAccount);
+  
+  return { transaction, daoAccount };
+}
+
+// Create a new proposal transaction
+export async function createProposalTransaction(
+  connection: Connection,
+  wallet: { publicKey: PublicKey },
+  name: string,
+  description: string,
   daoId: string,
-  proposalId: string,
-  vote: 'for' | 'against' | 'abstain'
-) => {
-  try {
-    // Create a new account for the vote record
-    const voteAccount = Keypair.generate();
-    
-    // Convert vote choice to boolean (true for 'for', false for 'against')
-    // For now, treat 'abstain' as 'against'
-    const approve = vote === 'for';
-    
-    // Create vote args that match the Borsh schema
-    const voteArgs = {
-      approve: approve
-    };
-    
-    // Serialize the vote data with Borsh
-    const data = serializeInstructionData(
-      voteSchema,
-      INSTRUCTION_VOTE,
-      voteArgs
-    );
-    
-    // Calculate the size needed for the vote data
-    const voteSize = 32 + 1 + 8; // PublicKey + bool + padding
-    
-    // Minimum lamports needed for rent exemption
-    const lamports = await connection.getMinimumBalanceForRentExemption(voteSize);
-    
-    // Create a transaction with two instructions:
-    // 1. Create vote account instruction
-    const createAccountInstruction = SystemProgram.createAccount({
-      fromPubkey: walletPubkey,
-      newAccountPubkey: voteAccount.publicKey,
-      lamports,
-      space: voteSize,
-      programId: DAO_PROGRAM_PUBLIC_KEY,
-    });
-    
-    // 2. Vote instruction
-    const voteInstruction = new TransactionInstruction({
-      keys: [
-        { pubkey: walletPubkey, isSigner: true, isWritable: true }, // Voter
-        { pubkey: voteAccount.publicKey, isSigner: true, isWritable: true }, // Vote record account
-      ],
-      programId: DAO_PROGRAM_PUBLIC_KEY,
-      data,
-    });
-    
-    // Create a new transaction and add both instructions
-    const transaction = new Transaction()
-      .add(createAccountInstruction)
-      .add(voteInstruction);
-    
-    // Get the latest blockhash
-    const { blockhash } = await connection.getLatestBlockhash();
-    transaction.recentBlockhash = blockhash;
-    transaction.feePayer = walletPubkey;
-    
-    // Partial sign with the vote account
-    transaction.partialSign(voteAccount);
-    
-    return { 
-      transaction,
-      voteAccount 
-    };
-  } catch (error) {
-    console.error('Error creating vote transaction:', error);
-    throw error;
-  }
-};
+  podId: string = '', // Making this optional with default empty string
+  startTime: number,
+  endTime: number
+): Promise<{ transaction: Transaction, proposalAccount: Keypair }> {
+  if (!wallet.publicKey) throw new Error("Wallet not connected");
+  
+  // Generate a new keypair for the proposal
+  const proposalAccount = Keypair.generate();
 
-/**
- * Creates a transaction for creating a new DAO
- * @param connection Solana connection
- * @param walletPubkey User's wallet public key
- * @param daoData DAO information
- * @returns Transaction for creating a DAO
- */
-export const createDaoTransaction = async (
+  console.log("wallet.publicKey", wallet.publicKey);
+  
+  // Serialize instruction data
+  const data = serializeCreateProposalInstruction(
+    name,
+    description,
+    daoId,
+    podId,
+    startTime,
+    endTime
+  );
+  
+  // Create instruction
+  const instruction = new TransactionInstruction({
+    keys: [
+      { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+      { pubkey: proposalAccount.publicKey, isSigner: true, isWritable: true },
+      { pubkey: new PublicKey(daoId), isSigner: false, isWritable: false },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      { pubkey: FEE_ADDRESS, isSigner: false, isWritable: true },
+    ],
+    programId: PROGRAM_ID,
+    data,
+  });
+  
+  // Create transaction
+  const transaction = new Transaction().add(instruction);
+  
+  // Set recent blockhash
+  transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+  transaction.feePayer = wallet.publicKey;
+  
+  // Partially sign with the proposal account
+  transaction.partialSign(proposalAccount);
+  
+  return { transaction, proposalAccount };
+}
+
+// Create a vote transaction
+export async function createVoteTransaction(
   connection: Connection,
-  walletPubkey: PublicKey,
-  daoData: {
-    name: string;
-    description: string;
-    discord_server?: string;
-    twitter?: string;
-    website?: string;
-    telegram?: string;
-    instagram?: string;
-    tiktok?: string;
-    profile_picture?: string;
-    admins?: PublicKey[];
-  }
-) => {
-  try {
-    console.log('Creating DAO account on Solana with program ID:', DAO_PROGRAM_ID);
-    
-    // Create a new account for the DAO
-    const daoAccount = Keypair.generate();
-    
-    // Calculate size needed for the DAO data
-    const daoSize = 128; // Small size just for proof of concept
-    
-    // Get minimum lamports needed for rent exemption
-    const lamports = await connection.getMinimumBalanceForRentExemption(daoSize);
-    
-    // Create account instruction that transfers ownership to the program
-    // This simply creates an account owned by the DAO program without calling any program instructions
-    const createAccountInstruction = SystemProgram.createAccount({
-      fromPubkey: walletPubkey,
-      newAccountPubkey: daoAccount.publicKey,
-      lamports,
-      space: daoSize,
-      programId: DAO_PROGRAM_PUBLIC_KEY,
-    });
-    
-    // Create transaction with just the account creation
-    const transaction = new Transaction();
-    transaction.add(createAccountInstruction);
-    
-    // Get the latest blockhash
-    const { blockhash } = await connection.getLatestBlockhash();
-    transaction.recentBlockhash = blockhash;
-    transaction.feePayer = walletPubkey;
-    
-    // Sign with the DAO account
-    transaction.partialSign(daoAccount);
-    
-    console.log('DAO account created with address:', daoAccount.publicKey.toString());
-    
-    return {
-      transaction,
-      daoAccount,
-    };
-  } catch (error) {
-    console.error('Error creating DAO transaction:', error);
-    throw error;
-  }
-};
+  wallet: { publicKey: PublicKey },
+  voteValue: string, // 'for' or 'against'
+  proposalId: string
+): Promise<{ transaction: Transaction, voteAccount: Keypair }> {
+  if (!wallet.publicKey) throw new Error("Wallet not connected");
+  
+  // Generate a new keypair for the vote
+  const voteAccount = Keypair.generate();
+  
+  // Serialize instruction data
+  const data = serializeVoteInstruction(
+    voteValue,
+    proposalId
+  );
+  
+  // Create instruction
+  const instruction = new TransactionInstruction({
+    keys: [
+      { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+      { pubkey: voteAccount.publicKey, isSigner: true, isWritable: true },
+      { pubkey: new PublicKey(proposalId), isSigner: false, isWritable: false },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      { pubkey: FEE_ADDRESS, isSigner: false, isWritable: true },
+    ],
+    programId: PROGRAM_ID,
+    data,
+  });
+  
+  // Create transaction
+  const transaction = new Transaction().add(instruction);
+  
+  // Set recent blockhash
+  transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+  transaction.feePayer = wallet.publicKey;
+  
+  // Partially sign with the vote account
+  transaction.partialSign(voteAccount);
+  
+  return { transaction, voteAccount };
+}
 
 /**
  * Sends a transaction using the wallet adapter
@@ -401,7 +336,7 @@ export const signAndSendTransaction = async (
   wallet: any, // This should be properly typed with WalletContextState
   connection: Connection,
   transaction: Transaction
-) => {
+): Promise<string> => {
   try {
     if (!wallet.signTransaction) {
       throw new Error('Wallet does not support signing transactions');
@@ -430,4 +365,4 @@ export const signAndSendTransaction = async (
     console.error('Error sending transaction:', error);
     throw error;
   }
-}; 
+};

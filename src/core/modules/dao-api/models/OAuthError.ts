@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* OAuth error
+*/
 export class OAuthError {
     /**
     * Error message
