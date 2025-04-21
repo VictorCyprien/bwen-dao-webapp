@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* Input information needed to create a Proposal
+*/
 export class InputCreateProposal {
     'name': string;
     'description': string;
@@ -20,6 +23,8 @@ export class InputCreateProposal {
     'startTime': Date;
     'endTime': Date;
     'actions'?: { [key: string]: any; } | null;
+    'pubkey': string;
+    'transaction': string;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -66,6 +71,18 @@ export class InputCreateProposal {
             "name": "actions",
             "baseName": "actions",
             "type": "{ [key: string]: any; }",
+            "format": ""
+        },
+        {
+            "name": "pubkey",
+            "baseName": "pubkey",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "transaction",
+            "baseName": "transaction",
+            "type": "string",
             "format": ""
         }    ];
 

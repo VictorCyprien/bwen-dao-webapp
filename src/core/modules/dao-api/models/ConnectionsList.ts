@@ -13,6 +13,9 @@
 import { SocialConnection } from '../models/SocialConnection';
 import { HttpFile } from '../http/http';
 
+/**
+* Social connections of the user
+*/
 export class ConnectionsList {
     /**
     * List of social connections

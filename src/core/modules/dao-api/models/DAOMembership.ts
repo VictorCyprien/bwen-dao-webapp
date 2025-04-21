@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* Provide a user id to add/remove the user from the DAO. (Only for admins)
+*/
 export class DAOMembership {
     'userId': string;
 

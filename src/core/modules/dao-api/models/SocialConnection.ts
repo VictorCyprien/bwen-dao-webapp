@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* Social connection informations
+*/
 export class SocialConnection {
     /**
     * Social provider name (discord, twitter, telegram)

@@ -13,6 +13,9 @@
 import { DiscordChannel } from '../models/DiscordChannel';
 import { HttpFile } from '../http/http';
 
+/**
+* POD informations
+*/
 export class POD {
     'podId'?: string;
     'daoId': string;

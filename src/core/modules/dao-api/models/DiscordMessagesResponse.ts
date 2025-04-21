@@ -13,6 +13,9 @@
 import { DiscordMessage } from '../models/DiscordMessage';
 import { HttpFile } from '../http/http';
 
+/**
+* Get multiple Discord messages
+*/
 export class DiscordMessagesResponse {
     'action': string;
     'messages': Array<DiscordMessage>;

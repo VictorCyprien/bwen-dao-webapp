@@ -13,6 +13,9 @@
 import { UserBasic } from '../models/UserBasic';
 import { HttpFile } from '../http/http';
 
+/**
+* DAO informations.
+*/
 export class DAO {
     'daoId'?: string;
     'name': string;
@@ -27,6 +30,8 @@ export class DAO {
     'website'?: string;
     'profilePicture'?: string;
     'treasuryAddress'?: string;
+    'pubkey'?: string;
+    'transaction'?: string;
     'admins'?: Array<UserBasic>;
     'members'?: Array<UserBasic>;
 
@@ -110,6 +115,18 @@ export class DAO {
         {
             "name": "treasuryAddress",
             "baseName": "treasury_address",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "pubkey",
+            "baseName": "pubkey",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "transaction",
+            "baseName": "transaction",
             "type": "string",
             "format": ""
         },

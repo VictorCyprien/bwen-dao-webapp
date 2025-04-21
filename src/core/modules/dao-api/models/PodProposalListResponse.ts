@@ -13,6 +13,9 @@
 import { Proposal } from '../models/Proposal';
 import { HttpFile } from '../http/http';
 
+/**
+* List POD proposals
+*/
 export class PodProposalListResponse {
     'podId': string;
     'proposals': Array<Proposal>;

@@ -223,7 +223,6 @@ const request: DaosApiCreateDAORequest = {
   inputCreateDAO: {
     name: "name_example",
     description: "description_example",
-    ownerId: "ownerId_example",
     discordServer: "discordServer_example",
     twitter: "twitter_example",
     telegram: "telegram_example",
@@ -231,6 +230,8 @@ const request: DaosApiCreateDAORequest = {
     tiktok: "tiktok_example",
     website: "website_example",
     treasury: "treasury_example",
+    pubkey: "pubkey_example",
+    transaction: "transaction_example",
     profile: { data: Buffer.from(fs.readFileSync('/path/to/file', 'utf-8')), name: '/path/to/file' },
   },
 };

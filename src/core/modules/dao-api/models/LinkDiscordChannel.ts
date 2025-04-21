@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* Link a Discord channel to a POD
+*/
 export class LinkDiscordChannel {
     'channelId': string;
     'podId': string;

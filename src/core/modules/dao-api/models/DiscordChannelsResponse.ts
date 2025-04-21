@@ -13,6 +13,9 @@
 import { DiscordChannel } from '../models/DiscordChannel';
 import { HttpFile } from '../http/http';
 
+/**
+* Get multiple Discord channels
+*/
 export class DiscordChannelsResponse {
     'action': string;
     'channels': Array<DiscordChannel>;

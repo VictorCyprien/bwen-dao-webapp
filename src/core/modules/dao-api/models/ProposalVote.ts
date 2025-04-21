@@ -12,8 +12,13 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* Vote on a Proposal
+*/
 export class ProposalVote {
     'vote': ProposalVoteVoteEnum;
+    'pubkey': string;
+    'transaction': string;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -24,6 +29,18 @@ export class ProposalVote {
             "name": "vote",
             "baseName": "vote",
             "type": "ProposalVoteVoteEnum",
+            "format": ""
+        },
+        {
+            "name": "pubkey",
+            "baseName": "pubkey",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "transaction",
+            "baseName": "transaction",
+            "type": "string",
             "format": ""
         }    ];
 

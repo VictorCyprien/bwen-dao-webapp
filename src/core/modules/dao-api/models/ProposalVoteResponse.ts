@@ -13,6 +13,9 @@
 import { Proposal } from '../models/Proposal';
 import { HttpFile } from '../http/http';
 
+/**
+* Proposal vote response
+*/
 export class ProposalVoteResponse {
     'action': string;
     'voteStatus': ProposalVoteResponseVoteStatusEnum;
