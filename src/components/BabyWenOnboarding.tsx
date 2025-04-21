@@ -644,7 +644,6 @@ const BabyWenOnboarding: React.FC = () => {
         telegram: sessionStorage.getItem('daoTelegram') || '',
         tiktok: sessionStorage.getItem('daoTiktok') || '',
         instagram: sessionStorage.getItem('daoInstagram') || '',
-        ownerId: userInfo?.userId,
       };
       
       // Add user message indicating button was clicked
