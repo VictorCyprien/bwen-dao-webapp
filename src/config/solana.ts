@@ -15,7 +15,10 @@ export const SOLANA_RPC_ENDPOINT = clusterApiUrl(SOLANA_NETWORK);
 
 // Your DAO program ID on Solana
 // IMPORTANT: Replace this with your actual program ID!
-export const DAO_PROGRAM_ID = '7XDjgfTVf6A5FSL4HAsox7FPKLNvzWL5qowaHJ7JTaXY';
+export const DAO_PROGRAM_ID = '7Mof2gtQh9478eWLAFTbzk9hpwsSjsaEsGiBGD42dMQj';
+
+// Treasury address
+export const TREASURY_ADDRESS = 'BAGek78CDYQ8phuDqNk7sQzD7LdJeKkb7jD4y2AyR3tJ';
 
 // Maximum retries for transaction confirmation
 export const MAX_TRANSACTION_RETRIES = 3;

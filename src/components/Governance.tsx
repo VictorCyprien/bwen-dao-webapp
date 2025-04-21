@@ -386,6 +386,7 @@ const Governance = () => {
       // Create the transaction
       const result = await proposalService.createProposalTransaction(
         daoId,
+        '', // podId
         publicKey,
         {
           title: proposal.title,
@@ -406,6 +407,9 @@ const Governance = () => {
       if (!transaction) {
         throw new Error('Failed to create proposal transaction - transaction is null');
       }
+      
+      // Save just the proposalAccount public key as a string for later use
+      sessionStorage.setItem('currentProposalAccount', proposalAccount.publicKey.toString());
       
       // Log the transaction details for debugging
       console.log('Transaction created successfully:', {
@@ -458,6 +462,9 @@ const Governance = () => {
       endDate.setHours(endDate.getHours() + hours);
       endDate.setMinutes(endDate.getMinutes() + minutes);
       
+      // Get the proposalAccount public key from sessionStorage
+      const proposalAccountPubkey = sessionStorage.getItem('currentProposalAccount') || '';
+      
       // Format actions for the API
       const actions = proposal.actions.map(action => {
         let description = '';
@@ -490,8 +497,11 @@ const Governance = () => {
         startDate,
         endDate,
         actions,
-        transactionSignature: signature // Include the signature from the successful transaction
+        transactionSignature: signature, // Include the signature from the successful transaction
+        proposalAccount: proposalAccountPubkey // Include the proposal account
       });
+
+      sessionStorage.removeItem('currentProposalAccount');
       
       if (newProposal) {
         // Refresh the proposal list
@@ -608,7 +618,13 @@ const Governance = () => {
       }
       
       console.log("Vote transaction confirmed:", signature);
-      await proposalService.voteOnProposal(daoId, proposalId, vote, signature);
+      await proposalService.voteOnProposal(
+        daoId, 
+        proposalId, 
+        vote, 
+        signature, 
+        voteAccount.publicKey.toString()
+      );
       
       // Refresh proposals after voting
       fetchProposals();

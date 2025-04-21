@@ -116,6 +116,22 @@ export class DaosService {
   }
 
   /**
+   * Get the blockchain address (pubkey) for a DAO
+   * @param daoId The database ID of the DAO
+   * @returns The Solana account public key for the DAO, or null if not found
+   */
+  async getDaoBlockchainAddress(daoId: string): Promise<string | null> {
+    try {
+      const dao = await this.getDaoById(daoId);
+      // Access the pubkey field from the DAO object
+      return dao?.pubkey || null;
+    } catch (error) {
+      console.error(`Error getting blockchain address for DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Create a new DAO
    */
   async createDao(daoData: {
@@ -131,6 +147,8 @@ export class DaosService {
     website?: string;
     profilePicture?: File;
     bannerPicture?: File;
+    blockchainAddress: string; // Solana account address
+    transactionSignature: string; // Transaction hash
   }): Promise<DAO | null> {
     try {
       const apiClient = this.createAuthenticatedApiClient();
@@ -139,7 +157,6 @@ export class DaosService {
       const daoInput = new InputCreateDAO();
       daoInput.name = daoData.name;
       daoInput.description = daoData.description?.trim() || '';
-      daoInput.ownerId = daoData.userId;
       daoInput.treasury = daoData.treasury;
       daoInput.discordServer = daoData.discordServer;
       daoInput.twitter = daoData.twitter;
@@ -147,6 +164,8 @@ export class DaosService {
       daoInput.instagram = daoData.instagram;
       daoInput.tiktok = daoData.tiktok;
       daoInput.website = daoData.website;
+      daoInput.pubkey = daoData.blockchainAddress;
+      daoInput.transaction = daoData.transactionSignature;
       
       // Convert File objects to FileStorage objects for Minio
       if (daoData.profilePicture != undefined) {
