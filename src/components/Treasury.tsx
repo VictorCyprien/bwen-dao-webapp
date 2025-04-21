@@ -198,10 +198,11 @@ const Treasury = () => {
       <div className={containers.flexBetween + " mb-6"}>
         <h1 className={typography.h1}>Treasury</h1>
         <Button 
-          variant="secondary" 
+          variant="outline" 
           onClick={handleRefresh} 
           disabled={refreshing}
           leftIcon={refreshing ? <Loader className="animate-spin" size={16} /> : <RefreshCw size={16} />}
+          className="flex items-center gap-2 text-xs sm:text-sm py-1 px-2 sm:py-2 sm:px-3 border-2 border-gray-800 hover:border-purple-500/50 bg-[#151515]"
         >
           {refreshing ? 'Refreshing...' : 'Refresh'}
         </Button>
