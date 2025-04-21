@@ -242,8 +242,6 @@ export async function createProposalTransaction(
   
   // Generate a new keypair for the proposal
   const proposalAccount = Keypair.generate();
-
-  console.log("wallet.publicKey", wallet.publicKey);
   
   // Serialize instruction data
   const data = serializeCreateProposalInstruction(
