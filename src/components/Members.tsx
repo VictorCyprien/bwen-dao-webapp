@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronDown, ExternalLink, Check, Calendar, Users, Search, X, Filter, Clock } from 'lucide-react';
-import type { User, UserBasic, UserBasic1 } from '../core/modules/dao-api';
+import React from 'react';
+import { ChevronDown, ExternalLink, Check, Calendar, Users, Search, X, Clock, Grid, List, ChevronLeft, ChevronRight } from 'lucide-react';
+import type { UserBasic } from '../core/modules/dao-api';
 import { useEffectOnce } from '../hooks/useEffectOnce';
 import { useParams } from 'react-router-dom';
 import { daosService } from '../services/DaosService';
@@ -26,24 +26,30 @@ interface MemberData {
 
 const Members = () => {
   const { daoId } = useParams<{ daoId: string }>();
-  const [sortOrder, setSortOrder] = useState('A-Z');
-  const [podFilter, setPodFilter] = useState<string[]>([]);
-  const [filteredMembers, setFilteredMembers] = useState<MemberData[]>([]);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [daoMembers, setDaoMembers] = useState<MemberData[]>([]);
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [sortOrder, setSortOrder] = React.useState('A-Z');
+  const [podFilter, setPodFilter] = React.useState<string[]>([]);
+  const [filteredMembers, setFilteredMembers] = React.useState<MemberData[]>([]);
+  const [activeDropdown, setActiveDropdown] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState<boolean>(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const [daoMembers, setDaoMembers] = React.useState<MemberData[]>([]);
+  const [searchQuery, setSearchQuery] = React.useState<string>('');
+  const [viewMode, setViewMode] = React.useState<'table' | 'card'>('card');
   
-  // Date range filters
-  const [activitySince, setActivitySince] = useState<string>('');
-  const [activityUntil, setActivityUntil] = useState<string>('');
-  const [loginSince, setLoginSince] = useState<string>('');
-  const [loginUntil, setLoginUntil] = useState<string>('');
+  // Pagination states
+  const [currentPage, setCurrentPage] = React.useState<number>(1);
+  const [rowsPerPage, setRowsPerPage] = React.useState<number>(10);
+  const [isPageChanging, setIsPageChanging] = React.useState<boolean>(false);
+  
+  // Date range filters - used for filtering only
+  const [activitySince, setActivitySince] = React.useState<string>('');
+  const [activityUntil, setActivityUntil] = React.useState<string>('');
+  const [loginSince, setLoginSince] = React.useState<string>('');
+  const [loginUntil, setLoginUntil] = React.useState<string>('');
   
   // Selected member for profile modal
-  const [selectedMember, setSelectedMember] = useState<UserProfileData | null>(null);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
+  const [selectedMember, setSelectedMember] = React.useState<UserProfileData | null>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = React.useState<boolean>(false);
   
   // Fetch DAO members using the DaosService
   useEffectOnce(() => {
@@ -90,7 +96,7 @@ const Members = () => {
   }, [daoId]);
 
   // Get unique pod values for filter
-  const uniquePods = [...new Set(daoMembers.flatMap(member => member.pods))].sort();
+  const uniquePods = [...new Set(daoMembers.flatMap((member: MemberData) => member.pods))].sort() as string[];
 
   // Toggle dropdown visibility
   const toggleDropdown = (dropdown: string) => {
@@ -98,7 +104,7 @@ const Members = () => {
   };
 
   // Apply filters and sorting
-  useEffect(() => {
+  React.useEffect(() => {
     let result = [...daoMembers];
     
     // Apply search query filter
@@ -114,7 +120,7 @@ const Members = () => {
     // Apply pod filter
     if (podFilter.length > 0) {
       result = result.filter(member => 
-        member.pods.some(pod => podFilter.includes(pod))
+        member.pods.some((pod: string) => podFilter.includes(pod))
       );
     }
     
@@ -185,7 +191,7 @@ const Members = () => {
   // Toggle pod in filter
   const togglePodFilter = (pod: string) => {
     setPodFilter(podFilter.includes(pod) 
-      ? podFilter.filter(p => p !== pod) 
+      ? podFilter.filter((p: string) => p !== pod) 
       : [...podFilter, pod]
     );
   };
@@ -259,8 +265,38 @@ const Members = () => {
     setIsProfileModalOpen(true);
   };
 
+  // Calculate pagination values
+  const totalPages = Math.ceil(filteredMembers.length / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = Math.min(startIndex + rowsPerPage, filteredMembers.length);
+  const paginatedMembers = filteredMembers.slice(startIndex, endIndex);
+  
+  // Change page with animation
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages && page !== currentPage) {
+      // Start animation
+      setIsPageChanging(true);
+      
+      // Change page after short delay to allow animation
+      setTimeout(() => {
+        setCurrentPage(page);
+        // Remove animation class after page changes
+        setTimeout(() => {
+          setIsPageChanging(false);
+        }, 50);
+      }, 150);
+    }
+  };
+  
+  // Change rows per page
+  const handleRowsPerPageChange = (rows: number) => {
+    setRowsPerPage(rows);
+    setCurrentPage(1); // Reset to first page when changing rows per page
+    setActiveDropdown(null); // Close dropdown after selection
+  };
+
   return (
-    <div className="p-6 h-screen overflow-hidden flex flex-col">
+    <div className="p-6 h-full min-h-screen overflow-auto">
       <div className={containers.flexBetween + " mb-6"}>
         <h1 className={typography.h1}>Members</h1>
       </div>
@@ -279,46 +315,56 @@ const Members = () => {
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <Card className="flex items-center">
-              <div className="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-purple-600 to-blue-600 mr-4">
-                <Users size={24} className="text-white" />
-              </div>
-              <div>
-                <div className={ui.stat.label}>Total Members</div>
-                <div className={ui.stat.value}>{daoMembers.length}</div>
-              </div>
-            </Card>
-            
-            {lastJoinedMember && (
-              <Card className="flex items-center">
-                <div className="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 mr-4">
-                  <Calendar size={24} className="text-white" />
+            <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-800/60">
+              <div className="flex items-center">
+                <div className="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 mr-4">
+                  <Users size={20} className="text-white" />
                 </div>
                 <div>
-                  <div className={ui.stat.label}>Last Joined</div>
-                  <div className={ui.stat.value}>{lastJoinedMember.name}</div>
-                  <div className={typography.small}>{getTimeAgo(lastJoinedMember.lastLogin)}</div>
+                  <div className="text-sm text-gray-400">Total Members</div>
+                  <div className="text-2xl font-bold text-white">{daoMembers.length}</div>
                 </div>
-              </Card>
+              </div>
+            </div>
+            
+            {lastJoinedMember && (
+              <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-800/60">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 mr-4">
+                    <Calendar size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-400 flex items-center">
+                      <span>Last Joined</span>
+                      <span className="ml-2 px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded-full">{getTimeAgo(lastJoinedMember.lastLogin)}</span>
+                    </div>
+                    <div className="text-xl font-bold text-white mt-1">{lastJoinedMember.name}</div>
+                  </div>
+                </div>
+              </div>
             )}
             
             {lastActiveMember && (
-              <Card className="flex items-center">
-                <div className="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 mr-4">
-                  <Clock size={24} className="text-white" />
+              <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-800/60">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 mr-4">
+                    <Clock size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-400 flex items-center">
+                      <span>Last Active</span>
+                      <span className="ml-2 px-2 py-0.5 bg-purple-500/20 text-purple-400 text-xs rounded-full">{getTimeAgo(lastActiveMember.lastInteraction)}</span>
+                    </div>
+                    <div className="text-xl font-bold text-white mt-1">{lastActiveMember.name}</div>
+                  </div>
                 </div>
-                <div>
-                  <div className={ui.stat.label}>Last Active</div>
-                  <div className={ui.stat.value}>{lastActiveMember.name}</div>
-                  <div className={typography.small}>{getTimeAgo(lastActiveMember.lastInteraction)}</div>
-                </div>
-              </Card>
+              </div>
             )}
           </div>
           
           {/* Sort and filter toolbar */}
-          <div className={containers.flexBetween + " mb-4"}>
-            <div className="flex space-x-2">
+          <div className="flex flex-col md:flex-row justify-between mb-4 gap-3">
+            <div className="flex flex-wrap gap-2">
               {/* Sort Dropdown */}
               <div className="relative">
                 <Button 
@@ -359,7 +405,7 @@ const Members = () => {
                   onClick={() => toggleDropdown('activity')}
                   rightIcon={<ChevronDown size={16} />}
                 >
-                  Activity Date
+                  Activity
                 </Button>
                 
                 {activeDropdown === 'activity' && (
@@ -419,7 +465,7 @@ const Members = () => {
                   <div className={utils.glassmorphism + " absolute left-0 mt-2 w-48 rounded-md shadow-lg z-10"}>
                     <div className="py-2">
                       {uniquePods.length > 0 ? (
-                        uniquePods.map(pod => (
+                        uniquePods.map((pod: string) => (
                           <button
                             key={pod}
                             className={`flex items-center w-full px-4 py-2 text-sm ${podFilter.includes(pod) ? 'text-purple-500' : 'text-gray-200'} hover:bg-[#222]/60`}
@@ -440,165 +486,317 @@ const Members = () => {
               </div>
             </div>
             
-            {/* Search Bar - now aligned with the dropdowns */}
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search members..."
-                className="pl-10 pr-3 py-2 bg-[#191919] border border-gray-800 rounded-md text-white w-64 focus:outline-none focus:border-purple-600"
-              />
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                <Search size={16} />
-              </div>
-              {searchQuery && (
+            <div className="flex flex-wrap items-center gap-2">
+              {/* View Mode Toggle */}
+              <div className="flex items-center border border-gray-800 rounded-md overflow-hidden mr-2 bg-[#191919]">
                 <button 
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                  className={`flex items-center justify-center p-2 ${viewMode === 'table' ? 'bg-purple-600/40 text-white' : 'text-gray-400 hover:text-white hover:bg-[#222]'}`}
+                  onClick={() => setViewMode('table')}
+                  title="Table View"
                 >
-                  <X size={16} />
+                  <List size={16} />
                 </button>
-              )}
+                <button 
+                  className={`flex items-center justify-center p-2 ${viewMode === 'card' ? 'bg-purple-600/40 text-white' : 'text-gray-400 hover:text-white hover:bg-[#222]'}`}
+                  onClick={() => setViewMode('card')}
+                  title="Card View"
+                >
+                  <Grid size={16} />
+                </button>
+              </div>
+              
+              {/* Search Bar */}
+              <div className="relative flex-1 min-w-[180px]">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search members..."
+                  className="pl-10 pr-3 py-2 bg-[#191919] border border-gray-800 rounded-md text-white w-full focus:outline-none focus:border-purple-600"
+                />
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                  <Search size={16} />
+                </div>
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           
-          {/* Members list */}
-          <Card className="overflow-hidden flex-1">
-            <div className="overflow-auto h-full custom-scrollbar">
-              <table className={ui.table.container}>
-                <thead>
-                  <tr>
-                    <th className={ui.table.header}>Member</th>
-                    <th className={ui.table.header}>Wallet</th>
-                    <th className={ui.table.header}>Pods</th>
-                    <th className={ui.table.header}>Social</th>
-                    <th className={ui.table.header}>Last Activity</th>
-                    <th className={ui.table.header}>Last Login</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredMembers.map((member) => (
-                    <tr 
-                      key={member.id?.toString()} 
-                      className={`${ui.table.row} cursor-pointer hover:bg-[#191919]`}
-                      onClick={() => handleMemberClick(member)}
-                    >
-                      <td className={ui.table.cell}>
-                        <div className="flex items-center">
-                          {member.avatar ? (
-                            <img 
-                              src={member.avatar} 
-                              alt={`${member.name}'s avatar`}
-                              className="h-10 w-10 rounded-full mr-3 object-cover"
-                              onError={(e) => {
-                                // Fallback to first letter avatar if image fails to load
-                                const imgElement = e.currentTarget;
-                                imgElement.style.display = 'none';
-                                const parentDiv = imgElement.parentElement;
-                                if (parentDiv) {
-                                  const letterAvatar = parentDiv.querySelector('div.rounded-full');
-                                  if (letterAvatar && letterAvatar instanceof HTMLElement) {
-                                    letterAvatar.style.display = 'flex';
-                                  }
-                                }
-                              }}
-                            />
-                          ) : null}
-                          <div 
-                            className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mr-3 text-white font-medium"
-                            style={{display: member.avatar ? 'none' : 'flex'}}
+          {/* Pagination controls above table/cards - Only shown in table view */}
+          {viewMode === 'table' && (
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400 text-sm">Show</span>
+                <div className="relative">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => toggleDropdown('rows')}
+                    rightIcon={<ChevronDown size={16} />}
+                  >
+                    {rowsPerPage} members
+                  </Button>
+                  
+                  {activeDropdown === 'rows' && (
+                    <div className={utils.glassmorphism + " absolute left-0 mt-2 w-40 rounded-md shadow-lg z-10"}>
+                      <div className="py-2">
+                        {[10, 25, 50].map(option => (
+                          <button
+                            key={option}
+                            className={`flex items-center w-full px-4 py-2 text-sm ${rowsPerPage === option ? 'text-purple-500' : 'text-gray-200'} hover:bg-[#222]/60`}
+                            onClick={() => handleRowsPerPageChange(option)}
                           >
-                            {member.name.substring(0, 1)}
-                          </div>
-                          <div>
-                            <div className="font-medium text-white">{member.name}</div>
-                            <div className="text-xs text-gray-400">@{member.username}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className={ui.table.cell}>
-                        <div className="flex items-center gap-2">
-                          <span className="text-gray-300">{truncateWallet(member.wallet)}</span>
-                          <a href={`https://explorer.solana.com/address/${member.wallet}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
-                            <ExternalLink size={14} />
-                          </a>
-                        </div>
-                      </td>
-                      <td className={ui.table.cell}>
-                        <div className="flex flex-wrap gap-1">
-                          {member.pods.length > 0 ? (
-                            member.pods.map((pod, index) => (
-                              <Badge key={index} variant="primary" className="text-xs whitespace-nowrap">
-                                {pod}
-                              </Badge>
-                            ))
-                          ) : (
-                            <span className="text-gray-400 text-xs">No pods</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className={ui.table.cell}>
-                        <div className="flex gap-2">
-                          {member.discordId && (
-                            <a 
-                              href={`https://discord.com/users/${member.discordId}`} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex"
-                            >
-                              <Badge variant="primary" className="text-xs flex items-center gap-1">
-                                Discord <ExternalLink size={12} />
-                              </Badge>
-                            </a>
-                          )}
-                          {member.twitter && (
-                            <a 
-                              href={`https://twitter.com/${member.twitter}`} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex"
-                            >
-                              <Badge variant="primary" className="text-xs flex items-center gap-1">
-                                Twitter <ExternalLink size={12} />
-                              </Badge>
-                            </a>
-                          )}
-                          {member.telegram && (
-                            <a 
-                              href={`https://t.me/${member.telegram}`} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              onClick={(e) => e.stopPropagation()}
-                              className="inline-flex"
-                            >
-                              <Badge variant="primary" className="text-xs flex items-center gap-1">
-                                Telegram <ExternalLink size={12} />
-                              </Badge>
-                            </a>
-                          )}
-                        </div>
-                      </td>
-                      <td className={ui.table.cell}>
-                        <div>
-                          <div className="text-gray-300">{getTimeAgo(member.lastInteraction)}</div>
-                          <div className="text-xs text-gray-400">{formatDate(member.lastInteraction)}</div>
-                        </div>
-                      </td>
-                      <td className={ui.table.cell}>
-                        <div>
-                          <div className="text-gray-300">{getTimeAgo(member.lastLogin)}</div>
-                          <div className="text-xs text-gray-400">{formatDate(member.lastLogin)}</div>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                            {rowsPerPage === option && <Check size={16} className="mr-2" />}
+                            <span>{option} members</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="text-gray-400 text-sm">
+                Showing {startIndex + 1} to {endIndex} of {filteredMembers.length} members
+              </div>
             </div>
+          )}
+          
+          {/* Members content - Table or Card view */}
+          <Card className="overflow-hidden mb-4" style={{ minHeight: '300px', height: `calc(100vh - 400px)` }}>
+            {viewMode === 'table' ? (
+              /* Table View - Updated for responsiveness */
+              <div className={`overflow-auto h-full custom-scrollbar transition-opacity duration-150 ${isPageChanging ? 'opacity-30' : 'opacity-100'}`}>
+                <table className={ui.table.container}>
+                  <thead className="sticky top-0 bg-[#121212] z-10">
+                    <tr>
+                      <th className={ui.table.header + " min-w-[200px]"}>Member</th>
+                      <th className={ui.table.header + " min-w-[120px]"}>Wallet</th>
+                      <th className={ui.table.header + " min-w-[180px]"}>Pods</th>
+                      <th className={ui.table.header + " min-w-[180px]"}>Social</th>
+                      <th className={ui.table.header + " min-w-[150px]"}>Last Activity</th>
+                      <th className={ui.table.header + " min-w-[150px]"}>Last Login</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedMembers.map((member: MemberData) => (
+                      <tr 
+                        key={member.id?.toString()} 
+                        className={`${ui.table.row} cursor-pointer hover:bg-[#191919]`}
+                        onClick={() => handleMemberClick(member)}
+                      >
+                        <td className={ui.table.cell}>
+                          <div className="flex items-center">
+                            {member.avatar ? (
+                              <img 
+                                src={member.avatar} 
+                                alt={`${member.name}'s avatar`}
+                                className="h-10 w-10 rounded-full mr-3 object-cover"
+                                onError={(e) => {
+                                  // Fallback to first letter avatar if image fails to load
+                                  const imgElement = e.currentTarget;
+                                  imgElement.style.display = 'none';
+                                  const parentDiv = imgElement.parentElement;
+                                  if (parentDiv) {
+                                    const letterAvatar = parentDiv.querySelector('div.rounded-full');
+                                    if (letterAvatar && letterAvatar instanceof HTMLElement) {
+                                      letterAvatar.style.display = 'flex';
+                                    }
+                                  }
+                                }}
+                              />
+                            ) : null}
+                            <div 
+                              className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mr-3 text-white font-medium"
+                              style={{display: member.avatar ? 'none' : 'flex'}}
+                            >
+                              {member.name.substring(0, 1)}
+                            </div>
+                            <div>
+                              <div className="font-medium text-white">{member.name}</div>
+                              <div className="text-xs text-gray-400">@{member.username}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className={ui.table.cell}>
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-300">{truncateWallet(member.wallet)}</span>
+                            <a 
+                              href={`https://explorer.solana.com/address/${member.wallet}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="text-blue-400 hover:text-blue-300"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <ExternalLink size={14} />
+                            </a>
+                          </div>
+                        </td>
+                        <td className={ui.table.cell}>
+                          <div className="flex flex-wrap gap-1">
+                            {member.pods.length > 0 ? (
+                              member.pods.map((pod: string, index: number) => (
+                                <Badge key={index} variant="primary" className="text-xs whitespace-nowrap">
+                                  {pod}
+                                </Badge>
+                              ))
+                            ) : (
+                              <span className="text-gray-400 text-xs">No pods</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className={ui.table.cell}>
+                          <div className="flex gap-2">
+                            {member.discordId && (
+                              <a 
+                                href={`https://discord.com/users/${member.discordId}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex"
+                              >
+                                <Badge variant="primary" className="text-xs flex items-center gap-1">
+                                  Discord <ExternalLink size={12} />
+                                </Badge>
+                              </a>
+                            )}
+                            {member.twitter && (
+                              <a 
+                                href={`https://twitter.com/${member.twitter}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex"
+                              >
+                                <Badge variant="primary" className="text-xs flex items-center gap-1">
+                                  Twitter <ExternalLink size={12} />
+                                </Badge>
+                              </a>
+                            )}
+                            {member.telegram && (
+                              <a 
+                                href={`https://t.me/${member.telegram}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex"
+                              >
+                                <Badge variant="primary" className="text-xs flex items-center gap-1">
+                                  Telegram <ExternalLink size={12} />
+                                </Badge>
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                        <td className={ui.table.cell}>
+                          <div>
+                            <div className="text-gray-300">{getTimeAgo(member.lastInteraction)}</div>
+                            <div className="text-xs text-gray-400">{formatDate(member.lastInteraction)}</div>
+                          </div>
+                        </td>
+                        <td className={ui.table.cell}>
+                          <div>
+                            <div className="text-gray-300">{getTimeAgo(member.lastLogin)}</div>
+                            <div className="text-xs text-gray-400">{formatDate(member.lastLogin)}</div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                
+                {filteredMembers.length === 0 && (
+                  <div className="flex justify-center items-center py-10 text-gray-400">
+                    <p>No members match your search criteria</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Card View - No pagination, showing all members */
+              <div className="overflow-auto h-full custom-scrollbar p-3">
+                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                  {filteredMembers.map((member: MemberData) => (
+                    <div 
+                      key={member.id?.toString()}
+                      onClick={() => handleMemberClick(member)}
+                      className="bg-[#191919] border border-gray-800 rounded-lg p-2 cursor-pointer hover:bg-[#222] transition-colors flex flex-col items-center text-center"
+                    >
+                      {/* Member Avatar & Name - Centered */}
+                      {member.avatar ? (
+                        <img 
+                          src={member.avatar} 
+                          alt={`${member.name}'s avatar`}
+                          className="h-14 w-14 rounded-full mb-2 object-cover"
+                          onError={(e) => {
+                            // Fallback to first letter avatar
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            if (target.parentElement) {
+                              const fallback = target.parentElement.querySelector('.avatar-fallback');
+                              if (fallback) {
+                                (fallback as HTMLElement).style.display = 'flex';
+                              }
+                            }
+                          }}
+                        />
+                      ) : null}
+                      <div 
+                        className="avatar-fallback h-14 w-14 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center mb-2 text-white font-bold text-lg"
+                        style={{display: member.avatar ? 'none' : 'flex'}}
+                      >
+                        {member.name.substring(0, 1)}
+                      </div>
+                      
+                      <div className="font-medium text-white text-sm truncate w-full">{member.name}</div>
+                      <div className="text-xs text-gray-400 truncate w-full">@{member.username}</div>
+                    </div>
+                  ))}
+                </div>
+                
+                {filteredMembers.length === 0 && (
+                  <div className="flex justify-center items-center py-10 text-gray-400">
+                    <p>No members match your search criteria</p>
+                  </div>
+                )}
+              </div>
+            )}
           </Card>
+          
+          {/* Simplified Pagination controls - Only shown in table view */}
+          {viewMode === 'table' && (
+            <div className="flex justify-center items-center gap-4 my-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                leftIcon={<ChevronLeft size={14} />}
+              >
+                Prev
+              </Button>
+              
+              <div className="flex items-center">
+                <span className="mx-4 text-gray-300">{currentPage} of {totalPages}</span>
+              </div>
+              
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                rightIcon={<ChevronRight size={14} />}
+              >
+                Next
+              </Button>
+            </div>
+          )}
         </>
       )}
       
