@@ -1,5 +1,5 @@
 import React from 'react';
-import { CircleDollarSign, Loader, TrendingUp, TrendingDown } from 'lucide-react';
+import { CircleDollarSign, Loader, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
 
 interface TokenCardProps {
   tokenAddress: string;
@@ -16,10 +16,18 @@ interface TokenData {
   marketCap: number | null;
 }
 
+// État du composant TokenCard
+interface TokenCardState {
+  loading: boolean;
+  tokenData: TokenData;
+  error: string | null;
+  noDataFound: boolean;
+}
+
 // Cache pour stocker les informations des jetons déjà consultés
 const tokenCache: Record<string, TokenData> = {};
 
-class TokenCard extends React.Component<TokenCardProps, any> {
+class TokenCard extends React.Component<TokenCardProps, TokenCardState> {
   constructor(props: TokenCardProps) {
     super(props);
     this.state = {
@@ -33,7 +41,8 @@ class TokenCard extends React.Component<TokenCardProps, any> {
         priceChange24h: null,
         marketCap: null,
       },
-      error: null
+      error: null,
+      noDataFound: false
     };
   }
 
@@ -49,13 +58,14 @@ class TokenCard extends React.Component<TokenCardProps, any> {
 
   async fetchTokenData() {
     try {
-      this.setState({ loading: true, error: null });
+      this.setState({ loading: true, error: null, noDataFound: false });
       
       // Vérifier d'abord dans le cache local
       if (tokenCache[this.props.tokenAddress]) {
         this.setState({
           tokenData: tokenCache[this.props.tokenAddress],
-          loading: false
+          loading: false,
+          noDataFound: !tokenCache[this.props.tokenAddress].name && !tokenCache[this.props.tokenAddress].symbol
         });
         return;
       }
@@ -84,7 +94,7 @@ class TokenCard extends React.Component<TokenCardProps, any> {
       if (!tokenData || !tokenData.name || !tokenData.symbol) {
         const birdeyeData = await this.tryBirdeyeAPI();
         if (birdeyeData) {
-          tokenData = tokenData ? { ...tokenData, ...birdeyeData } : birdeyeData;
+          tokenData = tokenData ? { ...birdeyeData, ...tokenData } : birdeyeData;
         }
       }
       
@@ -113,7 +123,8 @@ class TokenCard extends React.Component<TokenCardProps, any> {
         
         this.setState({
           tokenData,
-          loading: false
+          loading: false,
+          noDataFound: false
         });
         return;
       }
@@ -125,12 +136,22 @@ class TokenCard extends React.Component<TokenCardProps, any> {
           tokenCache[this.props.tokenAddress] = solanaData;
           this.setState({
             tokenData: solanaData,
-            loading: false
+            loading: false,
+            noDataFound: !solanaData.name && !solanaData.symbol
           });
           return;
         }
       } catch (error) {
         console.log('Failed to get on-chain data:', error);
+      }
+      
+      // Si nous n'avons toujours pas trouvé d'informations utiles, considérer qu'aucune donnée n'est trouvée
+      if (!tokenData || (!tokenData.name && !tokenData.symbol)) {
+        this.setState({
+          loading: false,
+          noDataFound: true
+        });
+        return;
       }
       
       // Fallback final avec des informations minimales
@@ -149,7 +170,8 @@ class TokenCard extends React.Component<TokenCardProps, any> {
       
       this.setState({
         tokenData: fallbackData,
-        loading: false
+        loading: false,
+        noDataFound: false
       });
     } catch (err) {
       console.error('Error fetching token data:', err);
@@ -408,7 +430,7 @@ class TokenCard extends React.Component<TokenCardProps, any> {
   }
 
   render() {
-    const { loading, tokenData, error } = this.state;
+    const { loading, tokenData, error, noDataFound } = this.state;
     const { tokenAddress } = this.props;
 
     if (error) {
@@ -423,6 +445,26 @@ class TokenCard extends React.Component<TokenCardProps, any> {
               <div className="text-xl font-bold text-white/70">{tokenData.name || 'Unknown Token'}</div>
               <div className="text-sm text-gray-400">{'$'}{tokenData.symbol || 'SPL'}</div>
             </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (noDataFound) {
+      return (
+        <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-amber-800/40">
+          <div className="flex items-center justify-center flex-col text-center">
+            <AlertCircle className="text-amber-500 mb-3" size={24} />
+            <div className="text-amber-400 text-sm font-medium mb-1">No information found about this token</div>
+            <p className="text-gray-400 text-xs mb-3">
+              No information could be found across multiple sources for this contract
+            </p>
+            <button 
+              onClick={this.openSolscan}
+              className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              View on Solscan
+            </button>
           </div>
         </div>
       );
@@ -477,7 +519,7 @@ class TokenCard extends React.Component<TokenCardProps, any> {
               <div className="flex-1">
                 {/* Première ligne: Nom du token à gauche et prix à droite */}
                 <div className="flex items-center justify-between">
-                  <div className="text-xl font-bold text-white">{tokenData.name || 'Unknown Token'}</div>
+                  <div className="text-xl font-bold text-white token-name">{tokenData.name || 'Unknown Token'}</div>
                   {tokenData.price !== null && (
                     <div className="text-lg font-medium text-white">
                       {this.formatUSD(tokenData.price)}
@@ -495,7 +537,7 @@ class TokenCard extends React.Component<TokenCardProps, any> {
                       ) : (
                         <TrendingDown size={14} className="mr-1" />
                       )}
-                      <span>{Math.abs(tokenData.priceChange24h).toFixed(2)}%</span>
+                      <span>24h {Math.abs(tokenData.priceChange24h).toFixed(2)}%</span>
                     </div>
                   )}
                 </div>
