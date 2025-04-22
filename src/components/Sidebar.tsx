@@ -11,7 +11,8 @@ import {
   FileText,
   ArrowLeft,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  ChevronDown
 } from 'lucide-react';
 import { ui } from '../styles/theme';
 import { useAuth } from '../context/AuthContext';
@@ -47,6 +48,37 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [refreshTimestamp, setRefreshTimestamp] = React.useState<number>(Date.now());
   const [retryCount, setRetryCount] = React.useState<number>(0);
   const maxRetries = 3;
+  
+  // Track which sections are expanded, initialize from localStorage if available
+  const [expandedSections, setExpandedSections] = React.useState<Record<string, boolean>>(() => {
+    const savedState = localStorage.getItem('sidebarExpandedSections');
+    if (savedState) {
+      try {
+        return JSON.parse(savedState);
+      } catch (e) {
+        console.error('Failed to parse saved sidebar state:', e);
+      }
+    }
+    // Default state if nothing in localStorage
+    return {
+      'Pods': true,
+      'Proof of Love': true,
+      'Docs': true
+    };
+  });
+  
+  // Toggle section expanded/collapsed state and save to localStorage
+  const toggleSection = (sectionName: string) => {
+    setExpandedSections((prev: Record<string, boolean>) => {
+      const newState = {
+        ...prev,
+        [sectionName]: !prev[sectionName]
+      };
+      // Save to localStorage
+      localStorage.setItem('sidebarExpandedSections', JSON.stringify(newState));
+      return newState;
+    });
+  };
   
   // Fetch the DAO data when the daoId changes
   const fetchDaoData = async () => {
@@ -129,15 +161,25 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  const navItems = [
+  const navItems: {
+    section: string;
+    items: { id: string; label: string; icon: React.ReactNode }[];
+    isUncollapsable?: boolean;
+  }[] = [
     {
-      section: 'DAO',
+      section: 'main',
       items: [
         { id: 'dashboard_home', label: 'Home', icon: <Home size={18} /> },
         { id: 'governance', label: 'Governance', icon: <Building2 size={18} /> },
-        { id: 'pods', label: 'Pods', icon: <Layers size={18} /> },
         { id: 'treasury', label: 'Treasury', icon: <Wallet size={18} /> },
         { id: 'members', label: 'Members', icon: <Users size={18} /> }
+      ],
+      isUncollapsable: true
+    },
+    {
+      section: 'Pods',
+      items: [
+        { id: 'pods', label: 'Pods', icon: <Layers size={18} /> }
       ]
     },
     {
@@ -219,8 +261,23 @@ const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex-1 overflow-y-auto">
           {navItems.map((section) => (
             <React.Fragment key={section.section}>
-              <div className="px-3 py-2 text-xs text-surface-500 font-normal">{section.section}</div>
-              <nav>
+              {!section.isUncollapsable && (
+                <div 
+                  className="px-3 py-2 text-xs text-surface-500 font-normal flex items-center justify-between cursor-pointer group"
+                  onClick={() => toggleSection(section.section)}
+                >
+                  <span>{section.section}</span>
+                  <span className="transform transition-transform duration-200 mr-1">
+                    {expandedSections[section.section] ? 
+                      <ChevronDown size={14} className="text-surface-500 group-hover:text-surface-400"/> : 
+                      <ChevronRight size={14} className="text-surface-500 group-hover:text-surface-400"/>
+                    }
+                  </span>
+                </div>
+              )}
+              <nav className={`transition-all duration-300 overflow-hidden ${
+                section.isUncollapsable || expandedSections[section.section] ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+              }`}>
                 {section.items.map((item) => (
                   <button 
                     key={item.id}
