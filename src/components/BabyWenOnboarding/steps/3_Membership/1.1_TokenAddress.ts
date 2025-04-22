@@ -12,16 +12,16 @@ const TokenAddressStep: OnboardingStep = {
   formFields: [
     {
       id: 'tokenAddress',
-      label: 'Token Contract Address',
+      label: 'Token Contract Address (Solana)',
       type: 'text',
-      placeholder: 'e.g. 0x1234...5678',
+      placeholder: 'e.g. ABC123XYZ...',
       required: true,
       validator: (value: string) => {
-        // Basic Ethereum address validation
-        if (!/^0x[a-fA-F0-9]{40}$/.test(value)) {
+        // Solana address validation - base58 encoded, typically 32-44 characters
+        if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value)) {
           return { 
             isValid: false, 
-            errorMessage: 'Please enter a valid Ethereum address (0x followed by 40 hexadecimal characters)' 
+            errorMessage: 'Please enter a valid Solana address (32-44 characters using Base58 encoding)' 
           };
         }
         return { isValid: true };
