@@ -100,8 +100,6 @@ const BabyWenOnboarding: React.FC = () => {
   // Track last played sound to prevent duplicates
   const [lastPlayedStepSound, setLastPlayedStepSound] = React.useState<StepId | null>(null);
   const [lastPlayedStepSoundIndex, setLastPlayedStepSoundIndex] = React.useState<number | null>(null);
-  // Reference to the current audio element and a flag to track if audio is currently playing
-  const audioRef = React.useRef<HTMLAudioElement | null>(null);
   
   // Audio Playback Manager - handles all audio to ensure only one sound is playing at a time
   const audioManager = React.useMemo(() => {
@@ -231,9 +229,6 @@ const BabyWenOnboarding: React.FC = () => {
     };
   }, []);
 
-  // Active section for sidebar highlight
-  const [activeSection, setActiveSection] = React.useState<string>('dashboard');
-  
   // UI States
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [currentStep, setCurrentStep] = React.useState<StepId>('dao-name');
@@ -259,9 +254,6 @@ const BabyWenOnboarding: React.FC = () => {
   const [showWelcomeModal, setShowWelcomeModal] = React.useState<boolean>(true);
   const [showOnboarding, setShowOnboarding] = React.useState<boolean>(false);
   
-  // User dropdown state
-  const [showProfileDropdown, setShowProfileDropdown] = React.useState<boolean>(false);
-  
   // Wallet change detection state
   const [initialWalletAddress, setInitialWalletAddress] = React.useState<string | null>(null);
   const [showWalletChangeError, setShowWalletChangeError] = React.useState<boolean>(false);
@@ -272,26 +264,10 @@ const BabyWenOnboarding: React.FC = () => {
   // Check if wallet is connected
   const isWalletConnected = userDisplayInfo?.isAuthenticated || false;
   
-  // Mock user wallet data - Replace with actual user wallet data in production
-  const [userWallet, setUserWallet] = React.useState({
-    address: '0x7C5a...F92E',
-    shortAddress: '0x7C5a...F92E',
-    balance: '1.24 ETH',
-    connected: true
-  });
-  
   // Blockchain transaction state
   const [blockchainTxInProgress, setBlockchainTxInProgress] = React.useState<boolean>(false);
   const [blockchainTxCompleted, setBlockchainTxCompleted] = React.useState<boolean>(false);
   const [blockchainTxError, setBlockchainTxError] = React.useState<string | null>(null);
-  
-  // Handle disconnect wallet
-  const handleDisconnect = () => {
-    // Add your wallet disconnect logic here
-    setUserWallet({...userWallet, connected: false});
-    // Navigate back to home or wallet connection page
-    navigate('/');
-  };
   
   // Create an object that maps step IDs to step objects
   const steps: Record<StepId, OnboardingStep> = {
@@ -383,12 +359,11 @@ const BabyWenOnboarding: React.FC = () => {
     
     // Clean up audio on unmount
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
+      if (audioManager.isPlaying()) {
+        audioManager.stop();
       }
     };
-  }, []);
+  }, [audioManager]);
 
   // Function to determine the input type based on the step
   const determineInputType = (step: OnboardingStep) => {

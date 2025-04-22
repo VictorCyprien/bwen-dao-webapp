@@ -18,7 +18,7 @@ import useMediaQuery from './hooks/useMediaQuery';
 const Dashboard = () => {
   const { daoId } = useParams();
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = React.useState('home');
+  const [activeSection, setActiveSection] = React.useState('dashboard_home');
   const [showNotifications, setShowNotifications] = React.useState(false);
   const [fadeIn, setFadeIn] = React.useState(true);
   const [currentComponent, setCurrentComponent] = React.useState<React.ReactNode>(null);
@@ -65,11 +65,11 @@ const Dashboard = () => {
         case 'treasury':
           setCurrentComponent(<Treasury />);
           break;
-        case 'home':
+        case 'dashboard_home':
           setCurrentComponent(<Home />);
           break;
         default:
-          setCurrentComponent(<Home />);
+          setCurrentComponent(null);
       }
       
       setFadeIn(true); // Start fade in
