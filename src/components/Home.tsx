@@ -570,7 +570,7 @@ const Dashboard = () => {
   const [hasUpdatePermission, setHasUpdatePermission] = useState<boolean>(false);
   const [selectedProposal, setSelectedProposal] = useState<any | null>(null);
   // Add state for token address
-  const [tokenAddress, setTokenAddress] = useState<string>("Bshgs87zjajQ3jPcsxntTWjpEZqrsKfKNS7A5rgRpump");
+  const [tokenAddress, setTokenAddress] = useState<string>("7pmuGLLYdJ2mc7chZwEJAaxuWALAYqaVqbUwzzyHcA7D");
   const [daoProfile, setDaoProfile] = useState<{
     name: string | null;
     description: string | null;
