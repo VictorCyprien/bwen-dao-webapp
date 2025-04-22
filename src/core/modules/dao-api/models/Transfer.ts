@@ -13,6 +13,9 @@
 import { Token } from '../models/Token';
 import { HttpFile } from '../http/http';
 
+/**
+* Transfer informations
+*/
 export class Transfer {
     'transferId'?: string;
     'daoId': string;

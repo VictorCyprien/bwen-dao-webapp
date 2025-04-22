@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* New DAO information.
+*/
 export class DAOUpdate {
     'name'?: string;
     'description'?: string;

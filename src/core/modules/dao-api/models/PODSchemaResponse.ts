@@ -13,6 +13,9 @@
 import { POD } from '../models/POD';
 import { HttpFile } from '../http/http';
 
+/**
+* Create/Update a POD
+*/
 export class PODSchemaResponse {
     'action': string;
     'pod': POD;

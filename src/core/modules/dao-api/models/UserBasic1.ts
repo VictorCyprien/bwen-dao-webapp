@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* Basic user information for nested proposals relationships
+*/
 export class UserBasic1 {
     'userId'?: string;
     'username'?: string;

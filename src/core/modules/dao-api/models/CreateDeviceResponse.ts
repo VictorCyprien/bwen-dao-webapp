@@ -13,6 +13,9 @@
 import { DeviceWithKey } from '../models/DeviceWithKey';
 import { HttpFile } from '../http/http';
 
+/**
+* Create a new API key
+*/
 export class CreateDeviceResponse {
     /**
     * Success message

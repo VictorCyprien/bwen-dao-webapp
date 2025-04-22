@@ -13,7 +13,7 @@
 import { HttpFile } from '../http/http';
 
 /**
-* Token of the user
+* Authentication tokens for the user
 */
 export class LoginResponse {
     /**
@@ -21,9 +21,13 @@ export class LoginResponse {
     */
     'msg'?: string;
     /**
-    * Token of the user
+    * Access token of the user
     */
     'token'?: string;
+    /**
+    * Refresh token for obtaining new access tokens
+    */
+    'refreshToken'?: string;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -39,6 +43,12 @@ export class LoginResponse {
         {
             "name": "token",
             "baseName": "token",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "refreshToken",
+            "baseName": "refresh_token",
             "type": "string",
             "format": ""
         }    ];

@@ -13,6 +13,9 @@
 import { SocialConnection } from '../models/SocialConnection';
 import { HttpFile } from '../http/http';
 
+/**
+* Create a social connection between the user and the third party service
+*/
 export class ConnectionResponse {
     /**
     * Success message

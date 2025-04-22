@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* Get the authorization URL and message
+*/
 export class OAuthResponse {
     /**
     * Authorization URL

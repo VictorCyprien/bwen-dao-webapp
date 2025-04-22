@@ -445,6 +445,7 @@ const Pods = () => {
       // Create the transaction
       const result = await proposalService.createProposalTransaction(
         daoId,
+        selectedPod.podId,
         publicKey,
         {
           title: title,
@@ -460,7 +461,7 @@ const Pods = () => {
       }
       
       // Extract transaction
-      const { transaction } = result;
+      const { transaction, proposalAccount } = result;
       
       // Send the transaction using Solana wallet adapter
       const connection = new Connection(SOLANA_RPC_ENDPOINT);
@@ -478,7 +479,9 @@ const Pods = () => {
         {
           title,
           description,
-          endDate
+          endDate,
+          transactionSignature: signature,
+          proposalAccount: proposalAccount.publicKey.toString()
         }
       );
       
@@ -523,7 +526,7 @@ const Pods = () => {
       }
       
       // Extract transaction
-      const { transaction } = result;
+      const { transaction, voteAccount } = result;
       
       // Send the transaction using Solana wallet adapter
       const connection = new Connection(SOLANA_RPC_ENDPOINT);
@@ -539,7 +542,9 @@ const Pods = () => {
         daoId,
         selectedPod.podId,
         proposalId,
-        vote
+        vote,
+        signature,
+        voteAccount.publicKey.toString()
       );
       
       return true;

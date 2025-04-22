@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* Token informations
+*/
 export class Token {
     'tokenId'?: string;
     'walletAddress'?: string;

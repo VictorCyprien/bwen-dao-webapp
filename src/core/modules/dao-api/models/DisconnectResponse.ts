@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* Disconnect a social connection between the user and the third party service
+*/
 export class DisconnectResponse {
     /**
     * Success message

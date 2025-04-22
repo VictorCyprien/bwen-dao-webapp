@@ -164,6 +164,9 @@ export interface AuthApiGetWalletChallengeRequest {
 export interface AuthApiLogoutRequest {
 }
 
+export interface AuthApiRefreshAccessTokenRequest {
+}
+
 export interface AuthApiVerifyWalletSignatureRequest {
     /**
      * 
@@ -210,6 +213,22 @@ export class ObjectAuthApi {
      */
     public logout(param: AuthApiLogoutRequest = {}, options?: ConfigurationOptions): Promise<LogoutResponse> {
         return this.api.logout( options).toPromise();
+    }
+
+    /**
+     * Refresh access token using a valid refresh token
+     * @param param the request object
+     */
+    public refreshAccessTokenWithHttpInfo(param: AuthApiRefreshAccessTokenRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<LoginResponse>> {
+        return this.api.refreshAccessTokenWithHttpInfo( options).toPromise();
+    }
+
+    /**
+     * Refresh access token using a valid refresh token
+     * @param param the request object
+     */
+    public refreshAccessToken(param: AuthApiRefreshAccessTokenRequest = {}, options?: ConfigurationOptions): Promise<LoginResponse> {
+        return this.api.refreshAccessToken( options).toPromise();
     }
 
     /**

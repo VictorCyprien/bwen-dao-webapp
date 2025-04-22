@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* Device (API key) informations
+*/
 export class Device {
     /**
     * Device/API key ID

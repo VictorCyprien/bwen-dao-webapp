@@ -644,7 +644,6 @@ const BabyWenOnboarding: React.FC = () => {
         telegram: sessionStorage.getItem('daoTelegram') || '',
         tiktok: sessionStorage.getItem('daoTiktok') || '',
         instagram: sessionStorage.getItem('daoInstagram') || '',
-        ownerId: userInfo?.userId,
       };
       
       // Add user message indicating button was clicked
@@ -710,7 +709,6 @@ const BabyWenOnboarding: React.FC = () => {
       daosService.createDao({
         name: collectedData.name,
         description: collectedData.description,
-        userId: collectedData.ownerId || '',
         treasury: undefined,
         discordServer: collectedData.discordServer,
         twitter: collectedData.twitter,
@@ -721,7 +719,9 @@ const BabyWenOnboarding: React.FC = () => {
         // Use the converted file if available
         profilePicture: logoFile,
         // Add blockchain DAO address if transaction was successful
-        blockchainAddress: sessionStorage.getItem('blockchainDaoAddress') || undefined
+        blockchainAddress: sessionStorage.getItem('blockchainDaoAddress') || undefined,
+        // Add transaction signature if transaction was successful
+        transactionSignature: sessionStorage.getItem('blockchainTxSignature') || undefined
       } as any).then(result => {
         if (result) {
           const daoId = result.daoId?.toString() || '';
@@ -730,15 +730,11 @@ const BabyWenOnboarding: React.FC = () => {
           // Store the DAO ID for the success step to use
           sessionStorage.setItem('createdDaoId', daoId);
           
-          // Clear all onboarding data but keep the created DAO ID
-          clearOnboardingData();
-          // Make sure to keep the DAO ID
-          sessionStorage.setItem('createdDaoId', daoId);
+          // Store blockchain DAO address in session storage
+          sessionStorage.setItem('blockchainDaoAddress', (result as any).blockchainAddress || '');
           
-          // Store blockchain DAO address if available
-          if (sessionStorage.getItem('blockchainDaoAddress')) {
-            sessionStorage.setItem('blockchainDaoAddress', sessionStorage.getItem('blockchainDaoAddress') || '');
-          }
+          // Store transaction signature in session storage
+          sessionStorage.setItem('blockchainTxSignature', (result as any).transactionSignature || '');
           
           // Show success message and change to success step
           setCurrentStep('dao-success');
@@ -1132,20 +1128,17 @@ const BabyWenOnboarding: React.FC = () => {
       // Create the transaction for DAO creation
       const { transaction, daoAccount } = await createDaoTransaction(
         connection,
-        publicKey,
-        {
-          name: daoName,
-          description: daoDescription,
-          discord_server: discordServer,
-          twitter: twitter,
-          telegram: telegram,
-          instagram: instagram,
-          tiktok: tiktok,
-          website: website,
-          profile_picture: logoFile ? URL.createObjectURL(logoFile) : undefined,
-          // Add any admin wallets if you have them
-          // admins: [],
-        }
+        { publicKey },
+        daoName,
+        daoDescription,
+        discordServer,
+        twitter,
+        telegram,
+        instagram,
+        tiktok,
+        website,
+        '', // treasury
+        logoFile ? URL.createObjectURL(logoFile) : '', // profile picture URL
       );
       
       // Get the wallet from the context or appropriate source
@@ -1164,6 +1157,9 @@ const BabyWenOnboarding: React.FC = () => {
         
         // Store blockchain DAO address in session storage
         sessionStorage.setItem('blockchainDaoAddress', daoAccount.publicKey.toString());
+        
+        // Store transaction signature in session storage
+        sessionStorage.setItem('blockchainTxSignature', txSignature);
         
         // Update state to show success
         setBlockchainTxInProgress(false);

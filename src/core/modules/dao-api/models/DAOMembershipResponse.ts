@@ -13,6 +13,9 @@
 import { DAO } from '../models/DAO';
 import { HttpFile } from '../http/http';
 
+/**
+* Create/Update a DAO membership.
+*/
 export class DAOMembershipResponse {
     'action': string;
     'dao': DAO;

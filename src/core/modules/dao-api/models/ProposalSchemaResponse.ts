@@ -13,6 +13,9 @@
 import { Proposal } from '../models/Proposal';
 import { HttpFile } from '../http/http';
 
+/**
+* Create/Update a Proposal
+*/
 export class ProposalSchemaResponse {
     'action': string;
     'proposal': Proposal;

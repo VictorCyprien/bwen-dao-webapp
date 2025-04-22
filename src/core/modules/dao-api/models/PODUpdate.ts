@@ -12,6 +12,9 @@
 
 import { HttpFile } from '../http/http';
 
+/**
+* New POD informations
+*/
 export class PODUpdate {
     'name'?: string;
     'description'?: string;

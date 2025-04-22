@@ -13,6 +13,9 @@
 import { PodBasic } from '../models/PodBasic';
 import { HttpFile } from '../http/http';
 
+/**
+* Basic user information for nested DAO relationships
+*/
 export class UserBasic {
     'userId'?: string;
     'username'?: string;

@@ -3,11 +3,12 @@
  * Handles all API interactions related to Proposals
  */
 
-import { createConfiguration, DaosApi, InputCreateProposal, ProposalsApi, Proposal as ApiProposal } from '../core/modules/dao-api';
+import { createConfiguration, DaosApi, InputCreateProposal, ProposalsApi, Proposal as ApiProposal, ProposalVote, ProposalVoteVoteEnum } from '../core/modules/dao-api';
 import { ServerConfiguration } from '../core/modules/dao-api/servers';
 import { walletAuthService } from './WalletAuthService';
 import { Connection, PublicKey, Transaction, Keypair } from '@solana/web3.js';
 import { createProposalTransaction, createVoteTransaction } from '../utils/solanaTransactions';
+import { daosService } from './DaosService';
 
 // Default API endpoint - using the proxy URL
 const DEFAULT_API_ENDPOINT = '/api';
@@ -142,11 +143,12 @@ export class ProposalService {
    */
   async createProposalTransaction(
     daoId: string,
+    podId: string,
     walletPublicKey: PublicKey,
     proposalData: {
       title: string;
       description: string;
-      startDate?: Date;
+      startDate: Date;
       endDate: Date;
       actions?: any[];
     }
@@ -159,17 +161,25 @@ export class ProposalService {
     try {
       console.log(`Creating proposal transaction for DAO: ${daoId}`);
       
+      // Get the blockchain address for the DAO
+      const daoBlockchainAddress = await daosService.getDaoBlockchainAddress(daoId);
+      
+      if (!daoBlockchainAddress) {
+        console.error(`Could not find blockchain address for DAO ${daoId}`);
+        return null;
+      }
+      
+      console.log(`Using blockchain address for DAO: ${daoBlockchainAddress}`);
+      
       const result = await createProposalTransaction(
         this.connection,
-        walletPublicKey,
-        daoId,
-        {
-          title: proposalData.title,
-          description: proposalData.description,
-          startTime: proposalData.startDate || new Date(),
-          endTime: proposalData.endDate,
-          actions: proposalData.actions || [],
-        }
+        { publicKey: walletPublicKey },
+        proposalData.title,
+        proposalData.description,
+        daoBlockchainAddress,
+        podId,
+        proposalData.startDate.getTime(),
+        proposalData.endDate.getTime()
       );
 
       return result;
@@ -192,7 +202,8 @@ export class ProposalService {
       startDate?: Date;
       endDate: Date;
       actions?: any[];
-      transactionSignature?: string; // Optional signature from the Solana transaction
+      transactionSignature: string;
+      proposalAccount: string;
     }
   ): Promise<ApiProposal | null> {
     try {
@@ -209,7 +220,9 @@ export class ProposalService {
         startTime: proposalData.startDate || new Date(),
         endTime: proposalData.endDate,
         daoId: daoId,
-        actions: apiActions
+        actions: apiActions,
+        pubkey: proposalData.proposalAccount,
+        transaction: proposalData.transactionSignature
       };
 
       // Use the SDK to create a proposal
@@ -218,6 +231,23 @@ export class ProposalService {
       return response?.proposal || null;
     } catch (error) {
       console.error(`Error creating proposal for DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get a proposal's blockchain account pubkey
+   */
+  async getProposalPubkey(daoId: string, proposalId: string): Promise<string | null> {
+    try {
+      const proposal = await this.getProposalById(daoId, proposalId);
+      if (!proposal || !proposal.pubkey) {
+        console.error(`No pubkey found for proposal ${proposalId}`);
+        return null;
+      }
+      return proposal.pubkey;
+    } catch (error) {
+      console.error(`Error getting proposal pubkey for ${proposalId}:`, error);
       return null;
     }
   }
@@ -240,12 +270,20 @@ export class ProposalService {
     try {
       console.log(`Creating vote transaction for proposal: ${proposalId} in DAO: ${daoId}`);
       
+      // Get the proposal's blockchain account pubkey from the database
+      const proposalPubkey = await this.getProposalPubkey(daoId, proposalId);
+      if (!proposalPubkey) {
+        throw new Error(`Could not find blockchain account for proposal ${proposalId}`);
+      }
+
+      console.log(`Using proposal pubkey: ${proposalPubkey}`);
+      
+      // Use the actual proposal account pubkey from the database
       const result = await createVoteTransaction(
         this.connection,
-        walletPublicKey,
-        daoId,
-        proposalId,
-        vote
+        { publicKey: walletPublicKey },
+        vote, // 'for' or 'against'
+        proposalPubkey
       );
 
       return result;
@@ -264,23 +302,27 @@ export class ProposalService {
     daoId: string, 
     proposalId: string, 
     vote: 'for' | 'against',
-    transactionSignature?: string
+    transactionSignature: string,
+    voteAccount: string
   ): Promise<boolean> {
     try {
       const apiClient = this.createAuthenticatedApiClient();
       if (!apiClient) return false;
 
       // Map our vote values to what the API expects
-      const voteRequestVoteEnum = {
-        'for': 'for',
-        'against': 'against'
-      }[vote];
+      const voteRequestVoteEnum = vote === 'for' 
+        ? ProposalVoteVoteEnum.For 
+        : ProposalVoteVoteEnum.Against;
 
       // Create vote request object with the correct enum value
-      const voteRequest = { vote: voteRequestVoteEnum };
+      const voteDataInput: ProposalVote = {
+        vote: voteRequestVoteEnum,
+        pubkey: voteAccount,
+        transaction: transactionSignature,
+      }
 
       // Use the API client to vote on the proposal 
-      await apiClient.proposalsApi.voteOnDAOProposal(daoId, proposalId, voteRequest as any);
+      await apiClient.proposalsApi.voteOnDAOProposal(daoId, proposalId, voteDataInput);
       return true;
     } catch (error) {
       console.error(`Error voting on proposal ${proposalId} for DAO ${daoId}:`, error);
@@ -296,23 +338,28 @@ export class ProposalService {
     daoId: string, 
     podId: string,
     proposalId: string, 
-    vote: 'for' | 'against'
+    vote: 'for' | 'against',
+    transactionSignature: string,
+    voteAccount: string
   ): Promise<boolean> {
     try {
       const apiClient = this.createAuthenticatedApiClient();
       if (!apiClient) return false;
 
       // Map our vote values to what the API expects
-      const voteRequestVoteEnum = {
-        'for': 'for',
-        'against': 'against'
-      }[vote];
+      const voteRequestVoteEnum = vote === 'for' 
+        ? ProposalVoteVoteEnum.For 
+        : ProposalVoteVoteEnum.Against;
 
       // Create vote request object with the correct enum value
-      const voteRequest = { vote: voteRequestVoteEnum };
+      const voteDataInput: ProposalVote = {
+        vote: voteRequestVoteEnum,
+        pubkey: voteAccount,
+        transaction: transactionSignature,
+      }
 
       // Use the API client to vote on the POD proposal 
-      await apiClient.proposalsApi.voteOnPODProposal(daoId, podId, proposalId, voteRequest as any);
+      await apiClient.proposalsApi.voteOnPODProposal(daoId, podId, proposalId, voteDataInput);
       return true;
     } catch (error) {
       console.error(`Error voting on POD proposal ${proposalId} in POD ${podId}, DAO ${daoId}:`, error);
@@ -358,6 +405,8 @@ export class ProposalService {
       description: string;
       startDate?: Date;
       endDate: Date;
+      transactionSignature: string;
+      proposalAccount: string;
     }
   ): Promise<ApiProposal | null> {
     try {
@@ -372,7 +421,9 @@ export class ProposalService {
         endTime: proposalData.endDate,
         daoId: daoId,
         podId: podId, // Include the POD ID in the request
-        actions: [] // No actions for POD proposals
+        actions: [], // No actions for POD proposals
+        pubkey: proposalData.proposalAccount,
+        transaction: proposalData.transactionSignature
       };
 
       // Use the SDK to create a proposal

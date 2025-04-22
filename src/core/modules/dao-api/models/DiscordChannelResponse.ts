@@ -13,6 +13,9 @@
 import { DiscordChannel } from '../models/DiscordChannel';
 import { HttpFile } from '../http/http';
 
+/**
+* Get a Discord channel
+*/
 export class DiscordChannelResponse {
     'action': string;
     'channel': DiscordChannel;

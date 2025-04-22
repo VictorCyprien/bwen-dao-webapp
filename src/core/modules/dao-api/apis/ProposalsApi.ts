@@ -43,7 +43,7 @@ export class ProposalsApiRequestFactory extends BaseAPIRequestFactory {
 
 
         // Path Params
-        const localVarPath = '/proposals/dao/{dao_id}/proposals'
+        const localVarPath = '/proposals/dao/{dao_id}'
             .replace('{' + 'dao_id' + '}', encodeURIComponent(String(daoId)));
 
         // Make Request Context
@@ -99,7 +99,7 @@ export class ProposalsApiRequestFactory extends BaseAPIRequestFactory {
 
 
         // Path Params
-        const localVarPath = '/proposals/dao/{dao_id}/pod/{pod_id}/proposals'
+        const localVarPath = '/proposals/dao/{dao_id}/pod/{pod_id}'
             .replace('{' + 'dao_id' + '}', encodeURIComponent(String(daoId)))
             .replace('{' + 'pod_id' + '}', encodeURIComponent(String(podId)));
 
@@ -149,7 +149,7 @@ export class ProposalsApiRequestFactory extends BaseAPIRequestFactory {
 
 
         // Path Params
-        const localVarPath = '/proposals/dao/{dao_id}/proposals/{proposal_id}'
+        const localVarPath = '/proposals/dao/{dao_id}/{proposal_id}'
             .replace('{' + 'dao_id' + '}', encodeURIComponent(String(daoId)))
             .replace('{' + 'proposal_id' + '}', encodeURIComponent(String(proposalId)));
 
@@ -195,7 +195,7 @@ export class ProposalsApiRequestFactory extends BaseAPIRequestFactory {
 
 
         // Path Params
-        const localVarPath = '/proposals/dao/{dao_id}/pod/{pod_id}/proposals/{proposal_id}'
+        const localVarPath = '/proposals/dao/{dao_id}/pod/{pod_id}/{proposal_id}'
             .replace('{' + 'dao_id' + '}', encodeURIComponent(String(daoId)))
             .replace('{' + 'pod_id' + '}', encodeURIComponent(String(podId)))
             .replace('{' + 'proposal_id' + '}', encodeURIComponent(String(proposalId)));
@@ -228,7 +228,7 @@ export class ProposalsApiRequestFactory extends BaseAPIRequestFactory {
 
 
         // Path Params
-        const localVarPath = '/proposals/dao/{dao_id}/proposals/active'
+        const localVarPath = '/proposals/dao/{dao_id}/active'
             .replace('{' + 'dao_id' + '}', encodeURIComponent(String(daoId)));
 
         // Make Request Context
@@ -266,7 +266,7 @@ export class ProposalsApiRequestFactory extends BaseAPIRequestFactory {
 
 
         // Path Params
-        const localVarPath = '/proposals/dao/{dao_id}/pod/{pod_id}/proposals/active'
+        const localVarPath = '/proposals/dao/{dao_id}/pod/{pod_id}/active'
             .replace('{' + 'dao_id' + '}', encodeURIComponent(String(daoId)))
             .replace('{' + 'pod_id' + '}', encodeURIComponent(String(podId)));
 
@@ -305,7 +305,7 @@ export class ProposalsApiRequestFactory extends BaseAPIRequestFactory {
 
 
         // Path Params
-        const localVarPath = '/proposals/dao/{dao_id}/proposals/{proposal_id}'
+        const localVarPath = '/proposals/dao/{dao_id}/{proposal_id}'
             .replace('{' + 'dao_id' + '}', encodeURIComponent(String(daoId)))
             .replace('{' + 'proposal_id' + '}', encodeURIComponent(String(proposalId)));
 
@@ -351,7 +351,7 @@ export class ProposalsApiRequestFactory extends BaseAPIRequestFactory {
 
 
         // Path Params
-        const localVarPath = '/proposals/dao/{dao_id}/pod/{pod_id}/proposals/{proposal_id}'
+        const localVarPath = '/proposals/dao/{dao_id}/pod/{pod_id}/{proposal_id}'
             .replace('{' + 'dao_id' + '}', encodeURIComponent(String(daoId)))
             .replace('{' + 'pod_id' + '}', encodeURIComponent(String(podId)))
             .replace('{' + 'proposal_id' + '}', encodeURIComponent(String(proposalId)));
@@ -398,7 +398,7 @@ export class ProposalsApiRequestFactory extends BaseAPIRequestFactory {
 
 
         // Path Params
-        const localVarPath = '/proposals/dao/{dao_id}/pod/{pod_id}/proposals/{proposal_id}/vote'
+        const localVarPath = '/proposals/dao/{dao_id}/pod/{pod_id}/{proposal_id}/vote'
             .replace('{' + 'dao_id' + '}', encodeURIComponent(String(daoId)))
             .replace('{' + 'pod_id' + '}', encodeURIComponent(String(podId)))
             .replace('{' + 'proposal_id' + '}', encodeURIComponent(String(proposalId)));
@@ -438,7 +438,7 @@ export class ProposalsApiRequestFactory extends BaseAPIRequestFactory {
 
 
         // Path Params
-        const localVarPath = '/proposals/dao/{dao_id}/proposals/{proposal_id}/vote'
+        const localVarPath = '/proposals/dao/{dao_id}/{proposal_id}/vote'
             .replace('{' + 'dao_id' + '}', encodeURIComponent(String(daoId)))
             .replace('{' + 'proposal_id' + '}', encodeURIComponent(String(proposalId)));
 
@@ -470,7 +470,7 @@ export class ProposalsApiRequestFactory extends BaseAPIRequestFactory {
 
 
         // Path Params
-        const localVarPath = '/proposals/dao/{dao_id}/proposals'
+        const localVarPath = '/proposals/dao/{dao_id}'
             .replace('{' + 'dao_id' + '}', encodeURIComponent(String(daoId)));
 
         // Make Request Context
@@ -508,7 +508,7 @@ export class ProposalsApiRequestFactory extends BaseAPIRequestFactory {
 
 
         // Path Params
-        const localVarPath = '/proposals/dao/{dao_id}/pod/{pod_id}/proposals'
+        const localVarPath = '/proposals/dao/{dao_id}/pod/{pod_id}'
             .replace('{' + 'dao_id' + '}', encodeURIComponent(String(daoId)))
             .replace('{' + 'pod_id' + '}', encodeURIComponent(String(podId)));
 
@@ -547,7 +547,7 @@ export class ProposalsApiRequestFactory extends BaseAPIRequestFactory {
 
 
         // Path Params
-        const localVarPath = '/proposals/dao/{dao_id}/proposals/{proposal_id}/vote'
+        const localVarPath = '/proposals/dao/{dao_id}/{proposal_id}/vote'
             .replace('{' + 'dao_id' + '}', encodeURIComponent(String(daoId)))
             .replace('{' + 'proposal_id' + '}', encodeURIComponent(String(proposalId)));
 
@@ -593,7 +593,7 @@ export class ProposalsApiRequestFactory extends BaseAPIRequestFactory {
 
 
         // Path Params
-        const localVarPath = '/proposals/dao/{dao_id}/pod/{pod_id}/proposals/{proposal_id}/vote'
+        const localVarPath = '/proposals/dao/{dao_id}/pod/{pod_id}/{proposal_id}/vote'
             .replace('{' + 'dao_id' + '}', encodeURIComponent(String(daoId)))
             .replace('{' + 'pod_id' + '}', encodeURIComponent(String(podId)))
             .replace('{' + 'proposal_id' + '}', encodeURIComponent(String(proposalId)));
@@ -640,7 +640,7 @@ export class ProposalsApiRequestFactory extends BaseAPIRequestFactory {
 
 
         // Path Params
-        const localVarPath = '/proposals/dao/{dao_id}/proposals/{proposal_id}'
+        const localVarPath = '/proposals/dao/{dao_id}/{proposal_id}'
             .replace('{' + 'dao_id' + '}', encodeURIComponent(String(daoId)))
             .replace('{' + 'proposal_id' + '}', encodeURIComponent(String(proposalId)));
 
@@ -704,7 +704,7 @@ export class ProposalsApiRequestFactory extends BaseAPIRequestFactory {
 
 
         // Path Params
-        const localVarPath = '/proposals/dao/{dao_id}/pod/{pod_id}/proposals/{proposal_id}'
+        const localVarPath = '/proposals/dao/{dao_id}/pod/{pod_id}/{proposal_id}'
             .replace('{' + 'dao_id' + '}', encodeURIComponent(String(daoId)))
             .replace('{' + 'pod_id' + '}', encodeURIComponent(String(podId)))
             .replace('{' + 'proposal_id' + '}', encodeURIComponent(String(proposalId)));
@@ -762,7 +762,7 @@ export class ProposalsApiRequestFactory extends BaseAPIRequestFactory {
 
 
         // Path Params
-        const localVarPath = '/proposals/dao/{dao_id}/proposals/{proposal_id}/vote'
+        const localVarPath = '/proposals/dao/{dao_id}/{proposal_id}/vote'
             .replace('{' + 'dao_id' + '}', encodeURIComponent(String(daoId)))
             .replace('{' + 'proposal_id' + '}', encodeURIComponent(String(proposalId)));
 
@@ -826,7 +826,7 @@ export class ProposalsApiRequestFactory extends BaseAPIRequestFactory {
 
 
         // Path Params
-        const localVarPath = '/proposals/dao/{dao_id}/pod/{pod_id}/proposals/{proposal_id}/vote'
+        const localVarPath = '/proposals/dao/{dao_id}/pod/{pod_id}/{proposal_id}/vote'
             .replace('{' + 'dao_id' + '}', encodeURIComponent(String(daoId)))
             .replace('{' + 'pod_id' + '}', encodeURIComponent(String(podId)))
             .replace('{' + 'proposal_id' + '}', encodeURIComponent(String(proposalId)));
