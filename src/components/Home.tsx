@@ -38,6 +38,7 @@ import Button from './common/Button';
 import { proposalService } from '../services/ProposalService';
 import { SOLANA_RPC_ENDPOINT } from '../config/solana';
 import PopupProposal from './PopupProposal';
+import TokenCard from './TokenCard';
 
 // Register Chart.js components
 ChartJS.register(
@@ -568,6 +569,8 @@ const Dashboard = () => {
   const [isDaoUpdateModalOpen, setIsDaoUpdateModalOpen] = useState<boolean>(false);
   const [hasUpdatePermission, setHasUpdatePermission] = useState<boolean>(false);
   const [selectedProposal, setSelectedProposal] = useState<any | null>(null);
+  // Add state for token address
+  const [tokenAddress, setTokenAddress] = useState<string>("7pmuGLLYdJ2mc7chZwEJAaxuWALAYqaVqbUwzzyHcA7D");
   const [daoProfile, setDaoProfile] = useState<{
     name: string | null;
     description: string | null;
@@ -724,7 +727,9 @@ const Dashboard = () => {
         setRefreshing(false);
         setLoading(false);
         setError(null);
-      }, 800); // Simulate network delay
+      }, 800); 
+      
+      // Simulate network delay
 
       /* Original API code - commented out for now
       // Fetch treasury data
@@ -742,6 +747,7 @@ const Dashboard = () => {
       setLoading(false);
       setError(null);
       */
+     
     } catch (err) {
       console.error('Error fetching treasury data:', err);
       setError('Failed to load treasury data. Please try again.');
@@ -1603,36 +1609,8 @@ const Dashboard = () => {
               )}
             </div>
             
-            {/* DAO Token - Moved down */}
-            <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="font-medium text-white">DAO Token</h3>
-                <span className="text-green-400 text-sm">+5.2%</span>
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-full flex items-center justify-center">
-                  <CircleDollarSign className="text-white" size={20} />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-white">$2.87</div>
-                  <div className="text-sm text-gray-400">24h: +$0.14</div>
-                </div>
-              </div>
-              
-              <div className="mt-4">
-                <div className="bg-[#1A1A1A]/70 p-3 rounded-lg">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-xs text-gray-400">Market Cap</span>
-                    <span className="text-xs text-white">$28.7M</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-xs text-gray-400">Volume (24h)</span>
-                    <span className="text-xs text-white">$1.2M</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Replace the DAO Token card with our TokenCard component */}
+            <TokenCard tokenAddress={tokenAddress} />
             
             {/* Member Distribution */}
             <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
