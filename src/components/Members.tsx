@@ -248,6 +248,7 @@ const Members = () => {
       id: member.id?.toString() || '',
       username: member.username,
       name: member.name,
+      profilePicture: member.avatar,
       walletAddress: member.wallet,
       socials: [
         ...(member.discordId ? [{ platform: 'discord', username: member.discordId }] : []),

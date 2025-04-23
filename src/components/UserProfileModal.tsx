@@ -26,7 +26,7 @@ export interface UserProfileData {
   id: string;
   username: string;
   name: string;
-  avatar?: string;
+  profilePicture?: string;
   bio?: string;
   walletAddress: string;
   socials: SocialMedia[];
@@ -46,7 +46,7 @@ export interface UserProfileModalProps {
   user: UserProfileData | null;
 }
 
-export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, user }) => {
+export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onClose, user }: UserProfileModalProps) => {
   // Format date to readable format
   const formatDate = (dateString?: string | Date) => {
     if (!dateString) return 'N/A';
@@ -90,12 +90,16 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
         return `https://github.com/${username}`;
       case 'discord':
         return `https://discord.com/users/${username}`;
+      case 'telegram':
+        return `https://t.me/${username}`;
       case 'website':
         return username;
       default:
         return '#';
     }
   };
+
+  console.log(user);
 
   if (!user && isOpen) {
     return (
@@ -113,9 +117,30 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
         <div className="space-y-6">
           {/* User Header */}
           <div className="flex items-center space-x-4">
-            <div className="h-16 w-16 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white text-2xl font-medium">
-              {user.name.substring(0, 1)}
-            </div>
+            {user.profilePicture ? (
+              <div className="h-16 w-16 rounded-full overflow-hidden">
+                <img 
+                  src={user.profilePicture} 
+                  alt={`${user.name}'s profile`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback if image fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.onerror = null;
+                    target.style.display = 'none';
+                    const parent = target.parentElement;
+                    if (parent) {
+                      parent.classList.add('bg-gradient-to-r', 'from-purple-600', 'to-blue-600', 'flex', 'items-center', 'justify-center', 'text-white', 'text-2xl', 'font-medium');
+                      parent.textContent = user.name.substring(0, 1);
+                    }
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="h-16 w-16 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white text-2xl font-medium">
+                {user.name.substring(0, 1)}
+              </div>
+            )}
             <div>
               <h2 className={typography.h3}>{user.name}</h2>
               <p className="text-gray-400">@{user.username}</p>
@@ -171,7 +196,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
             <div>
               <h3 className={typography.h4 + " mb-3"}>Social Media</h3>
               <div className="flex flex-wrap gap-3">
-                {user.socials.map((social, index) => (
+                {user.socials.map((social: SocialMedia, index: number) => (
                   <a 
                     key={index}
                     href={getSocialLink(social.platform, social.username)}
@@ -193,7 +218,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
             <div>
               <h3 className={typography.h4 + " mb-3"}>Member of Pods</h3>
               <div className="flex flex-wrap gap-2">
-                {user.pods.map((pod, index) => (
+                {user.pods.map((pod: Pod, index: number) => (
                   <span key={index} className="bg-[#1A1A1A] px-3 py-1 rounded-full text-sm text-gray-300">
                     {pod.name}
                   </span>
