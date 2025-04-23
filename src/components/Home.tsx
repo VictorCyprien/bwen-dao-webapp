@@ -479,6 +479,8 @@ const Dashboard = () => {
         setUserIsDaoMember(true);
         // Refresh member data
         fetchMemberData();
+        // Refresh token address
+        fetchTokenAddress();
       } else {
         console.error('Failed to join DAO');
         // Re-check membership to be sure
@@ -521,6 +523,8 @@ const Dashboard = () => {
         setUserIsDaoMember(false);
         // Refresh member data
         fetchMemberData();
+        // Refresh token address
+        fetchTokenAddress();
       } else {
         console.error('Failed to leave DAO');
         // Re-check membership to be sure
@@ -552,6 +556,24 @@ const Dashboard = () => {
     
   }, [daoId, publicKey, connected, userInfo?.userId]);
 
+  // Fetch the token address for the current DAO
+  const fetchTokenAddress = async () => {
+    if (!daoId) return;
+    
+    try {
+      const tokenAddr = await daosService.getDaoTokenAddress(daoId);
+      
+      if (tokenAddr) {
+        setTokenAddress(tokenAddr);
+        console.log('DAO token address loaded:', tokenAddr);
+      } else {
+        console.log('No token address found for this DAO, using default value');
+      }
+    } catch (err) {
+      console.error('Error fetching DAO token address:', err);
+    }
+  };
+
   // Set up initial data load
   useEffectOnce(() => {
     if (!daoId) return;
@@ -560,6 +582,8 @@ const Dashboard = () => {
       await fetchTreasuryData();
       await fetchProposalsData();
       await fetchMemberData();
+      await fetchCommunityLinks();
+      await fetchTokenAddress();
     };
     
     loadData();
@@ -808,6 +832,11 @@ const Dashboard = () => {
           description: daoInfo.description || null,
           profilePicture: daoInfo.profilePicture || null
         });
+        
+        // Also update the token address if available
+        if (daoInfo.tokenAddress) {
+          setTokenAddress(daoInfo.tokenAddress);
+        }
         
         console.log('Social links retrieved from API:', socialLinks);
         setCommunityLinks(socialLinks);
