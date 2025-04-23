@@ -1051,6 +1051,7 @@ const BabyWenOnboarding: React.FC = () => {
       const telegram = sessionStorage.getItem('daoTelegram') || '';
       const tiktok = sessionStorage.getItem('daoTiktok') || '';
       const instagram = sessionStorage.getItem('daoInstagram') || '';
+      const tokenAddress = sessionStorage.getItem('tokenAddress') || '';
       
       // Handle logo file if it exists
       let logoFile: File | undefined = undefined;
@@ -1123,6 +1124,7 @@ const BabyWenOnboarding: React.FC = () => {
         website,
         '', // treasury
         logoFile ? URL.createObjectURL(logoFile) : '', // profile picture URL
+        tokenAddress, // Pass the token address
       );
       
       // Get the wallet from the context or appropriate source
