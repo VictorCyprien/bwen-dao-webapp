@@ -32,6 +32,7 @@ export class DAO {
     'treasuryAddress'?: string;
     'pubkey'?: string;
     'transaction'?: string;
+    'tokenAddress'?: string;
     'admins'?: Array<UserBasic>;
     'members'?: Array<UserBasic>;
 
@@ -127,6 +128,12 @@ export class DAO {
         {
             "name": "transaction",
             "baseName": "transaction",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "tokenAddress",
+            "baseName": "token_address",
             "type": "string",
             "format": ""
         },

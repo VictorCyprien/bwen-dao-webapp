@@ -15,7 +15,7 @@ export const SOLANA_RPC_ENDPOINT = clusterApiUrl(SOLANA_NETWORK);
 
 // Your DAO program ID on Solana
 // IMPORTANT: Replace this with your actual program ID!
-export const DAO_PROGRAM_ID = '7Mof2gtQh9478eWLAFTbzk9hpwsSjsaEsGiBGD42dMQj';
+export const DAO_PROGRAM_ID = 'BLFfy2mhNyhwHB135oux43d4EtffJsmJ4LxSX66e7tHk';
 
 // Treasury address
 export const TREASURY_ADDRESS = 'BAGek78CDYQ8phuDqNk7sQzD7LdJeKkb7jD4y2AyR3tJ';

@@ -232,6 +232,7 @@ const request: DaosApiCreateDAORequest = {
     treasury: "treasury_example",
     pubkey: "pubkey_example",
     transaction: "transaction_example",
+    tokenAddress: "tokenAddress_example",
     profile: { data: Buffer.from(fs.readFileSync('/path/to/file', 'utf-8')), name: '/path/to/file' },
   },
 };

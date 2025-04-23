@@ -132,6 +132,22 @@ export class DaosService {
   }
 
   /**
+   * Get the token address for a DAO
+   * @param daoId The database ID of the DAO
+   * @returns The token address for the DAO, or null if not found
+   */
+  async getDaoTokenAddress(daoId: string): Promise<string | null> {
+    try {
+      const dao = await this.getDaoById(daoId);
+      // Access the tokenAddress field from the DAO object
+      return dao?.tokenAddress || null;
+    } catch (error) {
+      console.error(`Error getting token address for DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Create a new DAO
    */
   async createDao(daoData: {
@@ -149,6 +165,7 @@ export class DaosService {
     bannerPicture?: File;
     blockchainAddress: string; // Solana account address
     transactionSignature: string; // Transaction hash
+    tokenAddress: string; // Token address
   }): Promise<DAO | null> {
     try {
       const apiClient = this.createAuthenticatedApiClient();
@@ -166,6 +183,7 @@ export class DaosService {
       daoInput.website = daoData.website;
       daoInput.pubkey = daoData.blockchainAddress;
       daoInput.transaction = daoData.transactionSignature;
+      daoInput.tokenAddress = daoData.tokenAddress;
       
       // Convert File objects to FileStorage objects for Minio
       if (daoData.profilePicture != undefined) {

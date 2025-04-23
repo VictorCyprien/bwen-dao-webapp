@@ -619,6 +619,11 @@ const BabyWenOnboarding: React.FC = () => {
         telegram: sessionStorage.getItem('daoTelegram') || '',
         tiktok: sessionStorage.getItem('daoTiktok') || '',
         instagram: sessionStorage.getItem('daoInstagram') || '',
+        // Required fields for the API
+        pubkey: sessionStorage.getItem('blockchainDaoAddress') || '',
+        transaction: sessionStorage.getItem('blockchainTxSignature') || '',
+        // Token address from the token step
+        tokenAddress: sessionStorage.getItem('tokenAddress') || '',
       };
       
       // Add user message indicating button was clicked
@@ -696,7 +701,9 @@ const BabyWenOnboarding: React.FC = () => {
         // Add blockchain DAO address if transaction was successful
         blockchainAddress: sessionStorage.getItem('blockchainDaoAddress') || undefined,
         // Add transaction signature if transaction was successful
-        transactionSignature: sessionStorage.getItem('blockchainTxSignature') || undefined
+        transactionSignature: sessionStorage.getItem('blockchainTxSignature') || undefined,
+        // Add token address
+        tokenAddress: sessionStorage.getItem('tokenAddress') || undefined
       } as any).then(result => {
         if (result) {
           const daoId = result.daoId?.toString() || '';
@@ -883,7 +890,9 @@ const BabyWenOnboarding: React.FC = () => {
       // Membership information
       'membershipConditions', 'tokenThreshold', 'applicationApproval',
       // Governance information
-      'governanceModel', 'ideaRights', 'voteRights', 'survalidation', 'votingPower', 'voteDelegation'
+      'governanceModel', 'ideaRights', 'voteRights', 'survalidation', 'votingPower', 'voteDelegation',
+      // Blockchain transaction information
+      'blockchainDaoAddress', 'blockchainTxSignature'
     ];
 
     // Remove each key
@@ -1042,6 +1051,7 @@ const BabyWenOnboarding: React.FC = () => {
       const telegram = sessionStorage.getItem('daoTelegram') || '';
       const tiktok = sessionStorage.getItem('daoTiktok') || '';
       const instagram = sessionStorage.getItem('daoInstagram') || '';
+      const tokenAddress = sessionStorage.getItem('tokenAddress') || '';
       
       // Handle logo file if it exists
       let logoFile: File | undefined = undefined;
@@ -1114,6 +1124,7 @@ const BabyWenOnboarding: React.FC = () => {
         website,
         '', // treasury
         logoFile ? URL.createObjectURL(logoFile) : '', // profile picture URL
+        tokenAddress, // Pass the token address
       );
       
       // Get the wallet from the context or appropriate source
