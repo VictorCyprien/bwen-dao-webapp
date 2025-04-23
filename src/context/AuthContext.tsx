@@ -114,6 +114,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       // Get the user from the API using the @me endpoint
       const userData = await userService.getCurrentUser();
       
+      // Check for null response with existing token, which likely indicates auth issue
+      if (!userData && walletAuthService.hasAccessToken()) {
+        console.log('Got null user data despite having a token, likely an authentication issue');
+        
+        // Check if there is a refresh token available
+        if (walletAuthService.getRefreshToken()) {
+          try {
+            // Try to refresh the token
+            const refreshSuccess = await walletAuthService.refreshAccessToken();
+            
+            if (refreshSuccess) {
+              console.log('Token refreshed successfully, retrying user info fetch');
+              // Update the token in state
+              setToken(walletAuthService.getAccessToken());
+              // Retry fetching user info (recursive call, but will exit after success)
+              isFetchingUserInfo.current = false;
+              return fetchUserInfo();
+            } else {
+              // If refresh failed, log out the user
+              console.log('Token refresh failed, logging out');
+              setUserInfo(null);
+              logout();
+              return;
+            }
+          } catch (refreshError) {
+            console.error('Error refreshing token:', refreshError);
+            setUserInfo(null);
+            logout();
+            return;
+          }
+        } else {
+          // No refresh token available, log out
+          console.log('No refresh token available, logging out');
+          setUserInfo(null);
+          logout();
+          return;
+        }
+      }
+      
       if (userData) {
         // Use type assertion to handle unknown properties
         const user = userData as any;
@@ -153,7 +192,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       }
     } catch (error) {
       console.error('Error fetching user info:', error);
-      setUserInfo(null);
     } finally {
       // Reset the fetching flag when done
       isFetchingUserInfo.current = false;
