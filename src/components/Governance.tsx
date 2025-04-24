@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { PieChart, Plus, X, Check, AlertCircle, ChevronRight } from 'lucide-react';
+import { PieChart, Plus, X, Check, AlertCircle, ChevronRight, Search, ChevronDown, ChevronLeft, Calendar, Users, Clock, List, Grid } from 'lucide-react';
 import PopupProposal from './PopupProposal';
 import { containers, typography, ui, utils } from '../styles/theme';
 import { proposalService } from '../services/ProposalService';
@@ -83,6 +83,22 @@ const Governance = () => {
   const [membershipLoading, setMembershipLoading] = useState<boolean>(false);
   const [showMembershipTooltip, setShowMembershipTooltip] = useState<boolean>(false);
   
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(10);
+  const [isPageChanging, setIsPageChanging] = useState<boolean>(false);
+  
+  // Filtering states
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('all'); // 'all', 'active', 'passed', 'rejected'
+  const [sortOrder, setSortOrder] = useState<string>('Recent');
+  const [filteredProposals, setFilteredProposals] = useState<ProposalDetails[]>([]);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  
+  // Date range filters
+  const [createdSince, setCreatedSince] = useState<string>('');
+  const [createdUntil, setCreatedUntil] = useState<string>('');
+  
   // Get Solana transaction utilities from our custom hook
   const { 
     sendTransaction, 
@@ -108,9 +124,17 @@ const Governance = () => {
   useEffectOnce(() => {
     console.log("Governance component mounted with daoId:", daoId);
     if (daoId) {
-      fetchProposals();
+      fetchProposals().then(() => {
+        // Initialize filtered proposals after fetching
+        setFilteredProposals(proposals);
+      });
     }
   });
+
+  // Update filteredProposals whenever proposals changes initially
+  useEffect(() => {
+    setFilteredProposals(proposals);
+  }, [proposals]);
 
   // Check if the current user is a member of the DAO
   const checkDaoMembership = async () => {
@@ -218,6 +242,150 @@ const Governance = () => {
     }
   };
 
+  // Apply filters and sorting
+  useEffect(() => {
+    let result = [...proposals];
+    
+    // Apply search query filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(proposal => 
+        proposal.name.toLowerCase().includes(query) || 
+        proposal.description.toLowerCase().includes(query) ||
+        proposal.creator.toLowerCase().includes(query)
+      );
+    }
+    
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      result = result.filter(proposal => {
+        switch(statusFilter) {
+          case 'active':
+            return proposal.status === 'Active' || proposal.status === 'active';
+          case 'passed':
+            return proposal.status === 'Passed' || proposal.status === 'completed' || proposal.status === 'Completed';
+          case 'rejected':
+            return proposal.status === 'Rejected' || proposal.status === 'rejected';
+          default:
+            return true;
+        }
+      });
+    }
+    
+    // Apply date range filters
+    if (createdSince || createdUntil) {
+      result = result.filter(proposal => {
+        const createdDate = new Date(proposal.createdAt);
+        
+        if (createdSince && createdUntil) {
+          return createdDate >= new Date(createdSince) && createdDate <= new Date(createdUntil);
+        } else if (createdSince) {
+          return createdDate >= new Date(createdSince);
+        } else if (createdUntil) {
+          return createdDate <= new Date(createdUntil);
+        }
+        
+        return true;
+      });
+    }
+    
+    // Apply sorting
+    switch (sortOrder) {
+      case 'A-Z':
+        result.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case 'Z-A':
+        result.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case 'Recent':
+        result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        break;
+      case 'Oldest':
+        result.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        break;
+      case 'Most Votes':
+        result.sort((a, b) => (b.votes.for + b.votes.against) - (a.votes.for + a.votes.against));
+        break;
+    }
+    
+    setFilteredProposals(result);
+  }, [proposals, searchQuery, statusFilter, createdSince, createdUntil, sortOrder]);
+
+  // Get time ago for display
+  const getTimeAgo = (dateString: string | Date) => {
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+
+    if (diffDay > 0) {
+      return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+    } else if (diffHour > 0) {
+      return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
+    } else if (diffMin > 0) {
+      return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
+    } else {
+      return 'Just now';
+    }
+  };
+  
+  // Toggle dropdown visibility
+  const toggleDropdown = (dropdown: string) => {
+    setActiveDropdown(activeDropdown === dropdown ? null : dropdown);
+  };
+  
+  // Reset all date filters
+  const resetDateFilters = () => {
+    setCreatedSince('');
+    setCreatedUntil('');
+  };
+  
+  // Check if any date filter is active
+  const isDateFilterActive = createdSince || createdUntil;
+  
+  // Change page with animation
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages && page !== currentPage) {
+      // Start animation
+      setIsPageChanging(true);
+      
+      // Change page after short delay to allow animation
+      setTimeout(() => {
+        setCurrentPage(page);
+        // Remove animation class after page changes
+        setTimeout(() => {
+          setIsPageChanging(false);
+        }, 50);
+      }, 150);
+    }
+  };
+  
+  // Change rows per page
+  const handleRowsPerPageChange = (rows: number) => {
+    setRowsPerPage(rows);
+    setCurrentPage(1); // Reset to first page when changing rows per page
+    setActiveDropdown(null); // Close dropdown after selection
+  };
+  
+  // Get the most recently created proposal
+  const lastCreatedProposal = proposals.length > 0 
+    ? [...proposals].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
+    : null;
+  
+  // Get the most active proposal (most votes)
+  const mostActiveProposal = proposals.length > 0 
+    ? [...proposals].sort((a, b) => (b.votes.for + b.votes.against) - (a.votes.for + a.votes.against))[0]
+    : null;
+    
+  // Calculate pagination values
+  const totalPages = Math.ceil(filteredProposals.length / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = Math.min(startIndex + rowsPerPage, filteredProposals.length);
+  const paginatedProposals = filteredProposals.slice(startIndex, endIndex);
+
   const formatDate = (date?: Date | string) => {
     if (!date) return 'N/A';
     return new Date(date).toLocaleDateString('en-US', {
@@ -258,7 +426,7 @@ const Governance = () => {
 
   const toggleAction = (actionType: string) => {
     // Find if this action type already exists in the actions array
-    const existingActionIndex = proposal.actions.findIndex(action => action.type === actionType);
+    const existingActionIndex = proposal.actions.findIndex((action: Action) => action.type === actionType);
     
     if (existingActionIndex >= 0) {
       // If it exists, remove it
@@ -278,7 +446,7 @@ const Governance = () => {
   };
 
   const updateActionField = (actionType: string, fieldName: string, value: string) => {
-    const updatedActions = proposal.actions.map(action => {
+    const updatedActions = proposal.actions.map((action: Action) => {
       if (action.type === actionType) {
         return { ...action, [fieldName]: value };
       }
@@ -315,11 +483,11 @@ const Governance = () => {
   };
 
   const isActionSelected = (actionType: string) => {
-    return proposal.actions.some(action => action.type === actionType);
+    return proposal.actions.some((action: Action) => action.type === actionType);
   };
 
   const getActionByType = (actionType: string) => {
-    return proposal.actions.find(action => action.type === actionType);
+    return proposal.actions.find((action: Action) => action.type === actionType);
   };
 
   // Step 1: Create and send the blockchain transaction
@@ -364,8 +532,8 @@ const Governance = () => {
         return;
       }
 
-      // Format actions for the transaction (simplified for now)
-      const actions = proposal.actions.map(action => {
+      // Format actions for the transaction
+      const actions = proposal.actions.map((action: Action) => {
         return {
           type: action.type,
           walletAddress: action.walletAddress,
@@ -466,7 +634,7 @@ const Governance = () => {
       const proposalAccountPubkey = sessionStorage.getItem('currentProposalAccount') || '';
       
       // Format actions for the API
-      const actions = proposal.actions.map(action => {
+      const actions = proposal.actions.map((action: Action) => {
         let description = '';
         
         switch (action.type) {
@@ -1040,7 +1208,7 @@ const Governance = () => {
                 <div>
                   <h5 className="text-sm font-medium text-text opacity-80 mb-2">Actions:</h5>
                   <ul className="space-y-1">
-                    {proposal.actions.map((action, index) => (
+                    {proposal.actions.map((action: Action, index: number) => (
                       <li key={index} className="flex items-start text-sm">
                         <Check size={16} className="text-primary mr-2 mt-0.5" />
                         <span className="text-text">{getActionDescription(action)}</span>
@@ -1079,162 +1247,423 @@ const Governance = () => {
   };
 
   return (
-    <div className="p-6 h-screen overflow-hidden flex flex-col">
-      <div className={containers.flexBetween}>
+    <div className="p-6 h-full min-h-screen overflow-auto">
+      <div className={containers.flexBetween + " mb-6"}>
         <h1 className={typography.h1}>Governance</h1>
       </div>
-
-      <div className="mt-6">
-        <Card title="DAO Governance Overview">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex flex-col">
-              <span className={typography.label}>Total Proposals</span>
-              <span className={ui.stat.value}>{proposals.length}</span>
+      
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-800/60">
+          <div className="flex items-center">
+            <div className="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 mr-4">
+              <PieChart size={20} className="text-white" />
             </div>
-            <div className="flex flex-col">
-              <span className={typography.label}>Active Proposals</span>
-              <span className={ui.stat.value}>{proposals.filter(p => p.status === 'Active').length}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className={typography.label}>Completed Proposals</span>
-              <span className={ui.stat.value}>{proposals.filter(p => p.status === 'Passed').length}</span>
+            <div>
+              <div className="text-sm text-gray-400">Total Proposals</div>
+              <div className="text-2xl font-bold text-white">{proposals.length}</div>
             </div>
           </div>
-        </Card>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-10 gap-6 flex-1 overflow-hidden">
-        {/* Active Proposals Column - 70% on desktop, full width on mobile/tablet */}
-        <div className="col-span-1 lg:col-span-7 flex flex-col h-full overflow-hidden order-2 lg:order-1">
-          <Card title="Active Proposals" className="flex-1 flex flex-col h-full">
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin h-8 w-8 border-4 border-purple-500 rounded-full border-t-transparent"></div>
-              </div>
-            ) : proposals.filter(p => p.status === 'Active' || p.status === 'active').length === 0 ? (
-              <div className="text-center py-6">
-                <p className="text-gray-400">No active proposals at the moment.</p>
-              </div>
-            ) : (
-              <div className="space-y-4 overflow-y-auto flex-1 custom-scrollbar pr-1">
-                {proposals
-                  .filter(p => p.status === 'Active' || p.status === 'active')
-                  .map(proposal => (
-                    <div 
-                      key={proposal.id} 
-                      className="border border-gray-800 hover:border-purple-800/40 rounded-lg p-4 cursor-pointer transition-all"
-                      onClick={() => handleViewProposal(proposal.id)}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className={typography.h3}>{proposal.name}</h3>
-                          <p className={`${typography.small} mt-1 line-clamp-2`}>
-                            {proposal.description}
-                          </p>
-                        </div>
-                        <Badge variant="primary">Active</Badge>
-                      </div>
-                      
-                      <div className="mt-4 pt-4 border-t border-gray-800/40 flex justify-between items-center">
-                        <div className="flex items-center space-x-4">
-                          <div className="flex flex-col">
-                            <span className={typography.small}>For</span>
-                            <span className="text-green-400">{proposal.votes.for}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className={typography.small}>Against</span>
-                            <span className="text-red-400">{proposal.votes.against}</span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className={typography.small}>Created</span>
-                            <span className="text-gray-300">{formatDate(proposal.createdAt)}</span>
-                          </div>
-                        </div>
-                        <ChevronRight size={16} className="text-gray-400" />
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </Card>
         </div>
-
-        {/* Right Column - 30% on desktop, full width on mobile/tablet */}
-        <div className="col-span-1 lg:col-span-3 flex flex-col gap-6 order-1 lg:order-2">
-          {/* Create Proposal Card */}
-          <Card title="Actions" className="flex-shrink-0">
-            <div className="flex justify-center">
-              {userIsDaoMember ? (
-                <Button 
-                  variant="primary" 
-                  onClick={() => setShowProposalForm(true)}
-                  leftIcon={<Plus size={16} />}
-                  className="w-full"
-                >
-                  Create Proposal
-                </Button>
-              ) : membershipLoading ? (
-                <div className="animate-pulse h-10 w-full bg-gray-700 rounded-lg"></div>
-              ) : (
-                <div className="relative w-full">
-                  <Button 
-                    variant="secondary" 
-                    disabled={true}
-                    onClick={() => setShowMembershipTooltip(!showMembershipTooltip)}
-                    leftIcon={<AlertCircle size={16} />}
-                    className="w-full"
-                  >
-                    Members Only
-                  </Button>
-                  {showMembershipTooltip && (
-                    <div className={`${utils.glassmorphism} absolute right-0 mt-2 p-3 rounded-lg z-10 w-64`}>
-                      <p className={typography.small}>
-                        Only DAO members can create proposals. Join this DAO to participate in governance.
-                      </p>
-                    </div>
-                  )}
+            
+        {lastCreatedProposal && (
+          <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-800/60">
+            <div className="flex items-center">
+              <div className="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 mr-4">
+                <Calendar size={20} className="text-white" />
+              </div>
+              <div>
+                <div className="text-sm text-gray-400 flex items-center">
+                  <span>Latest Proposal</span>
+                  <span className="ml-2 px-2 py-0.5 bg-blue-500/20 text-blue-400 text-xs rounded-full">{getTimeAgo(lastCreatedProposal.createdAt)}</span>
                 </div>
-              )}
+                <div className="text-xl font-bold text-white mt-1 truncate">{lastCreatedProposal.name}</div>
+              </div>
             </div>
-          </Card>
-
-          {/* Completed Proposals */}
-          <Card title="Completed Proposals" className="flex-1">
-            {isLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin h-8 w-8 border-4 border-purple-500 rounded-full border-t-transparent"></div>
+          </div>
+        )}
+            
+        {mostActiveProposal && (
+          <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-800/60">
+            <div className="flex items-center">
+              <div className="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 mr-4">
+                <Users size={20} className="text-white" />
               </div>
-            ) : proposals.filter(p => p.status === 'Passed' || p.status === 'completed' || p.status === 'Completed').length === 0 ? (
-              <div className="text-center py-6">
-                <p className="text-gray-400">No completed proposals yet.</p>
+              <div>
+                <div className="text-sm text-gray-400 flex items-center">
+                  <span>Most Active</span>
+                  <span className="ml-2 px-2 py-0.5 bg-purple-500/20 text-purple-400 text-xs rounded-full">{mostActiveProposal.votes.for + mostActiveProposal.votes.against} votes</span>
+                </div>
+                <div className="text-xl font-bold text-white mt-1 truncate">{mostActiveProposal.name}</div>
               </div>
-            ) : (
-              <div className="space-y-4 overflow-y-auto max-h-[300px] lg:max-h-none lg:flex-1 custom-scrollbar pr-1">
-                {proposals
-                  .filter(p => p.status === 'Passed' || p.status === 'completed' || p.status === 'Completed')
-                  .map(proposal => (
-                    <div 
-                      key={proposal.id} 
-                      className="border border-gray-800 hover:border-purple-800/40 rounded-lg p-4 cursor-pointer transition-all"
-                      onClick={() => handleViewProposal(proposal.id)}
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {/* Filters Toolbar */}
+      <div className="flex flex-col md:flex-row justify-between mb-4 gap-4">
+        {/* Filters - Centered on mobile */}
+        <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+          {/* Sort Dropdown */}
+          <div className="relative">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => toggleDropdown('sort')}
+              rightIcon={<ChevronDown size={16} />}
+            >
+              Sort: {sortOrder}
+            </Button>
+            
+            {activeDropdown === 'sort' && (
+              <div className={utils.glassmorphism + " absolute left-0 md:left-0 right-0 md:right-auto mt-2 w-48 rounded-md shadow-lg z-10"}>
+                <div className="py-2">
+                  {['Recent', 'Oldest', 'A-Z', 'Z-A', 'Most Votes'].map(option => (
+                    <button
+                      key={option}
+                      className={`flex items-center w-full px-4 py-2 text-sm ${sortOrder === option ? 'text-purple-500' : 'text-gray-200'} hover:bg-[#222]/60`}
+                      onClick={() => {
+                        setSortOrder(option);
+                        setActiveDropdown(null);
+                      }}
                     >
-                      <div className="flex justify-between items-start">
-                        <div className="w-full">
-                          <h3 className={`${typography.h3} truncate`}>{proposal.name}</h3>
-                          <div className="flex justify-between mt-2 items-center">
-                            <span className="text-gray-300 text-xs">{formatDate(proposal.createdAt)}</span>
-                            <Badge variant="success">Completed</Badge>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                      {sortOrder === option && <Check size={16} className="mr-2" />}
+                      <span>{option}</span>
+                    </button>
                   ))}
+                </div>
               </div>
             )}
-          </Card>
+          </div>
+              
+          {/* Status Filter Dropdown */}
+          <div className="relative">
+            <Button 
+              variant={statusFilter !== 'all' ? "primary" : "outline"} 
+              size="sm" 
+              onClick={() => toggleDropdown('status')}
+              rightIcon={<ChevronDown size={16} />}
+            >
+              Status
+            </Button>
+                
+            {activeDropdown === 'status' && (
+              <div className={utils.glassmorphism + " absolute left-0 md:left-0 right-0 md:right-auto mt-2 w-48 rounded-md shadow-lg z-10"}>
+                <div className="py-2">
+                  {[
+                    { value: 'all', label: 'All Proposals' },
+                    { value: 'active', label: 'Active' },
+                    { value: 'passed', label: 'Passed' },
+                    { value: 'rejected', label: 'Rejected' }
+                  ].map(option => (
+                    <button
+                      key={option.value}
+                      className={`flex items-center w-full px-4 py-2 text-sm ${statusFilter === option.value ? 'text-purple-500' : 'text-gray-200'} hover:bg-[#222]/60`}
+                      onClick={() => {
+                        setStatusFilter(option.value);
+                        setActiveDropdown(null);
+                      }}
+                    >
+                      {statusFilter === option.value && <Check size={16} className="mr-2" />}
+                      <span>{option.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+              
+          {/* Date Filter Dropdown */}
+          <div className="relative">
+            <Button 
+              variant={isDateFilterActive ? "primary" : "outline"} 
+              size="sm" 
+              onClick={() => toggleDropdown('date')}
+              rightIcon={<ChevronDown size={16} />}
+            >
+              Date Range
+            </Button>
+                
+            {activeDropdown === 'date' && (
+              <div className={utils.glassmorphism + " absolute left-0 md:left-0 right-0 md:right-auto mt-2 w-64 rounded-md shadow-lg z-10"}>
+                <div className="p-4 space-y-4">
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">Created After</label>
+                    <input
+                      type="date"
+                      value={createdSince}
+                      onChange={(e) => setCreatedSince(e.target.value)}
+                      className="w-full bg-[#191919] border border-gray-800 rounded-md p-2 text-white text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-300 mb-1">Created Before</label>
+                    <input
+                      type="date"
+                      value={createdUntil}
+                      onChange={(e) => setCreatedUntil(e.target.value)}
+                      className="w-full bg-[#191919] border border-gray-800 rounded-md p-2 text-white text-sm"
+                    />
+                  </div>
+                  <div className="flex justify-between">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={resetDateFilters}
+                    >
+                      Reset
+                    </Button>
+                    <Button 
+                      variant="primary" 
+                      size="sm" 
+                      onClick={() => setActiveDropdown(null)}
+                    >
+                      Apply
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+            
+        {/* Search and Create Button - Centered on mobile */}
+        <div className="flex flex-wrap items-center gap-2 justify-center md:justify-start">
+          {/* Search Bar */}
+          <div className="relative flex-1 min-w-[180px] max-w-[300px]">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search proposals..."
+              className="pl-10 pr-3 py-2 bg-[#191919] border border-gray-800 rounded-md text-white w-full focus:outline-none focus:border-purple-600"
+            />
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+              <Search size={16} />
+            </div>
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+          
+          {/* Create Proposal Button */}
+          {userIsDaoMember && (
+            <Button 
+              variant="primary" 
+              onClick={() => setShowProposalForm(true)}
+              leftIcon={<Plus size={16} />}
+              className="sm:w-auto"
+            >
+              Create Proposal
+            </Button>
+          )}
         </div>
       </div>
+      
+      {/* Pagination controls */}
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-3">
+        <div className="w-full flex justify-center sm:justify-start items-center gap-2">
+          <span className="text-gray-400 text-sm">Show</span>
+          <div className="relative">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => toggleDropdown('rows')}
+              rightIcon={<ChevronDown size={16} />}
+            >
+              {rowsPerPage} proposals
+            </Button>
+                
+            {activeDropdown === 'rows' && (
+              <div className={utils.glassmorphism + " absolute left-0 mt-2 w-40 rounded-md shadow-lg z-10"}>
+                <div className="py-2">
+                  {[10, 25, 50].map(option => (
+                    <button
+                      key={option}
+                      className={`flex items-center w-full px-4 py-2 text-sm ${rowsPerPage === option ? 'text-purple-500' : 'text-gray-200'} hover:bg-[#222]/60`}
+                      onClick={() => handleRowsPerPageChange(option)}
+                    >
+                      {rowsPerPage === option && <Check size={16} className="mr-2" />}
+                      <span>{option} proposals</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+            
+        <div className="text-gray-400 text-sm text-center sm:text-right">
+          Showing {startIndex + 1} to {endIndex} of {filteredProposals.length} proposals
+        </div>
+      </div>
+      
+      {/* Proposals Content */}
+      {isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-600"></div>
+        </div>
+      ) : (
+        <Card className="overflow-hidden mb-4" style={{ minHeight: '300px', height: `calc(100vh - 400px)` }}>
+          <div className={`overflow-auto h-full custom-scrollbar transition-opacity duration-150 ${isPageChanging ? 'opacity-30' : 'opacity-100'}`}>
+            <table className={ui.table.container}>
+              <thead className="sticky top-0 bg-[#121212] z-10">
+                <tr>
+                  <th className={ui.table.header + " min-w-[250px]"}>Proposal</th>
+                  <th className={ui.table.header + " min-w-[100px]"}>Status</th>
+                  <th className={ui.table.header + " min-w-[150px]"}>Creator</th>
+                  <th className={ui.table.header + " min-w-[150px]"}>Created</th>
+                  <th className={ui.table.header + " min-w-[120px]"}>For</th>
+                  <th className={ui.table.header + " min-w-[120px]"}>Against</th>
+                  <th className={ui.table.header + " min-w-[150px]"}>End Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedProposals.map((proposal: ProposalDetails) => (
+                  <tr 
+                    key={proposal.id} 
+                    className={`${ui.table.row} cursor-pointer hover:bg-[#191919]`}
+                    onClick={() => handleViewProposal(proposal.id)}
+                  >
+                    <td className={ui.table.cell}>
+                      <div>
+                        <div className="font-medium text-white">{proposal.name}</div>
+                        <div className="text-xs text-gray-400 truncate max-w-[300px]">{proposal.description}</div>
+                      </div>
+                    </td>
+                    <td className={ui.table.cell}>
+                      <Badge 
+                        variant={
+                          proposal.status === 'Active' || proposal.status === 'active' 
+                            ? 'primary' 
+                            : proposal.status === 'Passed' || proposal.status === 'completed' || proposal.status === 'Completed' 
+                              ? 'success' 
+                              : 'error'
+                        }
+                      >
+                        {proposal.status}
+                      </Badge>
+                    </td>
+                    <td className={ui.table.cell}>
+                      <div className="text-gray-300">{proposal.creator}</div>
+                    </td>
+                    <td className={ui.table.cell}>
+                      <div className="text-gray-300">{getTimeAgo(proposal.createdAt)}</div>
+                      <div className="text-xs text-gray-400">{proposal.createdAt}</div>
+                    </td>
+                    <td className={ui.table.cell}>
+                      <div className="text-green-400 font-medium">{proposal.votes.for}</div>
+                    </td>
+                    <td className={ui.table.cell}>
+                      <div className="text-red-400 font-medium">{proposal.votes.against}</div>
+                    </td>
+                    <td className={ui.table.cell}>
+                      <div className="text-gray-300">{proposal.endTime}</div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            {filteredProposals.length === 0 && (
+              <div className="flex justify-center items-center py-10 text-gray-400">
+                <p>No proposals match your search criteria</p>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+      
+      {/* Pagination controls below the content */}
+      {filteredProposals.length > 0 && (
+        <div className="flex justify-center items-center gap-3 my-6">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            leftIcon={<ChevronLeft size={14} />}
+            className="px-4"
+          >
+            <span className="hidden sm:inline">Prev</span>
+          </Button>
+          
+          <div className="hidden sm:flex items-center">
+            {/* Show page numbers on larger screens */}
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              let pageNum;
+              if (totalPages <= 5) {
+                // If 5 or fewer pages, show them all
+                pageNum = i + 1;
+              } else if (currentPage <= 3) {
+                // If near the start, show 1-5
+                pageNum = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                // If near the end, show last 5
+                pageNum = totalPages - 4 + i;
+              } else {
+                // Show current page and 2 on each side
+                pageNum = currentPage - 2 + i;
+              }
+              
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => goToPage(pageNum)}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center mx-1 ${
+                    pageNum === currentPage 
+                      ? 'bg-purple-600 text-white' 
+                      : 'text-gray-300 hover:bg-[#222] hover:text-white'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+          </div>
+          
+          {/* Always show current/total on mobile */}
+          <div className="flex sm:hidden items-center">
+            <span className="mx-2 text-gray-300 text-sm">
+              Page {currentPage} of {totalPages}
+            </span>
+          </div>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            rightIcon={<ChevronRight size={14} />}
+            className="px-4"
+          >
+            <span className="hidden sm:inline">Next</span>
+          </Button>
+        </div>
+      )}
+      
+      {/* Non-member notice */}
+      {!userIsDaoMember && !membershipLoading && (
+        <div className="mt-4 p-4 bg-yellow-900/20 border border-yellow-700/30 rounded-lg">
+          <div className="flex items-start">
+            <AlertCircle size={20} className="text-yellow-500 mr-2 mt-0.5" />
+            <div>
+              <p className="text-yellow-500 font-medium">Members Only</p>
+              <p className="text-sm text-gray-300 mt-1">
+                Only DAO members can create proposals. Join this DAO to participate in governance.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
+      {/* Proposal Modal */}
       {selectedProposal && (
         <PopupProposal 
           proposal={selectedProposal}
@@ -1246,6 +1675,7 @@ const Governance = () => {
         />
       )}
       
+      {/* Create Proposal Form Modal */}
       {showProposalForm && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
           <div className="bg-[#111] rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden">
