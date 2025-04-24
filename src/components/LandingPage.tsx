@@ -77,6 +77,13 @@ const logoScrollKeyframes = `
   flex-shrink: 0;
   width: 100%;
 }
+
+/* Ensure long words break and wrap properly */
+.overflow-wrap-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
 `;
 
 interface LandingPageProps {
@@ -700,13 +707,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
                           <div 
                             className={`grid gap-4 md:gap-6`}
                             style={{ 
-                              minHeight: '280px',
                               gridTemplateColumns: `repeat(${
                                 // 2 columns on mobile, 4 on tablet, 4 or 6 on desktop depending on items per page
                                 itemsPerPage === 12 ? '6' : 
                                 itemsPerPage === 8 ? '4' : '2'
                               }, 1fr)`, // Equal width columns
-                              gridAutoRows: '220px' // Fixed height rows instead of minmax
+                              gridAutoRows: 'minmax(220px, 1fr)' // Ensure consistent row height
                             }}
                           >
                             {page.map((dao: DAO, index: number) => (
@@ -738,16 +744,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
                                     </div>
                                     
                                     {/* Name */}
-                                    <h3 className="text-base font-medium text-white group-hover:text-indigo-400 transition-colors line-clamp-2 mb-2 w-full">
+                                    <h3 className="text-base font-medium text-white group-hover:text-indigo-400 transition-colors line-clamp-2 mb-2 w-full break-words overflow-wrap-anywhere">
                                       {dao.name}
                                     </h3>
-                                  </div>
-                                  
-                                  {/* Description - only visible on larger screens with fixed height */}
-                                  <div className="hidden md:block mt-auto w-full h-12 overflow-hidden">
-                                    <p className="text-xs text-gray-300 line-clamp-3">
-                                      {dao.description || "This DAO hasn't provided a description yet."}
-                                    </p>
                                   </div>
                                   
                                   {/* Member count */}
@@ -765,7 +764,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
                               return [...Array(Math.max(0, itemsPerPage - page.length))].map((_, i: number) => (
                                 <div key={`empty-${i}`} className="h-full w-full" 
                                   style={{ 
-                                    minHeight: '220px',
                                     visibility: 'hidden'
                                   }}
                                 ></div>
