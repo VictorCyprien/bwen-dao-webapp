@@ -339,12 +339,12 @@ const DAOPublicProfileModal: React.FC<DAOPublicProfileModalProps> = ({
               
               {/* DAO Info */}
               <div className="flex-1 text-center sm:text-left">
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">{dao.name}</h1>
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 break-words overflow-wrap-anywhere hyphens-auto">{dao.name}</h1>
                 
                 {/* Social links moved here, right below the name */}
                 {renderSocialLinks()}
                 
-                <p className="text-sm md:text-base text-gray-300 mb-4 max-w-xl">
+                <p className="text-sm md:text-base text-gray-300 mb-4 max-w-xl break-words overflow-wrap-anywhere hyphens-auto">
                   {dao.description || "This DAO hasn't provided a description yet."}
                 </p>
               </div>
@@ -413,6 +413,18 @@ const DAOPublicProfileModal: React.FC<DAOPublicProfileModalProps> = ({
                 
                 .animate-slideInFromBottom {
                   animation: slideInFromBottom 0.3s ease-out forwards;
+                }
+                
+                .overflow-wrap-anywhere {
+                  overflow-wrap: anywhere;
+                  word-wrap: break-word;
+                  word-break: break-word;
+                }
+                
+                .hyphens-auto {
+                  -webkit-hyphens: auto;
+                  -ms-hyphens: auto;
+                  hyphens: auto;
                 }
               `}</style>
               <Button 

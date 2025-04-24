@@ -706,7 +706,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
                                 itemsPerPage === 12 ? '6' : 
                                 itemsPerPage === 8 ? '4' : '2'
                               }, 1fr)`, // Equal width columns
-                              gridAutoRows: 'minmax(220px, 1fr)' // Ensure consistent row height
+                              gridAutoRows: '220px' // Fixed height rows instead of minmax
                             }}
                           >
                             {page.map((dao: DAO, index: number) => (
@@ -743,8 +743,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
                                     </h3>
                                   </div>
                                   
-                                  {/* Description - only visible on larger screens */}
-                                  <div className="hidden md:block overflow-hidden mt-auto w-full">
+                                  {/* Description - only visible on larger screens with fixed height */}
+                                  <div className="hidden md:block mt-auto w-full h-12 overflow-hidden">
                                     <p className="text-xs text-gray-300 line-clamp-3">
                                       {dao.description || "This DAO hasn't provided a description yet."}
                                     </p>
