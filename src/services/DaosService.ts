@@ -175,12 +175,12 @@ export class DaosService {
       daoInput.name = daoData.name;
       daoInput.description = daoData.description?.trim() || '';
       daoInput.treasury = daoData.treasury;
-      daoInput.discordServer = daoData.discordServer;
-      daoInput.twitter = daoData.twitter;
-      daoInput.telegram = daoData.telegram;
-      daoInput.instagram = daoData.instagram;
-      daoInput.tiktok = daoData.tiktok;
-      daoInput.website = daoData.website;
+      daoInput.discordServer = daoData.discordServer?.trim() ? daoData.discordServer : undefined;
+      daoInput.twitter = daoData.twitter?.trim() ? daoData.twitter : undefined;
+      daoInput.telegram = daoData.telegram?.trim() ? daoData.telegram : undefined;
+      daoInput.instagram = daoData.instagram?.trim() ? daoData.instagram : undefined;
+      daoInput.tiktok = daoData.tiktok?.trim() ? daoData.tiktok : undefined;
+      daoInput.website = daoData.website?.trim() ? daoData.website : undefined;
       daoInput.pubkey = daoData.blockchainAddress;
       daoInput.transaction = daoData.transactionSignature;
       daoInput.tokenAddress = daoData.tokenAddress;
@@ -228,12 +228,12 @@ export class DaosService {
       if (daoData.isActive !== undefined) daoUpdate.isActive = daoData.isActive;
 
       daoUpdate.treasury = daoData.treasury;
-      daoUpdate.discordServer = daoData.discordServer;
-      daoUpdate.twitter = daoData.twitter;
-      daoUpdate.telegram = daoData.telegram;
-      daoUpdate.instagram = daoData.instagram;
-      daoUpdate.tiktok = daoData.tiktok;
-      daoUpdate.website = daoData.website;
+      daoUpdate.discordServer = daoData.discordServer?.trim() ? daoData.discordServer : undefined;
+      daoUpdate.twitter = daoData.twitter?.trim() ? daoData.twitter : undefined;
+      daoUpdate.telegram = daoData.telegram?.trim() ? daoData.telegram : undefined;
+      daoUpdate.instagram = daoData.instagram?.trim() ? daoData.instagram : undefined;
+      daoUpdate.tiktok = daoData.tiktok?.trim() ? daoData.tiktok : undefined;
+      daoUpdate.website = daoData.website?.trim() ? daoData.website : undefined;
       
       // Process image fields if provided
       if (daoData.profilePicture) {
