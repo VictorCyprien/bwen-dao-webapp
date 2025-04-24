@@ -1,23 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
-  CircleDollarSign, 
-  ArrowDownUp, 
   ArrowUp, 
   ArrowDown, 
-  RefreshCw, 
   Loader,
   AlertCircle,
   ExternalLink
 } from 'lucide-react';
 import { treasuryService } from '../services/TreasuryService';
-import { Treasury as TreasuryType, Token, Transfer } from '../core/modules/dao-api';
+import { Treasury as TreasuryType, Token } from '../core/modules/dao-api';
 import { useEffectOnce } from '../hooks/useEffectOnce';
-import { containers, typography, ui, utils } from '../styles/theme';
+import { containers, typography, ui } from '../styles/theme';
 import Card from './common/Card';
-import Button from './common/Button';
-import Badge from './common/Badge';
-import { daosService } from '../services/DaosService';
 
 // Define refresh interval (5 minutes)
 const REFRESH_INTERVAL = 300000;
@@ -26,15 +20,13 @@ const Treasury = () => {
   const { daoId } = useParams<{ daoId: string }>();
   const [treasury, setTreasury] = useState<TreasuryType | null>(null);
   const [tokens, setTokens] = useState<Token[]>([]);
-  const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [calculatedTotalValue, setCalculatedTotalValue] = useState<number>(0);
 
   // Function to fetch all treasury data
-  const fetchTreasuryData = async (showRefreshIndicator = true) => {
+  const fetchTreasuryData = async () => {
     if (!daoId) {
       setError('No DAO ID provided');
       setLoading(false);
@@ -42,11 +34,7 @@ const Treasury = () => {
     }
 
     try {
-      if (showRefreshIndicator) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
+      setLoading(true);
       
       // Fetch treasury data
       const treasuryData = await treasuryService.getTreasury(daoId);
@@ -56,25 +44,14 @@ const Treasury = () => {
       const tokensData = await treasuryService.getTokens(daoId);
       setTokens(tokensData);
       
-      // Fetch transfers
-      const transfersData = await treasuryService.getTransfers(daoId);
-      setTransfers(transfersData);
-      
       setLastUpdated(new Date());
-      setRefreshing(false);
       setLoading(false);
       setError(null);
     } catch (err) {
       console.error('Error fetching treasury data:', err);
       setError('Failed to load treasury data. Please try again.');
-      setRefreshing(false);
       setLoading(false);
     }
-  };
-
-  // Function to refresh data manually
-  const handleRefresh = () => {
-    fetchTreasuryData(true);
   };
 
   // Function to calculate total value based on token balances and prices
@@ -94,7 +71,7 @@ const Treasury = () => {
     
     // Set up automatic refresh
     const refreshInterval = setInterval(() => {
-      fetchTreasuryData(false);
+      fetchTreasuryData();
     }, REFRESH_INTERVAL);
     
     // Cleanup on unmount
@@ -176,12 +153,6 @@ const Treasury = () => {
     }).format(new Date(date));
   };
 
-  // Shorten wallet addresses for display
-  const shortenAddress = (address: string): string => {
-    if (!address) return 'Unknown';
-    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
-  };
-
   return (
     <div className="p-6">
       {/* Error message display */}
@@ -194,23 +165,10 @@ const Treasury = () => {
         </Card>
       )}
       
-      {/* Treasury overview header with refresh button */}
-      <div className={containers.flexBetween + " mb-6"}>
+      {/* Treasury overview header */}
+      <div className="mb-6">
         <h1 className={typography.h1}>Treasury</h1>
-        <Button 
-          variant="outline" 
-          onClick={handleRefresh} 
-          disabled={refreshing}
-          leftIcon={refreshing ? <Loader className="animate-spin" size={16} /> : <RefreshCw size={16} />}
-          className="flex items-center gap-2 text-xs sm:text-sm py-1 px-2 sm:py-2 sm:px-3 border-2 border-gray-800 hover:border-purple-500/50 bg-[#151515]"
-        >
-          {refreshing ? 'Refreshing...' : 'Refresh'}
-        </Button>
       </div>
-      
-      <p className={typography.small + " mb-6"}>
-        Last updated: {formatLastUpdated()}
-      </p>
       
       {/* Treasury total value card */}
       <Card title="Total Balance" className="mb-6">
@@ -266,7 +224,7 @@ const Treasury = () => {
                 </tr>
               </thead>
               <tbody>
-                {tokens.map((token) => (
+                {tokens.map((token: Token) => (
                   <tr key={token.tokenId} className={ui.table.row}>
                     <td className={ui.table.cell}>
                       <div className="flex items-center">
@@ -329,87 +287,25 @@ const Treasury = () => {
         )}
       </Card>
       
-      {/* Transactions section */}
-      <Card title="Recent Transactions" className="mb-6">
-        {loading ? (
-          <div className="flex items-center justify-center h-40">
-            <Loader className="animate-spin text-purple-500" size={24} />
-          </div>
-        ) : transfers.length === 0 ? (
-          <div className="text-center text-gray-400 py-8">
-            No transactions found.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className={ui.table.container}>
-              <thead>
-                <tr>
-                  <th className={ui.table.header}>Transaction</th>
-                  <th className={ui.table.header}>Token</th>
-                  <th className={ui.table.header + " text-right"}>Amount</th>
-                  <th className={ui.table.header + " text-right"}>Date</th>
-                  <th className={ui.table.header + " text-right"}>Explorer</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transfers.map((transfer, index) => (
-                  <tr key={transfer.transferId || index} className={ui.table.row}>
-                    <td className={ui.table.cell}>
-                      <div className="flex items-center">
-                        <div className={`p-2 rounded-full mr-3 ${transfer.fromAddress === daoId ? 'bg-red-500/20' : 'bg-green-500/20'}`}>
-                          <ArrowDownUp 
-                            size={16} 
-                            className={transfer.fromAddress === daoId ? 'text-red-400' : 'text-green-400'} 
-                          />
-                        </div>
-                        <div>
-                          <div className="font-medium">
-                            {transfer.fromAddress === daoId ? 'Withdrawal' : 'Deposit'}
-                          </div>
-                          <div className="text-gray-400 text-xs">
-                            {transfer.fromAddress === daoId
-                              ? `To: ${shortenAddress(transfer.toAddress || '')}` 
-                              : `From: ${shortenAddress(transfer.fromAddress || '')}`
-                            }
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className={ui.table.cell}>
-                      <div className="flex items-center">
-                        <div className="h-6 w-6 rounded-full bg-gray-700 flex items-center justify-center mr-2 text-xs">
-                          {transfer.token?.symbol ? transfer.token.symbol.substring(0, 1) : 'T'}
-                        </div>
-                        <span>{transfer.token?.symbol || 'Unknown'}</span>
-                      </div>
-                    </td>
-                    <td className={ui.table.cell + " text-right font-medium"}>
-                      <span className={transfer.fromAddress === daoId ? 'text-red-400' : 'text-green-400'}>
-                        {transfer.fromAddress === daoId ? '-' : '+'}{formatTokenAmount(transfer.amount)}
-                      </span>
-                    </td>
-                    <td className={ui.table.cell + " text-right text-gray-400"}>
-                      {formatDate(transfer.timestamp)}
-                    </td>
-                    <td className={ui.table.cell + " text-right"}>
-                      <a 
-                        href={`https://explorer.solana.com/tx/${transfer.transferId}`} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="text-blue-400 hover:text-blue-300 inline-flex items-center"
-                      >
-                        <ExternalLink size={14} />
-                      </a>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
+      {/* Last updated text - centered under Assets */}
+      <div className="text-center text-gray-400 text-sm">
+        Last updated: {formatLastUpdated()}
+      </div>
+      
+      {/* Explorer link */}
+      <div className="text-center mt-2">
+        <a 
+          href={`https://solscan.io/account/${daoId}`} 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className="text-purple-500 hover:text-purple-400 transition-colors inline-flex items-center gap-1 text-sm"
+        >
+          <span>See on Explorer</span>
+          <ExternalLink size={14} />
+        </a>
+      </div>
     </div>
   );
 };
 
-export default Treasury; 
+export default Treasury;
