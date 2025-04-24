@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { PieChart, Plus, X, Check, AlertCircle, ChevronRight, Search, ChevronDown, ChevronLeft, Calendar, Users, Clock, List, Grid } from 'lucide-react';
+import { PieChart, Plus, X, Check, AlertCircle, ChevronRight, Search, ChevronDown, ChevronLeft, Calendar, Users } from 'lucide-react';
 import PopupProposal from './PopupProposal';
 import { containers, typography, ui, utils } from '../styles/theme';
 import { proposalService } from '../services/ProposalService';
 import { useEffectOnce } from '../hooks/useEffectOnce';
 import { useSolanaTransaction } from '../hooks/useSolanaTransaction';
 import { SOLANA_RPC_ENDPOINT } from '../config/solana';
-import { toast } from 'react-hot-toast';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { Connection } from '@solana/web3.js';
 import { daosService } from '../services/DaosService';
@@ -81,7 +80,6 @@ const Governance = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userIsDaoMember, setUserIsDaoMember] = useState<boolean>(false);
   const [membershipLoading, setMembershipLoading] = useState<boolean>(false);
-  const [showMembershipTooltip, setShowMembershipTooltip] = useState<boolean>(false);
   
   // Pagination states
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -90,7 +88,7 @@ const Governance = () => {
   
   // Filtering states
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('all'); // 'all', 'active', 'passed', 'rejected'
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortOrder, setSortOrder] = useState<string>('Recent');
   const [filteredProposals, setFilteredProposals] = useState<ProposalDetails[]>([]);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
@@ -99,7 +97,6 @@ const Governance = () => {
   const [createdSince, setCreatedSince] = useState<string>('');
   const [createdUntil, setCreatedUntil] = useState<string>('');
   
-  // Get Solana transaction utilities from our custom hook
   const { 
     sendTransaction, 
     isLoading: isTransactionLoading, 
@@ -114,53 +111,39 @@ const Governance = () => {
   const wallet = useWallet();
   const connection = new Connection(SOLANA_RPC_ENDPOINT);
 
-  // Initialize Solana connection once on component mount
   useEffectOnce(() => {
-    // Initialize the Solana connection with our configured endpoint
     proposalService.initializeSolanaConnection(SOLANA_RPC_ENDPOINT);
   });
 
-  // Fetch proposals when the component mounts
   useEffectOnce(() => {
-    console.log("Governance component mounted with daoId:", daoId);
     if (daoId) {
       fetchProposals().then(() => {
-        // Initialize filtered proposals after fetching
         setFilteredProposals(proposals);
       });
     }
   });
 
-  // Update filteredProposals whenever proposals changes initially
   useEffect(() => {
     setFilteredProposals(proposals);
   }, [proposals]);
 
-  // Check if the current user is a member of the DAO
   const checkDaoMembership = async () => {
     if (!daoId || !publicKey) return;
     
     try {
       setMembershipLoading(true);
       
-      // Get the current user's ID
       const currentUser = await userService.getCurrentUser();
       if (!currentUser || !currentUser.userId) {
-        console.error("Could not find current user's ID");
         setUserIsDaoMember(false);
         setMembershipLoading(false);
         return;
       }
       
-      // Call the DAO-API SDK to check membership
       const members = await daosService.getDaoMembers(daoId);
-      console.log('DAO members:', members);
-      console.log('Current user ID:', currentUser.userId);
       
-      // Check if the user is a member by userId
       const isMember = members.some((member: any) => member.userId === currentUser.userId);
       
-      console.log('User is DAO member:', isMember);
       setUserIsDaoMember(isMember);
       setMembershipLoading(false);
     } catch (err) {
@@ -170,17 +153,14 @@ const Governance = () => {
     }
   };
 
-  // Check membership when component loads or when relevant data changes
   useEffect(() => {
     if (daoId && publicKey && connected) {
       checkDaoMembership();
     }
   }, [daoId, publicKey, connected]);
 
-  // Watch for transaction success/error to proceed with API updates
   useEffectOnce(() => {
     if (isTransactionSuccess && transactionSignature) {
-      // If we just completed a proposal creation transaction, continue with API call
       handleCreateProposalAPI(transactionSignature);
     }
     
@@ -190,33 +170,28 @@ const Governance = () => {
     }
   }, [isTransactionSuccess, isTransactionError, transactionSignature]);
 
-  // Fetch proposals
   const fetchProposals = async () => {
     if (!daoId) {
       console.error("No daoId available, cannot fetch proposals");
       return;
     }
     
-    console.log(`Fetching proposals for DAO ${daoId}`);
     setIsLoading(true);
     try {
       const fetchedProposals = await proposalService.getAllProposals(daoId);
-      console.log("Fetched proposals:", fetchedProposals);
       
       if (!fetchedProposals || fetchedProposals.length === 0) {
-        console.log("No proposals returned from API or empty array");
         setProposals([]);
         return;
       }
       
-      // Transform API proposals to our component's format
       const transformedProposals = fetchedProposals.map(p => ({
         id: p.proposalId || '',
         name: p.name || '',
         description: p.description || '',
         status: p.isActive ? 'Active' : p.hasPassed ? 'Passed' : 'Rejected',
         creator: p.createdByUsername || 'Unknown',
-        createdAt: formatDate(new Date()), // API doesn't provide created_at
+        createdAt: formatDate(new Date()),
         startTime: formatDate(p.startTime instanceof Date ? p.startTime : new Date(p.startTime)),
         endTime: formatDate(p.endTime instanceof Date ? p.endTime : new Date(p.endTime)),
         votes: {
@@ -230,7 +205,7 @@ const Governance = () => {
           amount: action.amount,
           token: action.token
         })),
-        quorum: 1000, // Default values, should be retrieved from DAO settings
+        quorum: 1000,
         minApproval: 60,
         daoId: p.daoId
       }));
@@ -242,11 +217,9 @@ const Governance = () => {
     }
   };
 
-  // Apply filters and sorting
   useEffect(() => {
     let result = [...proposals];
     
-    // Apply search query filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(proposal => 
@@ -256,7 +229,6 @@ const Governance = () => {
       );
     }
     
-    // Apply status filter
     if (statusFilter !== 'all') {
       result = result.filter(proposal => {
         switch(statusFilter) {
@@ -272,7 +244,6 @@ const Governance = () => {
       });
     }
     
-    // Apply date range filters
     if (createdSince || createdUntil) {
       result = result.filter(proposal => {
         const createdDate = new Date(proposal.createdAt);
@@ -289,7 +260,6 @@ const Governance = () => {
       });
     }
     
-    // Apply sorting
     switch (sortOrder) {
       case 'A-Z':
         result.sort((a, b) => a.name.localeCompare(b.name));
@@ -311,7 +281,6 @@ const Governance = () => {
     setFilteredProposals(result);
   }, [proposals, searchQuery, statusFilter, createdSince, createdUntil, sortOrder]);
 
-  // Get time ago for display
   const getTimeAgo = (dateString: string | Date) => {
     const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
     const now = new Date();
@@ -332,30 +301,23 @@ const Governance = () => {
     }
   };
   
-  // Toggle dropdown visibility
   const toggleDropdown = (dropdown: string) => {
     setActiveDropdown(activeDropdown === dropdown ? null : dropdown);
   };
   
-  // Reset all date filters
   const resetDateFilters = () => {
     setCreatedSince('');
     setCreatedUntil('');
   };
   
-  // Check if any date filter is active
   const isDateFilterActive = createdSince || createdUntil;
   
-  // Change page with animation
   const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages && page !== currentPage) {
-      // Start animation
       setIsPageChanging(true);
       
-      // Change page after short delay to allow animation
       setTimeout(() => {
         setCurrentPage(page);
-        // Remove animation class after page changes
         setTimeout(() => {
           setIsPageChanging(false);
         }, 50);
@@ -363,24 +325,20 @@ const Governance = () => {
     }
   };
   
-  // Change rows per page
   const handleRowsPerPageChange = (rows: number) => {
     setRowsPerPage(rows);
-    setCurrentPage(1); // Reset to first page when changing rows per page
-    setActiveDropdown(null); // Close dropdown after selection
+    setCurrentPage(1);
+    setActiveDropdown(null);
   };
   
-  // Get the most recently created proposal
   const lastCreatedProposal = proposals.length > 0 
     ? [...proposals].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
     : null;
   
-  // Get the most active proposal (most votes)
   const mostActiveProposal = proposals.length > 0 
     ? [...proposals].sort((a, b) => (b.votes.for + b.votes.against) - (a.votes.for + a.votes.against))[0]
     : null;
     
-  // Calculate pagination values
   const totalPages = Math.ceil(filteredProposals.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = Math.min(startIndex + rowsPerPage, filteredProposals.length);
@@ -425,16 +383,13 @@ const Governance = () => {
   };
 
   const toggleAction = (actionType: string) => {
-    // Find if this action type already exists in the actions array
     const existingActionIndex = proposal.actions.findIndex((action: Action) => action.type === actionType);
     
     if (existingActionIndex >= 0) {
-      // If it exists, remove it
       const updatedActions = [...proposal.actions];
       updatedActions.splice(existingActionIndex, 1);
       setProposal({ ...proposal, actions: updatedActions });
     } else {
-      // If it doesn't exist, add it
       const newAction: Action = {
         type: actionType,
         walletAddress: '',
@@ -490,7 +445,6 @@ const Governance = () => {
     return proposal.actions.find((action: Action) => action.type === actionType);
   };
 
-  // Step 1: Create and send the blockchain transaction
   const handleCreateProposalTransaction = async () => {
     if (!publicKey || !wallet) {
       alert('Wallet not connected.');
@@ -505,16 +459,11 @@ const Governance = () => {
     setIsSubmitting(true);
     
     try {
-      console.log(`Starting proposal creation for DAO ID: ${daoId}`);
-      console.log(`Using wallet public key: ${publicKey.toString()}`);
-      
-      // Calculate start and end dates
       let startDate = new Date();
       if (proposal.startTime === 'custom' && proposal.customStartDate && proposal.customStartTime) {
         startDate = new Date(`${proposal.customStartDate}T${proposal.customStartTime}`);
       }
       
-      // Calculate end date based on expiration time
       const days = parseInt(proposal.expirationDays) || 0;
       const hours = parseInt(proposal.expirationHours) || 0;
       const minutes = parseInt(proposal.expirationMinutes) || 0;
@@ -524,15 +473,13 @@ const Governance = () => {
       endDate.setHours(endDate.getHours() + hours);
       endDate.setMinutes(endDate.getMinutes() + minutes);
       
-      // Make sure voting period is at least 5 minutes to avoid too short periods
-      const minVotingPeriod = 5 * 60 * 1000; // 5 minutes in milliseconds
+      const minVotingPeriod = 5 * 60 * 1000;
       if (endDate.getTime() - startDate.getTime() < minVotingPeriod) {
         alert('Voting period must be at least 5 minutes long.');
         setIsSubmitting(false);
         return;
       }
 
-      // Format actions for the transaction
       const actions = proposal.actions.map((action: Action) => {
         return {
           type: action.type,
@@ -542,19 +489,9 @@ const Governance = () => {
         };
       });
       
-      console.log('Creating proposal transaction with data:', {
-        title: proposal.title,
-        description: proposal.description,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        votingPeriod: Math.floor((endDate.getTime() - startDate.getTime()) / 1000),
-        actions: actions.length ? actions : 'None'
-      });
-      
-      // Create the transaction
       const result = await proposalService.createProposalTransaction(
         daoId,
-        '', // podId
+        '',
         publicKey,
         {
           title: proposal.title,
@@ -569,38 +506,22 @@ const Governance = () => {
         throw new Error('Failed to create proposal transaction - null result returned');
       }
       
-      // Extract transaction and account from result
       const { transaction, proposalAccount } = result;
       
       if (!transaction) {
         throw new Error('Failed to create proposal transaction - transaction is null');
       }
       
-      // Save just the proposalAccount public key as a string for later use
       sessionStorage.setItem('currentProposalAccount', proposalAccount.publicKey.toString());
       
-      // Log the transaction details for debugging
-      console.log('Transaction created successfully:', {
-        numInstructions: transaction.instructions.length,
-        proposalAccount: proposalAccount?.publicKey.toString(),
-        feePayer: transaction.feePayer?.toString(),
-      });
-      
-      console.log('Transaction created successfully, sending for signature...');
-      
-      // Send the transaction directly with wallet adapter
       const signature = await wallet.sendTransaction(transaction, connection);
       
-      // Wait for confirmation
       const confirmation = await connection.confirmTransaction(signature, 'confirmed');
       
       if (confirmation.value.err) {
         throw new Error(`Transaction failed: ${confirmation.value.err.toString()}`);
       }
       
-      console.log('Transaction signed and sent successfully! Signature:', signature);
-      
-      // Now call the API to update the database
       await handleCreateProposalAPI(signature);
       
     } catch (error) {
@@ -610,12 +531,10 @@ const Governance = () => {
     }
   };
 
-  // Step 2: After blockchain transaction is confirmed, update the API
   const handleCreateProposalAPI = async (signature: string) => {
     if (!daoId) return;
     
     try {
-      // Calculate start and end dates (same as in handleCreateProposalTransaction)
       let startDate = new Date();
       if (proposal.startTime === 'custom' && proposal.customStartDate && proposal.customStartTime) {
         startDate = new Date(`${proposal.customStartDate}T${proposal.customStartTime}`);
@@ -630,10 +549,8 @@ const Governance = () => {
       endDate.setHours(endDate.getHours() + hours);
       endDate.setMinutes(endDate.getMinutes() + minutes);
       
-      // Get the proposalAccount public key from sessionStorage
       const proposalAccountPubkey = sessionStorage.getItem('currentProposalAccount') || '';
       
-      // Format actions for the API
       const actions = proposal.actions.map((action: Action) => {
         let description = '';
         
@@ -658,21 +575,19 @@ const Governance = () => {
         };
       });
       
-      // Create the proposal using the service, including the transaction signature
       const newProposal = await proposalService.createProposal(daoId, {
         title: proposal.title,
         description: proposal.description,
         startDate,
         endDate,
         actions,
-        transactionSignature: signature, // Include the signature from the successful transaction
-        proposalAccount: proposalAccountPubkey // Include the proposal account
+        transactionSignature: signature,
+        proposalAccount: proposalAccountPubkey
       });
 
       sessionStorage.removeItem('currentProposalAccount');
       
       if (newProposal) {
-        // Refresh the proposal list
         await fetchProposals();
         resetForm();
       }
@@ -700,7 +615,6 @@ const Governance = () => {
         return;
       }
       
-      // Get proposal votes
       const votes = await proposalService.getProposalVotes(daoId, proposalId);;
       
       const transformedProposal: ProposalDetails = {
@@ -709,7 +623,7 @@ const Governance = () => {
         description: proposalDetails.description || '',
         status: proposalDetails.isActive ? 'Active' : proposalDetails.hasPassed ? 'Passed' : 'Rejected',
         creator: proposalDetails.createdByUsername || 'Unknown',
-        createdAt: formatDate(new Date()), // API doesn't provide created_at
+        createdAt: formatDate(new Date()),
         startTime: formatDate(proposalDetails.startTime instanceof Date ? proposalDetails.startTime : new Date(proposalDetails.startTime)),
         endTime: formatDate(proposalDetails.endTime instanceof Date ? proposalDetails.endTime : new Date(proposalDetails.endTime)),
         votes: {
@@ -723,8 +637,8 @@ const Governance = () => {
           amount: action.amount,
           token: action.token
         })),
-        quorum: 1000, // Default value
-        minApproval: 60, // Default value
+        quorum: 1000,
+        minApproval: 60,
         daoId: proposalDetails.daoId
       };
       
@@ -736,7 +650,6 @@ const Governance = () => {
     }
   };
 
-  // Step 1: Create and send transaction for voting
   const handleVoteTransaction = async (proposalId: string, vote: 'for' | 'against') => {
     if (!publicKey || !wallet) {
       alert('Please connect your wallet first');
@@ -751,9 +664,6 @@ const Governance = () => {
     try {
       setIsLoading(true);
       
-      console.log(`Creating vote transaction for proposal: ${proposalId}, vote: ${vote}`);
-      
-      // Create the vote transaction
       const result = await proposalService.createVoteTransaction(
         daoId,
         proposalId,
@@ -766,26 +676,16 @@ const Governance = () => {
         return;
       }
       
-      // Extract transaction and vote account
       const { transaction, voteAccount } = result;
-      
-      console.log('Vote transaction created successfully:', {
-        proposalId,
-        vote,
-        voteAccountPubkey: voteAccount.publicKey.toString()
-      });
 
-      // Send the transaction
       const signature = await wallet.sendTransaction(transaction, connection);
       
-      // Wait for confirmation
       const confirmation = await connection.confirmTransaction(signature, 'confirmed');
       
       if (confirmation.value.err) {
         throw new Error(`Transaction failed: ${confirmation.value.err.toString()}`);
       }
       
-      console.log("Vote transaction confirmed:", signature);
       await proposalService.voteOnProposal(
         daoId, 
         proposalId, 
@@ -794,7 +694,6 @@ const Governance = () => {
         voteAccount.publicKey.toString()
       );
       
-      // Refresh proposals after voting
       fetchProposals();
     } catch (error) {
       console.error("Error voting on proposal:", error);
@@ -804,18 +703,14 @@ const Governance = () => {
     }
   };
 
-  // Handle vote submission and refresh the current proposal
   const handleVoteSubmitted = async () => {
-    // First refresh all proposals in the background
     fetchProposals();
     
-    // Then refresh the currently selected proposal to update its vote counts
     if (selectedProposal && daoId) {
       await refreshSelectedProposal(selectedProposal.id);
     }
   };
 
-  // Refresh the currently selected proposal
   const refreshSelectedProposal = async (proposalId: string) => {
     if (!daoId) return;
     
@@ -824,10 +719,8 @@ const Governance = () => {
       
       if (!proposalDetails) return;
       
-      // Get updated vote information
       const votes = await proposalService.getProposalVotes(daoId, proposalId);
       
-      // Transform the proposal data using the same logic as in handleViewProposal
       const transformedProposal: ProposalDetails = {
         id: proposalDetails.proposalId || '',
         name: proposalDetails.name || '',
