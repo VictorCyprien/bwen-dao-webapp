@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode, useRef, useEffect } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { walletAuthService } from '../services/WalletAuthService';
 import { userService } from '../services/UserService';
@@ -205,6 +205,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
 
   // Handle wallet connection/disconnection
   useEffectOnce(() => {
+    // Create a non-async wrapper function since useEffect callback shouldn't be async
     const handleWalletConnectionWrapper = () => {
       handleWalletConnection().catch(error => {
         console.error("Error handling wallet connection:", error);
@@ -548,28 +549,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     }
   }, []);
   
-  // Function to verify wallet connection and log out if disconnected
-  const verifyWalletConnection = async () => {
-    if (isAuthenticated && !connected) {
-      console.log('Wallet not connected but user is authenticated, logging out');
-      await logout();
-    }
-  };
-  
-  // Add effect to periodically verify wallet connection
-  useEffectOnce(() => {
-    if (isAuthenticated) {
-      // Verify wallet connection when auth state changes
-      verifyWalletConnection();
-      
-      // Set interval to verify connection periodically
-      const interval = setInterval(verifyWalletConnection, 30000); // Check every 30 seconds
-      
-      return () => clearInterval(interval);
-    }
-  }, [isAuthenticated, connected, verifyWalletConnection]);
-
-  // Update the handleWalletConnection function to include verification
+  // Handle wallet connection changes
   const handleWalletConnection = async () => {
     if (connected && publicKey) {
       const currentWalletAddress = publicKey.toString();
@@ -606,8 +586,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
         await authenticateWithWallet(currentWalletAddress);
       }
     } else if (!connected) {
-      // If wallet is disconnected, verify and log out if authenticated
-      await verifyWalletConnection();
+      // If wallet is disconnected, clear wallet address
+      // If we were authenticated, log out
+      if (isAuthenticated) {
+        console.log('Wallet disconnected, logging out');
+        logout();
+      }
     }
   };
 
