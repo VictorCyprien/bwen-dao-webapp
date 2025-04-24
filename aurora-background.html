@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aurora Background Effect</title>
+    <style>
+        /* Base styles */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #0a0a0a;
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        h1 {
+            background-image: linear-gradient(to right, #818cf8, #a78bfa, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        p {
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            color: #d1d5db;
+        }
+
+        /* Aurora effects */
+        .aurora-container {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .aurora-primary-1 {
+            position: absolute;
+            top: -20%;
+            right: -10%;
+            width: 90%;
+            height: 80%;
+            background-image: linear-gradient(to bottom right, rgba(79, 70, 229, 0.2), rgba(168, 85, 247, 0.15), rgba(236, 72, 153, 0.1));
+            border-radius: 100%;
+            filter: blur(120px);
+            animation: pulse-slow 15s infinite alternate;
+        }
+
+        .aurora-primary-2 {
+            position: absolute;
+            bottom: -30%;
+            left: -20%;
+            width: 80%;
+            height: 70%;
+            background-image: linear-gradient(to top right, rgba(13, 148, 136, 0.2), rgba(6, 182, 212, 0.15), rgba(59, 130, 246, 0.1));
+            border-radius: 100%;
+            filter: blur(120px);
+            animation: pulse-slow-delayed 15s infinite alternate;
+        }
+
+        .aurora-secondary-1 {
+            position: absolute;
+            top: 30%;
+            left: 10%;
+            width: 40%;
+            height: 30%;
+            background-image: linear-gradient(to right, rgba(251, 191, 36, 0.1), rgba(249, 115, 22, 0.05));
+            border-radius: 100%;
+            filter: blur(80px);
+            animation: float 20s infinite alternate;
+        }
+
+        .aurora-secondary-2 {
+            position: absolute;
+            bottom: 20%;
+            right: 15%;
+            width: 35%;
+            height: 25%;
+            background-image: linear-gradient(to left, rgba(16, 185, 129, 0.1), rgba(34, 197, 94, 0.05));
+            border-radius: 100%;
+            filter: blur(80px);
+            animation: float-delayed 20s infinite alternate;
+        }
+
+        .aurora-particles {
+            position: absolute;
+            inset: 0;
+            opacity: 0.2;
+        }
+
+        .particle {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            background-color: white;
+            border-radius: 50%;
+        }
+
+        /* Animations */
+        @keyframes pulse-slow {
+            0% {
+                opacity: 0.5;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0.7;
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes pulse-slow-delayed {
+            0% {
+                opacity: 0.5;
+                transform: scale(1.05);
+            }
+            100% {
+                opacity: 0.7;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) translateX(0);
+            }
+            50% {
+                transform: translateY(-10px) translateX(15px);
+            }
+            100% {
+                transform: translateY(5px) translateX(-15px);
+            }
+        }
+
+        @keyframes float-delayed {
+            0% {
+                transform: translateY(5px) translateX(-10px);
+            }
+            50% {
+                transform: translateY(-5px) translateX(10px);
+            }
+            100% {
+                transform: translateY(10px) translateX(-5px);
+            }
+        }
+
+        @keyframes twinkle {
+            0%, 100% {
+                opacity: 0.1;
+                width: 1px;
+                height: 1px;
+            }
+            50% {
+                opacity: 0.8;
+                width: 2px;
+                height: 2px;
+            }
+        }
+
+        /* Governance text gradient style */
+        .governance-gradient {
+            background-image: linear-gradient(to right, #818cf8, #a78bfa, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* LandingPage exact governance gradient */
+        .landing-governance-gradient {
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            background-image: linear-gradient(to right, #818cf8 0%, #a78bfa 50%, #ec4899 100%);
+            font-weight: bold;
+            font-size: 3rem;
+        }
+
+        .color-sample {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .color-box {
+            width: 100px;
+            height: 100px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .color-box span {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .color-indigo-400 {
+            background-color: #818cf8;
+        }
+
+        .color-purple-400 {
+            background-color: #a78bfa;
+        }
+
+        .color-pink-400 {
+            background-color: #ec4899;
+        }
+    </style>
+</head>
+<body>
+    <!-- Aurora background effects -->
+    <div class="aurora-container">
+        <!-- Primary aurora effects -->
+        <div class="aurora-primary-1"></div>
+        <div class="aurora-primary-2"></div>
+        
+        <!-- Secondary aurora effects -->
+        <div class="aurora-secondary-1"></div>
+        <div class="aurora-secondary-2"></div>
+        
+        <!-- Aurora particles -->
+        <div class="aurora-particles" id="particles">
+            <!-- Particles will be added via JavaScript -->
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="container">
+        <h1>Aurora Background with Governance Gradient</h1>
+        
+        <p>The "governance" text in LandingPage.tsx uses the following gradient:</p>
+        
+        <div class="color-sample">
+            <div class="color-box color-indigo-400">
+                <span>#818cf8</span>
+                <span>indigo-400</span>
+            </div>
+            <div class="color-box color-purple-400">
+                <span>#a78bfa</span>
+                <span>purple-400</span>
+            </div>
+            <div class="color-box color-pink-400">
+                <span>#ec4899</span>
+                <span>pink-400</span>
+            </div>
+        </div>
+        
+        <p>Here's how it looks on text:</p>
+        
+        <h2 class="landing-governance-gradient">governance</h2>
+        
+        <p>This uses the exact gradient from LandingPage.tsx:</p>
+        <pre>bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400</pre>
+        
+        <p>
+            In CSS, this translates to:
+            <code>background-image: linear-gradient(to right, #818cf8, #a78bfa, #ec4899);</code>
+        </p>
+    </div>
+
+    <script>
+        // Create twinkling particles
+        const particlesContainer = document.getElementById('particles');
+        const particleCount = 30;
+
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            
+            // Random position
+            const top = Math.random() * 100;
+            const left = Math.random() * 100;
+            
+            // Random animation duration and delay
+            const duration = 20 + Math.random() * 30;
+            const delay = Math.random() * 15;
+            
+            particle.style.top = `${top}%`;
+            particle.style.left = `${left}%`;
+            particle.style.animationName = 'twinkle';
+            particle.style.animationDuration = `${duration}s`;
+            particle.style.animationIterationCount = 'infinite';
+            particle.style.animationDelay = `${delay}s`;
+            particle.style.animationTimingFunction = 'ease-in-out';
+            
+            particlesContainer.appendChild(particle);
+        }
+    </script>
+</body>
+</html> 
