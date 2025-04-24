@@ -4,11 +4,12 @@ import Modal from './common/Modal';
 import { DAO } from '../core/modules/dao-api';
 import { daosService } from '../services/DaosService';
 import { ProposalService } from '../services/ProposalService';
-import { Users, FileText, Globe, Sparkles, ArrowUpRight, Rocket, Check, UserPlus, Twitter, Instagram, MessageCircle } from 'lucide-react';
+import { Users, FileText, Globe, Sparkles, ArrowUpRight, Rocket, Check, UserPlus, Twitter, Instagram, MessageCircle, Wallet } from 'lucide-react';
 import Button from './common/Button';
 import { useNavigate } from 'react-router-dom';
 import useApiAndWallet from '../hooks/useApiAndWallet';
 import { UserService } from '../services/UserService';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
 interface DAOPublicProfileModalProps {
   isOpen: boolean;
@@ -179,8 +180,8 @@ const DAOPublicProfileModal: React.FC<DAOPublicProfileModalProps> = ({
       // If user is a member, enter the dashboard
       onClose();
       onEnterDashboard(daoId);
-    } else {
-      // If user is not a member, join the DAO
+    } else if (connected) {
+      // If user is not a member but connected, join the DAO
       handleJoinDao();
     }
   };
@@ -421,48 +422,59 @@ const DAOPublicProfileModal: React.FC<DAOPublicProfileModalProps> = ({
                   hyphens: auto;
                 }
               `}</style>
-              <Button 
-                variant="primary"
-                className={`px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base transition-all duration-300 ${
-                  showJoinAnimation ? 
-                  'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 animate-gradientShift scale-105 shadow-lg shadow-green-500/30' : 
-                  ''
-                }`}
-                onClick={handleAction}
-                disabled={membershipLoading}
-              >
-                <span className="flex items-center">
-                  {membershipLoading ? (
-                    <>
-                      <span className="mr-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                      {userIsDaoMember ? 'Loading...' : 'Joining...'}
-                    </>
-                  ) : showJoinAnimation ? (
-                    <div className="flex items-center overflow-hidden">
-                      <div className="flex items-center opacity-0 animate-fadeIn" style={{ animationDelay: '0.1s', animationFillMode: 'forwards' }}>
-                        <Check className="mr-2 h-4 w-4" />
+              {!connected ? (
+                <WalletMultiButton 
+                  className="px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base transition-all duration-300 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500"
+                >
+                  <span className="flex items-center">
+                    Connect to join the DAO
+                    <Wallet className="ml-2 h-4 w-4" />
+                  </span>
+                </WalletMultiButton>
+              ) : (
+                <Button 
+                  variant="primary"
+                  className={`px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base transition-all duration-300 ${
+                    showJoinAnimation ? 
+                    'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 animate-gradientShift scale-105 shadow-lg shadow-green-500/30' : 
+                    ''
+                  }`}
+                  onClick={handleAction}
+                  disabled={membershipLoading}
+                >
+                  <span className="flex items-center">
+                    {membershipLoading ? (
+                      <>
+                        <span className="mr-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        {userIsDaoMember ? 'Loading...' : 'Joining...'}
+                      </>
+                    ) : showJoinAnimation ? (
+                      <div className="flex items-center overflow-hidden">
+                        <div className="flex items-center opacity-0 animate-fadeIn" style={{ animationDelay: '0.1s', animationFillMode: 'forwards' }}>
+                          <Check className="mr-2 h-4 w-4" />
+                        </div>
+                        <div className="flex items-center">
+                          <span className="opacity-0 animate-fadeIn" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>Joined&nbsp;</span>
+                          <span className="opacity-0 animate-fadeIn" style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}>DAO!</span>
+                          <span className="ml-1 opacity-0 animate-fadeIn" style={{ animationDelay: '0.4s', animationFillMode: 'forwards' }}>
+                            <UserPlus size={14} className="text-green-300" />
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center">
-                        <span className="opacity-0 animate-fadeIn" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>Joined&nbsp;</span>
-                        <span className="opacity-0 animate-fadeIn" style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}>DAO!</span>
-                        <span className="ml-1 opacity-0 animate-fadeIn" style={{ animationDelay: '0.4s', animationFillMode: 'forwards' }}>
-                          <UserPlus size={14} className="text-green-300" />
-                        </span>
-                      </div>
-                    </div>
-                  ) : userIsDaoMember ? (
-                    <>
-                      Enter Dashboard
-                      <ArrowUpRight className="ml-2 h-4 w-4" />
-                    </>
-                  ) : (
-                    <>
-                      Join DAO
-                      <Rocket className="ml-2 h-4 w-4" />
-                    </>
-                  )}
-                </span>
-              </Button>
+                    ) : userIsDaoMember ? (
+                      <>
+                        Enter Dashboard
+                        <ArrowUpRight className="ml-2 h-4 w-4" />
+                      </>
+                    ) : (
+                      <>
+                        Join DAO
+                        <Rocket className="ml-2 h-4 w-4" />
+                      </>
+                    )}
+                  </span>
+                </Button>
+              )}
             </div>
           </div>
         </div>
