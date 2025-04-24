@@ -34,7 +34,8 @@ export function serializeCreateDaoInstruction(
   tiktok: string, 
   website: string, 
   treasury: string, 
-  profile: string, 
+  profile: string,
+  tokenAddress: string,
   solPriceUsd: number
 ): Buffer {
   // Instruction index (0 for CreateDao)
@@ -52,6 +53,7 @@ export function serializeCreateDaoInstruction(
   const websiteBuf = serializeString(website);
   const treasuryBuf = serializeString(treasury);
   const profileBuf = serializeString(profile);
+  const tokenAddressBuf = serializeString(tokenAddress);
   
   // Serialize u64 sol price (8 bytes, little-endian)
   const solPriceBuf = Buffer.alloc(8);
@@ -75,6 +77,7 @@ export function serializeCreateDaoInstruction(
     websiteBuf,
     treasuryBuf,
     profileBuf,
+    tokenAddressBuf,
     solPriceBuf
   ]);
 }
@@ -175,6 +178,7 @@ export async function createDaoTransaction(
   website: string = '',
   treasury: string = '',
   profile: string = '',
+  tokenAddress: string = '',
   solPriceUsd?: number // Optional - will fetch current price if not provided
 ): Promise<{ transaction: Transaction, daoAccount: Keypair }> {
   if (!wallet.publicKey) throw new Error("Wallet not connected");
@@ -199,6 +203,7 @@ export async function createDaoTransaction(
     website,
     treasury,
     profile,
+    tokenAddress,
     solPriceUsd
   );
   

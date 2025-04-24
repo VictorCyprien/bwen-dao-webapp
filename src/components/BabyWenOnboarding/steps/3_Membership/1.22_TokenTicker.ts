@@ -50,6 +50,9 @@ const TokenTickerStep: OnboardingStep = {
       // Save token ticker to sessionStorage
       sessionStorage.setItem('tokenTicker', tokenTicker);
       
+      // Set a mock token address for when creating a new token
+      sessionStorage.setItem('tokenAddress', '7pmuGLLYdJ2mc7chZwEJAaxuWALAYqaVqbUwzzyHcA7D');
+      
       return {
         nextStep: 'dao-membership-conditions'
       };

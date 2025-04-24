@@ -27,6 +27,7 @@ export class InputCreateDAO {
     'treasury'?: string;
     'pubkey': string;
     'transaction': string;
+    'tokenAddress': string;
     'profile'?: HttpFile;
 
     static readonly discriminator: string | undefined = undefined;
@@ -97,6 +98,12 @@ export class InputCreateDAO {
         {
             "name": "transaction",
             "baseName": "transaction",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "tokenAddress",
+            "baseName": "token_address",
             "type": "string",
             "format": ""
         },

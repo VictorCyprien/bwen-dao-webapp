@@ -187,7 +187,7 @@ const TokenAddressStep: OnboardingStep = {
   customComponent: TokenAddressForm,
   onCustomComponentResponse: (option: string, data?: any) => {
     if (option === 'submit' && data?.tokenAddress) {
-      // Enregistrer l'adresse du token dans sessionStorage
+      // Save the token address in sessionStorage for later use in DAO creation
       sessionStorage.setItem('tokenAddress', data.tokenAddress);
       
       return {
@@ -204,7 +204,7 @@ const TokenAddressStep: OnboardingStep = {
       const data = JSON.parse(response);
       const tokenAddress = data.tokenAddress;
       
-      // Save token address to sessionStorage
+      // Save token address to sessionStorage for use in DAO creation
       sessionStorage.setItem('tokenAddress', tokenAddress);
       
       return {
