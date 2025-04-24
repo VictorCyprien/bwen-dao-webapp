@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode, useRef } from 'react';
+import React, { createContext, useState, useContext, useRef, useEffect, type ReactNode } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { walletAuthService } from '../services/WalletAuthService';
 import { userService } from '../services/UserService';
@@ -69,6 +69,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
 
   // Add a ref to track if we're already fetching user data
   const isFetchingUserInfo = useRef(false);
+  
+  // Simple wallet connection check with 2-second delay
+  useEffect(() => {
+    const checkWalletConnection = setTimeout(() => {
+      if (isAuthenticated && !connected) {
+        console.log('Wallet disconnected, logging out user');
+        logout();
+      }
+    }, 1000);
+    
+    return () => clearTimeout(checkWalletConnection);
+  }, [connected, isAuthenticated]);
   
   // Initialize API services with the API endpoint and check for token
   useEffectOnce(() => {
@@ -309,47 +321,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
     signChallenge();
   }, [challengeMessage, publicKey, signMessage, disconnect]);
 
-  // Start the authentication process for a wallet
-  const startAuthenticationProcess = async (walletAddress: string) => {
-    console.log('Starting authentication process for wallet:', walletAddress);
-    setIsLoading(true);
-    setApiError(null);
-    
-    try {
-      // Check if a user with this wallet exists
-      const userExists = await walletAuthService.checkUserExists(walletAddress);
-      
-      if (!userExists) {
-        // User doesn't exist, show registration form
-        console.log('User does not exist, showing registration form');
-        setPendingWalletAddress(walletAddress);
-        setShowRegistrationForm(true);
-        return;
-      }
-      
-      // User exists, request a challenge to sign
-      console.log('Requesting wallet challenge...');
-      const challenge = await walletAuthService.requestChallenge(walletAddress);
-      
-      if (!challenge) {
-        throw new Error('Failed to get challenge message');
-      }
-      
-      // Set the challenge to trigger the signature process
-      console.log('Challenge received, signature required:', challenge);
-      setChallengeMessage(challenge);
-      
-    } catch (error) {
-      console.error('Authentication process error:', error);
-      let errorMessage = 'Authentication failed';
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      }
-      setApiError(errorMessage);
-      setIsLoading(false);
-    }
-  };
-
   // Update the signature verification success handler to fetch user info
   const handleSignatureSuccess = async (result: any) => {
     console.log('Signature success result:', result);
@@ -520,34 +491,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({
       setIsLoading(false);
     }
   };
-
-  // Memoize the handleLogout function to prevent dependency issues
-  const handleLogout = React.useCallback(async () => {
-    try {
-      // Call API logout if we have a token
-      if (walletAuthService.getAccessToken()) {
-        // Call the logout API endpoint
-        try {
-          await walletAuthService.logout();
-          console.log('Successfully logged out from DAO API');
-        } catch (error) {
-          console.error('Error logging out from API:', error);
-        }
-      }
-      
-      // Clear local auth state
-      walletAuthService.clearTokens();
-      userService.clearUserCache(); // Clear user cache
-      setIsAuthenticated(false);
-      setToken(null);
-      setChallengeMessage(null);
-      setApiError(null);
-      setUserInfo(null); // Clear user info
-      localStorage.removeItem('authenticatedWalletAddress');
-    } catch (error) {
-      console.error('Error during logout:', error);
-    }
-  }, []);
   
   // Handle wallet connection changes
   const handleWalletConnection = async () => {
