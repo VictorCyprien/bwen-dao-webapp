@@ -1,12 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Shield, ChevronRight, AlertTriangle } from 'lucide-react';
+import { X, Shield, ChevronRight, AlertTriangle, Check } from 'lucide-react';
 import useApiAndWallet from '../hooks/useApiAndWallet';
 import ApiAuthStatus from './common/ApiAuthStatus';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { daosService } from '../services/DaosService';
 import { onboardingMessages } from './BabyWenOnboarding/steps/messages';
 import { useWallet } from '@solana/wallet-adapter-react';
+import UserRegistrationForm from '../components/UserRegistrationForm';
+import { UserService } from '../services/UserService';
+import { ProposalService } from '../services/ProposalService';
 
 // Import components for the onboarding experience
 
@@ -45,6 +48,10 @@ import ApplicationApprovalStep from './BabyWenOnboarding/steps/3_Membership/2.2_
 import DaoReviewStep from './BabyWenOnboarding/steps/4_Review/DaoReviewStep';
 import DaoSuccessStep from './BabyWenOnboarding/steps/4_Review/DaoSuccessStep';
 import { InputCreateDAO } from '../core/modules/dao-api';
+
+// Initialize services
+const proposalService = new ProposalService();
+const userService = new UserService();
 
 // Types for the onboarding flow
 export type StepId = 'dao-name' | 'dao-description' | 'dao-logo' | 'dao-social' | 
@@ -254,6 +261,8 @@ const BabyWenOnboarding: React.FC = () => {
   // Welcome modal state
   const [showWelcomeModal, setShowWelcomeModal] = React.useState<boolean>(true);
   const [showOnboarding, setShowOnboarding] = React.useState<boolean>(false);
+  const [showRegistrationForm, setShowRegistrationForm] = React.useState<boolean>(false);
+  const [registrationError, setRegistrationError] = React.useState<string | null>(null);
   
   // Wallet change detection state
   const [initialWalletAddress, setInitialWalletAddress] = React.useState<string | null>(null);
@@ -266,7 +275,10 @@ const BabyWenOnboarding: React.FC = () => {
   const wallet = useWallet();
   
   // Check if wallet is connected
-  const isWalletConnected = userDisplayInfo?.isAuthenticated || false;
+  const isWalletConnected = connected || false;
+  
+  // Check if user is registered (has username)
+  const isUserRegistered = userInfo?.username ? true : false;
   
   // Blockchain transaction state
   const [blockchainTxInProgress, setBlockchainTxInProgress] = React.useState<boolean>(false);
@@ -302,6 +314,13 @@ const BabyWenOnboarding: React.FC = () => {
     if (!isWalletConnected) {
       // Redirect to connect wallet page or show connection modal
       alert("Please connect your wallet before starting DAO creation");
+      return;
+    }
+    
+    // Check if user is registered after connecting wallet
+    if (isWalletConnected && !isUserRegistered) {
+      // Show registration form
+      setShowRegistrationForm(true);
       return;
     }
     
@@ -1166,6 +1185,59 @@ const BabyWenOnboarding: React.FC = () => {
     }
   };
   
+  // Handle user registration form submission
+  const handleUserRegistration = async (userData: {
+    username: string;
+    email: string;
+    memberName: string;
+    profilePicture?: File;
+  }) => {
+    if (!publicKey) return;
+    
+    try {
+      setRegistrationError(null);
+      
+      // Call the user service to register the new user
+      const registrationResult = await userService.createUser(
+        publicKey.toString(),
+        {
+          username: userData.username,
+          email: userData.email || undefined,
+          memberName: userData.memberName || undefined,
+          profilePicture: userData.profilePicture
+        }
+      );
+      
+      if (registrationResult.success) {
+        // Reload user info after registration
+        await userService.getCurrentUser();
+        
+        // Hide registration form
+        setShowRegistrationForm(false);
+        
+        // Continue with onboarding
+        if (showWelcomeModal) {
+          // If we're still on the welcome screen, wait for the user to click Start
+          // Instead of automatically starting onboarding
+          return;
+        } else {
+          // This case shouldn't normally happen but handle it just in case
+          startOnboarding();
+        }
+      } else {
+        setRegistrationError(registrationResult.error || "User registration failed. Please try again.");
+      }
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      setRegistrationError(error.message || "User registration failed. Please try again.");
+    }
+  };
+
+  // Handle registration form cancellation
+  const handleRegistrationCancel = () => {
+    setShowRegistrationForm(false);
+  };
+  
   // Render appropriate input component based on input type
   const renderInputComponent = () => {
     if (!showInput) return null;
@@ -1386,49 +1458,79 @@ const BabyWenOnboarding: React.FC = () => {
     };
   }, []);
   
+  // Monitor wallet connection status changes
+  React.useEffect(() => {
+    // This effect only watches for connection status changes
+    // but doesn't automatically show the registration form
+    console.log("Wallet connection status changed:", isWalletConnected);
+    console.log("User registration status:", isUserRegistered);
+    
+    // If wallet disconnects, hide registration form
+    if (!isWalletConnected) {
+      setShowRegistrationForm(false);
+    }
+  }, [isWalletConnected]);
+
+  // Add a separate effect to check user info when wallet is connected
+  React.useEffect(() => {
+    // Only run this if wallet is connected but we don't yet know if user is registered
+    const checkUserRegistration = async () => {
+      if (isWalletConnected && publicKey) {
+        // Force refresh user data
+        try {
+          await userService.getCurrentUser();
+          console.log("Updated user info after wallet connection");
+        } catch (error) {
+          console.error("Error getting current user:", error);
+        }
+      }
+    };
+    
+    if (isWalletConnected) {
+      checkUserRegistration();
+    }
+  }, [isWalletConnected, publicKey]);
+  
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white overflow-hidden relative">
-      {/* Welcome Modal */}
+      {/* User Registration Form */}
+      {showRegistrationForm && publicKey && (
+        <UserRegistrationForm
+          walletAddress={publicKey.toString()}
+          onSubmit={handleUserRegistration}
+          onCancel={handleRegistrationCancel}
+          apiError={registrationError || undefined}
+        />
+      )}
+      
+      {/* Welcome Screen with simplified layout */}
       {showWelcomeModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] backdrop-blur-sm transition-all duration-500 ease-in-out animate-fadeIn p-4">
-          <div className="bg-gradient-to-b from-[#1a1a1a] to-[#111] rounded-2xl p-4 sm:p-6 md:p-8 w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-2xl border border-indigo-500/30 shadow-2xl animate-scaleIn">
-            {/* Modal Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 gap-3">
-              <h2 className="text-xl sm:text-2xl font-bold text-white flex items-center">
-                <Shield className="mr-2 text-indigo-400" size={24} /> 
-                Welcome to DAO Creation
-              </h2>
-              
-              {/* Wallet Section: Show either ApiAuthStatus or Connect Wallet button */}
-              {isWalletConnected ? (
-                <ApiAuthStatus 
-                  apiStatus={apiStatus} 
-                  userDisplayInfo={userDisplayInfo}
-                />
-              ) : (
-                <WalletMultiButton className="wallet-adapter-button-custom" />
-              )}
-            </div>
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <div className="bg-gradient-to-b from-[#1a1a1a] to-[#111] rounded-2xl p-6 w-full max-w-2xl border border-indigo-500/30 shadow-2xl">
+            <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+              <Shield className="mr-2 text-indigo-400" size={24} /> 
+              Create Your DAO
+            </h2>
             
-            {/* Modal Content */}
-            <div className="mb-6 sm:mb-8">
-              <div className="flex flex-col sm:flex-row items-start mb-4 p-3 sm:p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-                <AlertTriangle className="text-amber-500 shrink-0 mt-1 mr-0 sm:mr-3 mb-2 sm:mb-0" size={20} />
+            {/* Important Security Notice */}
+            <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+              <div className="flex">
+                <AlertTriangle className="text-amber-500 shrink-0 mt-1 mr-3" size={20} />
                 <div>
-                  <h3 className="text-amber-400 font-medium mb-2">Important Wallet Security Notice</h3>
-                  <p className="text-white/80 text-xs sm:text-sm leading-relaxed">
-                    You're about to begin the DAO creation process. For security best practices, we strongly 
-                    recommend using a new, dedicated wallet created from a fresh seed phrase.
-                  </p>
-                  <p className="text-white/80 text-xs sm:text-sm leading-relaxed mt-2">
+                  <h3 className="text-amber-400 font-medium mb-2">Wallet Security Notice</h3>
+                  <p className="text-white/80 text-sm leading-relaxed">
+                    For security best practices, we recommend using a new, dedicated wallet created from a fresh seed phrase.
                     The wallet you use will become the DAO's treasury wallet and will be used to deploy your 
-                    DAO token contract. To protect your main assets, avoid using your primary wallet for this process.
+                    DAO token contract.
                   </p>
                 </div>
               </div>
-              
-              <h3 className="text-md sm:text-lg font-medium mb-2 sm:mb-3 text-indigo-300">What to expect:</h3>
-              <ul className="space-y-1 sm:space-y-2 text-white/80 text-xs sm:text-sm">
+            </div>
+            
+            {/* What to expect section */}
+            <div className="mb-6">
+              <h3 className="text-lg font-medium mb-3 text-indigo-300">What to expect:</h3>
+              <ul className="space-y-2 text-white/80 text-sm">
                 <li className="flex items-start">
                   <ChevronRight size={16} className="text-indigo-400 shrink-0 mt-1 mr-2" />
                   <span>A step-by-step guided process to customize your DAO</span>
@@ -1444,7 +1546,50 @@ const BabyWenOnboarding: React.FC = () => {
               </ul>
             </div>
             
-            {/* Modal Footer */}
+            {/* Wallet Connection Section */}
+            <div className="mb-6 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
+              <h3 className="text-indigo-300 font-medium mb-3">Connect Your Wallet</h3>
+              {!isWalletConnected ? (
+                <div className="flex flex-col gap-3">
+                  <p className="text-white/80 text-sm">Connect your wallet to begin the DAO creation process.</p>
+                  <div className="flex justify-center">
+                    <WalletMultiButton className="wallet-adapter-button-custom" />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between items-center">
+                    <p className="text-green-400 flex items-center">
+                      <Check size={16} className="mr-1" /> Wallet connected
+                    </p>
+                    <ApiAuthStatus 
+                      apiStatus={apiStatus} 
+                      userDisplayInfo={userDisplayInfo}
+                    />
+                  </div>
+                  <p className="text-white/80 text-xs">
+                    Connected as: {publicKey?.toString().slice(0, 6)}...{publicKey?.toString().slice(-4)}
+                  </p>
+                  
+                  {/* Show registration button if user is not registered */}
+                  {isWalletConnected && !isUserRegistered && (
+                    <div className="mt-2 pt-2 border-t border-indigo-500/20">
+                      <p className="text-amber-400 text-sm mb-2">
+                        This wallet is not yet registered. Please complete registration to continue.
+                      </p>
+                      <button
+                        onClick={() => setShowRegistrationForm(true)}
+                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm"
+                      >
+                        Complete Registration
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <button
                 onClick={() => {
@@ -1457,10 +1602,10 @@ const BabyWenOnboarding: React.FC = () => {
               </button>
               <button 
                 onClick={startOnboarding}
-                className={`w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg transition-all shadow-lg hover:shadow-indigo-500/25 font-medium ${!isWalletConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
+                className={`w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg transition-all shadow-lg hover:shadow-indigo-500/25 font-medium ${!isWalletConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
                 disabled={!isWalletConnected}
               >
-                {isWalletConnected ? 'I Understand, Let\'s Begin' : 'Connect Wallet to Begin'}
+                {isWalletConnected ? 'Start DAO Creation' : 'Connect Wallet to Begin'}
               </button>
             </div>
           </div>
