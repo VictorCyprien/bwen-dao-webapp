@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   CircleDollarSign,
   Vote,
@@ -6,16 +6,18 @@ import {
   Activity,
   Loader,
   RefreshCw,
-  LogIn,
   LogOut,
-  Settings
+  Settings,
+  ChevronLeft,
+  ChevronRight,
+  AlertCircle
 } from 'lucide-react';
 import { useParams, Link } from 'react-router-dom';
 import { treasuryService } from '../services/TreasuryService';
 import { daosService } from '../services/DaosService';
 import { userService } from '../services/UserService';
 import { Treasury, Token, User } from '../core/modules/dao-api';
-import { Pie } from 'react-chartjs-2';
+import { Pie, Doughnut } from 'react-chartjs-2';
 import { 
   Chart as ChartJS, 
   ArcElement, 
@@ -34,7 +36,6 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { useSolanaTransaction } from '../hooks/useSolanaTransaction';
 import DaoUpdateModal from './DaoUpdateModal';
 import { useAuth } from '../context/AuthContext';
-import Button from './common/Button';
 import { proposalService } from '../services/ProposalService';
 import { SOLANA_RPC_ENDPOINT } from '../config/solana';
 import PopupProposal from './PopupProposal';
@@ -50,7 +51,6 @@ ChartJS.register(
   CategoryScale,
   Title
 );
-
 
 // Define type for the selected proposal to solve typing issues
 interface SelectedProposal {
@@ -114,7 +114,6 @@ const Dashboard = () => {
   const [isDaoUpdateModalOpen, setIsDaoUpdateModalOpen] = useState<boolean>(false);
   const [hasUpdatePermission, setHasUpdatePermission] = useState<boolean>(false);
   const [selectedProposal, setSelectedProposal] = useState<any | null>(null);
-  // Add state for token address
   const [tokenAddress, setTokenAddress] = useState<string>("7pmuGLLYdJ2mc7chZwEJAaxuWALAYqaVqbUwzzyHcA7D");
   const [daoProfile, setDaoProfile] = useState<{
     name: string | null;
@@ -133,43 +132,36 @@ const Dashboard = () => {
     tiktok: null,
     website: null
   });
+  const [currentProposalPage, setCurrentProposalPage] = useState<number>(1);
+  const proposalsPerPage = 10;
   
   const { publicKey, connected } = useWallet();
   const { sendTransaction } = useSolanaTransaction();
   const { userInfo } = useAuth();
-
-  // Add these mock data arrays near the top of the file, with other state/data declarations
-  const mockRegions = [
-    { region: "Asia", members: 320, percentage: 25, color: "#7B5CFF" },
-    { region: "Europe", members: 280, percentage: 22, color: "#9C5CFF" },
-    { region: "North America", members: 250, percentage: 20, color: "#4E78FF" },
-    { region: "South America", members: 180, percentage: 14, color: "#8C45FF" },
-    { region: "Africa", members: 160, percentage: 12, color: "#7D45FF" },
-    { region: "Oceania", members: 90, percentage: 7, color: "#4EA0FF" }
-  ];
-
-  const mockTokens = [
-    { name: "USD Coin", symbol: "USDC", amount: 4250.8, percentage: 25, color: "#7B5CFF" },
-    { name: "Cardano", symbol: "ADA", amount: 3400.2, percentage: 20, color: "#9C5CFF" },
-    { name: "Solana", symbol: "SOL", amount: 2550.5, percentage: 15, color: "#4E78FF" },
-    { name: "Polkadot", symbol: "DOT", amount: 1700.9, percentage: 10, color: "#4EA0FF" },
-    { name: "Avalanche", symbol: "AVAX", amount: 1360.4, percentage: 8, color: "#8C45FF" }
-  ];
+  const [showLeaveConfirmation, setShowLeaveConfirmation] = useState<boolean>(false);
 
   // Chart helper functions
-  const createDonutChartData = (items: any[], colorKey: string = 'color') => {
+  const createDonutChartData = (items: Token[]) => {
+    if (!items || items.length === 0) return null;
+    
+    const labels = items.map((token) => token.symbol || 'Unknown');
+    const data = items.map((token) => 
+      token.balance && token.price ? token.balance * token.price : 0
+    );
+    const backgroundColor = [
+      '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+      '#FF9F40', '#8AC94A', '#F2C94C', '#EA4C89', '#614AE2'
+    ];
+    
     return {
-      labels: items.map(item => item.region || item.name),
+      labels,
       datasets: [
         {
-          data: items.map(item => item.percentage),
-          backgroundColor: items.map(item => item[colorKey]),
+          data,
+          backgroundColor: backgroundColor.slice(0, items.length),
           borderWidth: 0,
-          borderRadius: 0,
-          hoverOffset: 5,
-          cutout: '70%'
-        }
-      ]
+        },
+      ],
     };
   };
 
@@ -200,20 +192,6 @@ const Dashboard = () => {
           label: (context: any) => {
             const item = context.dataset.data[context.dataIndex];
             return `${item}%`;
-          },
-          afterLabel: (context: any) => {
-            // Get the corresponding mock data item
-            const index = context.dataIndex;
-            const dataset = context.dataset;
-            
-            if (dataset.label === 'Members') {
-              const regionData = mockRegions[index];
-              return regionData ? `${regionData.members} members` : '';
-            } else if (dataset.label === 'Tokens') {
-              const tokenData = mockTokens[index];
-              return tokenData ? `${tokenData.amount.toFixed(1)} ${tokenData.symbol}` : '';
-            }
-            return '';
           }
         }
       }
@@ -242,57 +220,16 @@ const Dashboard = () => {
         setLoading(true);
       }
       
-      // Use mock data instead of API calls for now
-      setTimeout(() => {
-        // Mock treasury data
-        const mockTreasury = {
-          totalValue: 10500000,
-          dailyChange: 250000,
-          weeklyChange: 780000,
-          monthlyChange: 2100000
-        };
-        setTreasury(mockTreasury as Treasury);
-        
-        // Mock tokens data
-        const mockTokens = [
-          { tokenId: '1', name: 'Solana', symbol: 'SOL', amount: 12500.45, contract: '0x123...' },
-          { tokenId: '2', name: 'Ethereum', symbol: 'ETH', amount: 487.32, contract: '0x456...' },
-          { tokenId: '3', name: 'USD Coin', symbol: 'USDC', amount: 350000, contract: '0x789...' },
-          { tokenId: '4', name: 'Bitcoin', symbol: 'BTC', amount: 10.75, contract: '0xabc...' },
-          { tokenId: '5', name: 'Avalanche', symbol: 'AVAX', amount: 2800.12, contract: '0xdef...' },
-          { tokenId: '6', name: 'Cardano', symbol: 'ADA', amount: 45000, contract: '0xghi...' },
-          { tokenId: '7', name: 'Polkadot', symbol: 'DOT', amount: 8500, contract: '0xjkl...' },
-        ];
-        
-        // Sort by amount and take top 5
-        const sortedTokens = [...mockTokens].sort((a, b) => b.amount - a.amount).slice(0, 5);
-        setTokens(sortedTokens as Token[]);
-        
-        setLastUpdated(new Date());
-        setRefreshing(false);
-        setLoading(false);
-        setError(null);
-      }, 800); 
-      
-      // Simulate network delay
-
-      /* Original API code - commented out for now
-      // Fetch treasury data
-      const treasuryData = await treasuryService.getTreasury(daoId);
+      const treasuryData = await treasuryService.getTreasury(daoId || '');
       setTreasury(treasuryData);
       
-      // Fetch tokens for the pie chart
-      const tokensData = await treasuryService.getTokens(daoId);
-      // Sort by amount and take top 5
-      const sortedTokens = [...tokensData].sort((a, b) => (b.amount || 0) - (a.amount || 0)).slice(0, 5);
-      setTokens(sortedTokens);
+      const tokensData = await treasuryService.getTokens(daoId || '');
+      setTokens(tokensData);
       
       setLastUpdated(new Date());
       setRefreshing(false);
       setLoading(false);
       setError(null);
-      */
-     
     } catch (err) {
       console.error('Error fetching treasury data:', err);
       setError('Failed to load treasury data. Please try again.');
@@ -308,12 +245,10 @@ const Dashboard = () => {
     try {
       setProposalsLoading(true);
       
-      // Get all proposals data from the API
       const proposalsData = await proposalService.getAllProposals(daoId);
       
-      // Transform API proposals to our component's format, filtering for active proposals only
       const formattedProposals = proposalsData
-        .filter(p => p.isActive) // Only keep active proposals
+        .filter(p => p.isActive)
         .map(p => ({
           id: p.proposalId || '',
           title: p.name || '',
@@ -322,7 +257,6 @@ const Dashboard = () => {
           closingDate: p.endTime ? new Date(p.endTime) : new Date()
         }));
       
-      // Sort by closing date (soonest first)
       const sortedProposals = formattedProposals.sort((a, b) => a.closingDate.getTime() - b.closingDate.getTime());
       setProposals(sortedProposals);
       setProposalsLoading(false);
@@ -339,12 +273,9 @@ const Dashboard = () => {
     try {
       setMembersLoading(true);
       
-      // Get members of the DAO
       const membersData = await daosService.getDaoMembers(daoId);
       setMembers(membersData);
       
-      // Mock location data (in a real app, you'd get this from user profiles)
-      // Count members by country/region
       const locationCounts: {[key: string]: number} = {
         'North America': 450,
         'Europe': 380,
@@ -369,47 +300,12 @@ const Dashboard = () => {
     try {
       setRefreshing(true);
       
-      // Use mock data instead of API call
-      setTimeout(() => {
-        // Mock tokens data with updated percentages
-        const mockTokens = [
-          { tokenId: '1', name: 'Solana', symbol: 'SOL', amount: 13200.88, contract: '0x123...' },
-          { tokenId: '2', name: 'Ethereum', symbol: 'ETH', amount: 492.15, contract: '0x456...' },
-          { tokenId: '3', name: 'USD Coin', symbol: 'USDC', amount: 345000, contract: '0x789...' },
-          { tokenId: '4', name: 'Bitcoin', symbol: 'BTC', amount: 11.02, contract: '0xabc...' },
-          { tokenId: '5', name: 'Avalanche', symbol: 'AVAX', amount: 2950.75, contract: '0xdef...' },
-          { tokenId: '6', name: 'Cardano', symbol: 'ADA', amount: 44500, contract: '0xghi...' },
-          { tokenId: '7', name: 'Polkadot', symbol: 'DOT', amount: 8750, contract: '0xjkl...' },
-        ];
-        
-        // Sort by amount and take top 5
-        const sortedTokens = [...mockTokens].sort((a, b) => b.amount - a.amount).slice(0, 5);
-        setTokens(sortedTokens as Token[]);
-        
-        // Update treasury total value
-        setTreasury((prev: Treasury | null) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            totalValue: 10750000,
-            dailyChange: 270000
-          };
-        });
-        
-        setRefreshing(false);
-        setLastUpdated(new Date());
-      }, 1000); // Simulate network delay
-      
-      /* Original API code - commented out for now
-      // Update the token percentages
       await treasuryService.updateDAOTokenPercentages(daoId);
       
-      // Refresh the data to show updated percentages
       await fetchTreasuryData(false);
       
       setRefreshing(false);
       setLastUpdated(new Date());
-      */
     } catch (err) {
       console.error('Error updating token percentages:', err);
       setRefreshing(false);
@@ -423,7 +319,6 @@ const Dashboard = () => {
     try {
       setMembershipLoading(true);
       
-      // Get the current user's ID
       const currentUser = await userService.getCurrentUser();
       if (!currentUser || !currentUser.userId) {
         console.error("Could not find current user's ID");
@@ -432,12 +327,10 @@ const Dashboard = () => {
         return;
       }
       
-      // Call the DAO-API SDK to check membership
       const members = await daosService.getDaoMembers(daoId);
       console.log('DAO members:', members);
       console.log('Current user ID:', currentUser.userId);
       
-      // Check if the user is a member by userId
       const isMember = members.some((member: any) => member.userId === currentUser.userId);
       
       console.log('User is DAO member:', isMember);
@@ -460,8 +353,6 @@ const Dashboard = () => {
     try {
       setMembershipLoading(true);
       
-      // Get the user ID - this should be retrieved from the user service
-      // rather than using the public key directly
       const currentUser = await userService.getCurrentUser();
       
       if (!currentUser || !currentUser.userId) {
@@ -472,25 +363,20 @@ const Dashboard = () => {
       
       console.log("Found user ID for adding to DAO:", currentUser.userId);
       
-      // Call the DAO-API SDK to join the DAO with the correct user ID
       const result = await daosService.addMemberToDao(daoId, currentUser.userId);
       if (result) {
         console.log('Successfully joined DAO');
         setUserIsDaoMember(true);
-        // Refresh member data
         fetchMemberData();
-        // Refresh token address
         fetchTokenAddress();
       } else {
         console.error('Failed to join DAO');
-        // Re-check membership to be sure
         checkDaoMembership();
       }
       setMembershipLoading(false);
     } catch (err) {
       console.error('Error joining DAO:', err);
       setMembershipLoading(false);
-      // Re-check membership to be sure
       checkDaoMembership();
     }
   };
@@ -505,7 +391,6 @@ const Dashboard = () => {
     try {
       setMembershipLoading(true);
       
-      // Get the current user's ID directly from the user service
       const currentUser = await userService.getCurrentUser();
       
       if (!currentUser || !currentUser.userId) {
@@ -516,40 +401,32 @@ const Dashboard = () => {
       
       console.log("Found user ID for removal:", currentUser.userId);
       
-      // Call the DAO-API SDK to leave the DAO with the correct user ID
       const result = await daosService.removeMemberFromDao(daoId, currentUser.userId);
       if (result) {
         console.log('Successfully left DAO');
         setUserIsDaoMember(false);
-        // Refresh member data
         fetchMemberData();
-        // Refresh token address
         fetchTokenAddress();
       } else {
         console.error('Failed to leave DAO');
-        // Re-check membership to be sure
         checkDaoMembership();
       }
       setMembershipLoading(false);
     } catch (err) {
       console.error('Error leaving DAO:', err);
       setMembershipLoading(false);
-      // Re-check membership to be sure
       checkDaoMembership();
     }
   };
 
   // Check membership when component loads or when relevant data changes
   useEffectOnce(() => {
-    // Only run checks if we have a daoId and auth context
     if (!daoId) return;
     
-    // Check membership if wallet is connected
     if (publicKey && connected) {
       checkDaoMembership();
     }
     
-    // Check update permission if we have user info
     if (userInfo?.userId) {
       checkUpdatePermission();
     }
@@ -588,12 +465,10 @@ const Dashboard = () => {
     
     loadData();
     
-    // Set up the automatic refresh timer
     timerRef.current = setInterval(() => {
       fetchTreasuryData(false);
-    }, 60000); // Refresh every minute
+    }, 60000);
     
-    // Cleanup function to clear the interval when the component unmounts
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -603,38 +478,8 @@ const Dashboard = () => {
 
   // Initialize Solana connection once on component mount
   useEffectOnce(() => {
-    // Initialize the Solana connection with our configured endpoint
     proposalService.initializeSolanaConnection(SOLANA_RPC_ENDPOINT);
   });
-
-  // Prepare data for the pie chart
-  const tokenChartData: ChartData<'pie'> = {
-    labels: tokens.map((token: Token) => token.name),
-    datasets: [
-      {
-        data: tokens.map((token: Token) => token.amount || 0),
-        backgroundColor: [
-          'rgba(255, 99, 132, 0.7)',
-          'rgba(54, 162, 235, 0.7)',
-          'rgba(255, 206, 86, 0.7)',
-          'rgba(75, 192, 192, 0.7)',
-          'rgba(153, 102, 255, 0.7)',
-          'rgba(255, 159, 64, 0.7)',
-          'rgba(199, 199, 199, 0.7)',
-        ],
-        borderColor: [
-          'rgba(255, 99, 132, 1)',
-          'rgba(54, 162, 235, 1)',
-          'rgba(255, 206, 86, 1)',
-          'rgba(75, 192, 192, 1)',
-          'rgba(153, 102, 255, 1)',
-          'rgba(255, 159, 64, 1)',
-          'rgba(199, 199, 199, 1)',
-        ],
-        borderWidth: 1,
-      },
-    ],
-  };
 
   // Format currency value
   const formatCurrency = (value: any): string => {
@@ -645,25 +490,6 @@ const Dashboard = () => {
       currency: 'USD',
       maximumFractionDigits: 0
     }).format(Number(value));
-  };
-
-  // Calculate percentage change
-  const calculatePercentageChange = (current: any, previous: any): string => {
-    if (!current || !previous || previous === 0) return '0%';
-    
-    const change = ((current - previous) / previous) * 100;
-    return `${change > 0 ? '+' : ''}${change.toFixed(1)}%`;
-  };
-
-  // Format the last updated time
-  const formatLastUpdated = (): string => {
-    if (!lastUpdated) return 'Never';
-    
-    return new Intl.DateTimeFormat('en-US', {
-      hour: 'numeric',
-      minute: 'numeric',
-      second: 'numeric',
-    }).format(lastUpdated);
   };
 
   // Format date for proposals
@@ -697,13 +523,11 @@ const Dashboard = () => {
         return;
       }
       
-      // Check if current user is the owner
       if (daoInfo.ownerId === userInfo.userId) {
         setHasUpdatePermission(true);
         return;
       }
       
-      // Check if current user is an admin
       const isAdmin = daoInfo.admins?.some(admin => admin.userId === userInfo.userId);
       setHasUpdatePermission(Boolean(isAdmin));
       
@@ -721,7 +545,6 @@ const Dashboard = () => {
     }
     
     try {
-      // Create Solana transaction for voting
       const result = await proposalService.createVoteTransaction(
         daoId,
         proposalId,
@@ -736,7 +559,6 @@ const Dashboard = () => {
       
       const { transaction, voteAccount } = result;
 
-      // Send transaction to be signed and processed
       const signature = await sendTransaction(transaction);
       
       if (!signature) {
@@ -744,11 +566,8 @@ const Dashboard = () => {
         return null;
       }
 
-      
-      // Update the API with the vote information
       await proposalService.voteOnProposal(daoId, proposalId, vote, signature, voteAccount.publicKey.toString());
       
-      // Refresh proposals data
       await fetchProposalsData();
       return signature;
     } catch (err) {
@@ -769,7 +588,6 @@ const Dashboard = () => {
     try {
       const proposalDetails = await proposalService.getProposalById(daoId, proposalId);
       if (proposalDetails) {
-        // Update the selected proposal with full details
         setSelectedProposal((prevProposal: SelectedProposal | null) => {
           if (!prevProposal) return null;
           
@@ -795,7 +613,7 @@ const Dashboard = () => {
                 amount: action.amount,
                 token: action.token
               })) : [],
-              quorum: 100, // Default values
+              quorum: 100,
               minApproval: 51,
               daoId: daoId
             }
@@ -807,16 +625,14 @@ const Dashboard = () => {
     }
   };
 
-  // Fonction pour récupérer les liens de la communauté
+  // Fetch community links
   const fetchCommunityLinks = async () => {
     if (!daoId) return;
     
     try {
-      // Récupérer les informations de la DAO depuis l'API
       const daoInfo = await daosService.getDaoById(daoId);
       
       if (daoInfo) {
-        // Récupérer les liens sociaux depuis l'objet DAO
         const socialLinks = {
           twitter: daoInfo.twitter || null,
           discordServer: daoInfo.discordServer || null,
@@ -826,14 +642,12 @@ const Dashboard = () => {
           website: daoInfo.website || null
         };
         
-        // Set DAO profile information
         setDaoProfile({
           name: daoInfo.name || null,
           description: daoInfo.description || null,
           profilePicture: daoInfo.profilePicture || null
         });
         
-        // Also update the token address if available
         if (daoInfo.tokenAddress) {
           setTokenAddress(daoInfo.tokenAddress);
         }
@@ -842,7 +656,6 @@ const Dashboard = () => {
         setCommunityLinks(socialLinks);
       } else {
         console.log('No DAO information found');
-        // Réinitialiser à null si aucune information n'est trouvée
         setCommunityLinks({
           twitter: null,
           discordServer: null,
@@ -854,7 +667,6 @@ const Dashboard = () => {
       }
     } catch (err) {
       console.error('Error fetching community links:', err);
-      // En cas d'erreur, réinitialiser à null
       setCommunityLinks({
         twitter: null,
         discordServer: null,
@@ -868,52 +680,68 @@ const Dashboard = () => {
 
   // Fetch community links when component loads or when relevant data changes
   useEffectOnce(() => {
-    // Only run checks if we have a daoId
     if (!daoId) return;
     
-    // Fetch community links
     fetchCommunityLinks();
   }, [daoId]);
 
-  // Fonction pour vérifier si des liens de communauté existent
+  // Check if community links exist
   const hasCommunityLinks = (): boolean => {
     return Object.values(communityLinks).some(link => link !== null);
   };
 
+  // Function to paginate proposals
+  const paginatedProposals = () => {
+    const startIndex = (currentProposalPage - 1) * proposalsPerPage;
+    const endIndex = startIndex + proposalsPerPage;
+    return proposals.slice(startIndex, endIndex);
+  };
+
+  // Function to handle page changes
+  const handlePreviousPage = () => {
+    if (currentProposalPage > 1) {
+      setCurrentProposalPage(prev => prev - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    const totalPages = Math.ceil(proposals.length / proposalsPerPage);
+    if (currentProposalPage < totalPages) {
+      setCurrentProposalPage(prev => prev + 1);
+    }
+  };
+
+  // Reset to first page when proposals change
+  useEffect(() => {
+    setCurrentProposalPage(1);
+  }, [proposals.length]);
+
   return (
     <div className="p-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+      <div className="flex justify-between items-center mb-4">
         <h1 className="text-3xl font-bold">Home</h1>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-3">
           {connected && userIsDaoMember && (
-            <Button 
-              variant="outline"
-              onClick={handleLeaveDao}
+            <button 
+              onClick={() => setShowLeaveConfirmation(true)}
               disabled={membershipLoading}
-              className="flex items-center gap-2 text-xs sm:text-sm py-1 px-2 sm:py-2 sm:px-3 border-2 border-red-500/50 hover:border-red-500 bg-transparent hover:bg-red-500/10"
+              className="group relative flex items-center justify-center h-11 w-11 rounded-lg bg-[#1A1A1A]/80 backdrop-blur-sm hover:bg-red-500/10 border border-red-500/20 hover:border-red-500/50 transition-all duration-200"
+              title="Leave DAO"
             >
               {membershipLoading ? (
-                <>
-                  <Loader size={14} className="animate-spin" />
-                  <span>Loading...</span>
-                </>
-              ) : (
-                <>
-                  <LogOut size={14} className="text-red-500" />
-                  <span className="text-red-500">Leave DAO</span>
-                </>
+                <Loader size={22} className="animate-spin text-red-500/70" />              ) : (
+                <LogOut size={22} className="text-red-500/70 group-hover:text-red-500 transition-colors" />
               )}
-            </Button>
+            </button>
           )}
           {hasUpdatePermission && (
-            <Button 
-              variant="outline"
+            <button 
               onClick={() => setIsDaoUpdateModalOpen(true)}
-              className="flex items-center gap-2 text-xs sm:text-sm py-1 px-2 sm:py-2 sm:px-3 border-2 border-gray-800 hover:border-purple-500/50 bg-[#151515]"
+              className="group relative flex items-center justify-center h-11 w-11 rounded-lg bg-[#1A1A1A]/80 backdrop-blur-sm hover:bg-purple-500/10 border border-purple-500/20 hover:border-purple-500/50 transition-all duration-200"
+              title="Update DAO"
             >
-              <Settings size={14} />
-              <span>Update DAO</span>
-            </Button>
+              <Settings size={22} className="text-purple-500/70 group-hover:text-purple-500 transition-colors" />
+            </button>
           )}
         </div>
       </div>
@@ -928,73 +756,52 @@ const Dashboard = () => {
         {/* Left Column: DAO Portfolio + News + Proposals */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="col-span-1 lg:col-span-2 space-y-4">
-            {/* Overall DAO Portfolio */}
-            <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
-              <div className="mb-3">
-                <h2 className="text-xl font-medium text-white">Overall DAO Stats</h2>
+            {/* Overall DAO Stats - now fully responsive */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-800/60">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 mr-4">
+                    <CircleDollarSign size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-400">DAO Balance</div>
+                    <div className="text-2xl font-bold text-white mt-1">{formatCurrency(treasury?.totalValue)}</div>
+                    {treasury?.dailyChangePercentage && (
+                      <div className={`text-xs ${Number(treasury.dailyChangePercentage) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {Number(treasury.dailyChangePercentage) >= 0 ? '↑' : '↓'} 
+                        {Math.abs(Number(treasury.dailyChangePercentage)).toFixed(2)}%
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
               
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="flex flex-col">
-                  <div className="text-sm text-gray-400 flex items-center">
-                    <span>DAO Balance</span>
-                    <span className="ml-2 px-2 py-0.5 bg-primary/20 text-primary text-xs rounded-full">+24%</span>
+              <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-800/60">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 mr-4">
+                    <Users size={20} className="text-white" />
                   </div>
-                  <div className="text-2xl font-bold text-white mt-1">{formatCurrency(treasury?.totalValue)}</div>
+                  <div>
+                    <div className="text-sm text-gray-400">DAO Members</div>
+                    <div className="text-2xl font-bold text-white mt-1">{members.length || 0}</div>
+                  </div>
                 </div>
-                
-                <div className="flex flex-col">
-                  <div className="text-sm text-gray-400 flex items-center">
-                    <span>DAO Members</span>
-                    <span className="ml-2 px-2 py-0.5 bg-indigo-500/20 text-indigo-400 text-xs rounded-full">+12 this week</span>
+              </div>
+              
+              <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-800/60">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 mr-4">
+                    <Vote size={20} className="text-white" />
                   </div>
-                  <div className="text-2xl font-bold text-white mt-1">{members.length || 1342}</div>
-                </div>
-                
-                <div className="flex flex-col">
-                  <div className="text-sm text-gray-400 flex items-center">
-                    <span>Active Proposals</span>
-                    <span className="ml-2 px-2 py-0.5 bg-purple-500/20 text-purple-400 text-xs rounded-full">{proposals.filter(p => p.closingDate.getTime() - Date.now() < 48 * 60 * 60 * 1000).length} closing soon</span>
+                  <div>
+                    <div className="text-sm text-gray-400">Active Proposals</div>
+                    <div className="text-2xl font-bold text-white mt-1">{proposals.length}</div>
                   </div>
-                  <div className="text-2xl font-bold text-white mt-1">{proposals.length}</div>
                 </div>
               </div>
             </div>
             
-            {/* DAO News */}
-            <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-medium text-white">DAO News</h3>
-                <span className="bg-primary/20 text-primary px-3 py-1 rounded-full text-xs">Latest updates</span>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="p-3 bg-[#1A1A1A]/70 rounded-lg border-l-4 border-l-indigo-500">
-                  <div className="flex justify-between mb-1">
-                    <span className="font-medium text-white">Treasury growth surpasses expectations</span>
-                    <span className="text-xs text-gray-400">2 days ago</span>
-                  </div>
-                  <p className="text-gray-400 text-sm">The DAO's treasury has grown by 24% this month, exceeding our target of 15%. This positions us well for upcoming project funding.</p>
-                </div>
-                
-                <div className="p-3 bg-[#1A1A1A]/70 rounded-lg border-l-4 border-l-purple-500">
-                  <div className="flex justify-between mb-1">
-                    <span className="font-medium text-white">New partnership announcement</span>
-                    <span className="text-xs text-gray-400">4 days ago</span>
-                  </div>
-                  <p className="text-gray-400 text-sm">We've established a strategic partnership with DecentralFi to expand our DeFi capabilities and provide additional yield opportunities.</p>
-                </div>
-                
-                <div className="p-3 bg-[#1A1A1A]/70 rounded-lg border-l-4 border-l-blue-500">
-                  <div className="flex justify-between mb-1">
-                    <span className="font-medium text-white">Community call scheduled</span>
-                    <span className="text-xs text-gray-400">1 week ago</span>
-                  </div>
-                  <p className="text-gray-400 text-sm">Our next community call is scheduled for June 15th. We'll be discussing Q3 plans and voting on new governance proposals.</p>
-                </div>
-              </div>
-            </div>
-            
+           
             {/* Proposals Activity */}
             <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
               <div className="flex items-center justify-between mb-4">
@@ -1007,29 +814,54 @@ const Dashboard = () => {
                   <Loader className="animate-spin text-primary" size={30} />
                 </div>
               ) : proposals.length > 0 ? (
-                <div className="space-y-3">
-                  {proposals.map((proposal, index) => (
-                    <div 
-                      key={proposal.id} 
-                      className="p-3 bg-[#1A1A1A]/70 rounded-lg hover:bg-[#222]/90 transition-colors cursor-pointer"
-                      onClick={() => {
-                        setSelectedProposal(proposal);
-                        loadFullProposalDetails(proposal.id);
-                      }}
-                    >
-                      <div className="flex justify-between mb-1">
-                        <span className="font-medium text-white">{proposal.title}</span>
-                        <span className="text-xs text-gray-400">Closes in {formatDate(proposal.closingDate)}</span>
-                      </div>
-                      <div className="flex justify-between items-center mt-2">
-                        <div className="flex space-x-4">
-                          <span className="text-green-400 text-sm">For: {proposal.votesFor}</span>
-                          <span className="text-red-400 text-sm">Against: {proposal.votesAgainst}</span>
+                <>
+                  <div className="space-y-3">
+                    {paginatedProposals().map((proposal, index) => (
+                      <div 
+                        key={proposal.id} 
+                        className="p-3 bg-[#1A1A1A]/70 rounded-lg hover:bg-[#222]/90 transition-colors cursor-pointer"
+                        onClick={() => {
+                          setSelectedProposal(proposal);
+                          loadFullProposalDetails(proposal.id);
+                        }}
+                      >
+                        <div className="flex justify-between mb-1">
+                          <span className="font-medium text-white">{proposal.title}</span>
+                          <span className="text-xs text-gray-400">Closes in {formatDate(proposal.closingDate)}</span>
+                        </div>
+                        <div className="flex justify-between items-center mt-2">
+                          <div className="flex space-x-4">
+                            <span className="text-green-400 text-sm">For: {proposal.votesFor}</span>
+                            <span className="text-red-400 text-sm">Against: {proposal.votesAgainst}</span>
+                          </div>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                  
+                  {/* Pagination Controls */}
+                  {proposals.length > proposalsPerPage && (
+                    <div className="flex justify-center items-center mt-4 pt-3 border-t border-gray-800">
+                      <button 
+                        className={`p-1 rounded-full ${currentProposalPage === 1 ? 'text-gray-600 cursor-not-allowed' : 'text-gray-300 hover:text-white hover:bg-gray-800'}`}
+                        onClick={handlePreviousPage}
+                        disabled={currentProposalPage === 1}
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+                      <span className="mx-2 text-xs text-gray-400">
+                        {currentProposalPage} of {Math.ceil(proposals.length / proposalsPerPage)}
+                      </span>
+                      <button 
+                        className={`p-1 rounded-full ${currentProposalPage >= Math.ceil(proposals.length / proposalsPerPage) ? 'text-gray-600 cursor-not-allowed' : 'text-gray-300 hover:text-white hover:bg-gray-800'}`}
+                        onClick={handleNextPage}
+                        disabled={currentProposalPage >= Math.ceil(proposals.length / proposalsPerPage)}
+                      >
+                        <ChevronRight size={16} />
+                      </button>
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               ) : (
                 <div className="flex items-center justify-center h-32 text-gray-400">
                   <p>No active proposals at the moment</p>
@@ -1069,13 +901,13 @@ const Dashboard = () => {
                   {/* Right column - Name and description (adjusted for better mobile view) */}
                   <div className="w-full md:w-[70%] md:pl-2 flex flex-col justify-center text-center md:text-left">
                     {daoProfile.name ? (
-                      <h4 className="text-lg font-medium text-white mb-1">{daoProfile.name}</h4>
+                      <h4 className="text-lg font-medium text-white mb-1 break-words overflow-wrap-anywhere">{daoProfile.name}</h4>
                     ) : (
                       <h4 className="text-lg font-medium text-white mb-1">Unnamed DAO</h4>
                     )}
                     
                     {daoProfile.description ? (
-                      <p className="text-sm text-gray-400">
+                      <p className="text-sm text-gray-400 break-words overflow-wrap-anywhere">
                         {daoProfile.description.length > 300 
                           ? `${daoProfile.description.substring(0, 300)}...` 
                           : daoProfile.description}
@@ -1098,8 +930,8 @@ const Dashboard = () => {
                   
                   {/* Right column - Name and description (adjusted for mobile) */}
                   <div className="w-full md:w-[70%] md:pl-2 flex flex-col justify-center text-center md:text-left">
-                    <h4 className="text-lg font-medium text-white mb-1">Loading DAO...</h4>
-                    <p className="text-sm text-gray-400">
+                    <h4 className="text-lg font-medium text-white mb-1 break-words overflow-wrap-anywhere">Loading DAO...</h4>
+                    <p className="text-sm text-gray-400 break-words overflow-wrap-anywhere">
                       Fetching DAO information...
                     </p>
                   </div>
@@ -1186,107 +1018,66 @@ const Dashboard = () => {
             {/* Replace the DAO Token card with our TokenCard component */}
             <TokenCard tokenAddress={tokenAddress} />
             
-            {/* Member Distribution */}
-            <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-                <h3 className="font-medium text-white mb-1 sm:mb-0">Share Holders</h3>
-                <div className="text-xs text-gray-500">
-                  Last updated: {formatLastUpdated()}
-                </div>
-              </div>
-              
-              {membersLoading ? (
-                <div className="flex items-center justify-center h-40">
-                  <Loader className="animate-spin text-primary" size={24} />
-                </div>
-              ) : (
-                <div className="flex flex-col sm:flex-row gap-4 items-center">
-                  {/* Left column - Chart */}
-                  <div className="w-full sm:w-2/5 flex justify-center">
-                    <div className="relative w-full aspect-square" style={{ maxWidth: "120px", margin: "0 auto" }}>
-                      <Pie 
-                        data={{
-                          ...createDonutChartData(mockRegions),
-                          datasets: [
-                            {
-                              ...createDonutChartData(mockRegions).datasets[0],
-                              label: 'Members'
-                            }
-                          ]
-                        }} 
-                        options={donutChartOptions} 
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Right column - Legend */}
-                  <div className="w-full sm:w-3/5 flex items-center justify-center sm:justify-start mt-4 sm:mt-0">
-                    <div className="grid grid-cols-2 gap-2 w-full">
-                      {mockRegions.map(region => (
-                        <div key={region.region} className="flex items-center">
-                          <div className="w-2 h-2 rounded-full mr-2" style={{ backgroundColor: region.color }} />
-                          <span className="text-xs text-gray-400">{region.region}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+          
             
             {/* Token Distribution */}
             <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-                <h3 className="font-medium text-white mb-1 sm:mb-0">Token Distribution</h3>
-                <div className="text-xs text-gray-500">
-                  Last updated: {formatLastUpdated()}
-                </div>
+              <div className="mb-3">
+                <h2 className="text-xl font-medium text-white">Treasury Assets</h2>
               </div>
               
-              {loading ? (
-                <div className="flex items-center justify-center h-40">
-                  <Loader className="animate-spin text-primary" size={24} />
-                </div>
-              ) : tokens.length > 0 ? (
-                <div className="flex flex-col sm:flex-row gap-4 items-center">
-                  {/* Left column - Chart */}
-                  <div className="w-full sm:w-2/5 flex justify-center">
-                    <div className="relative w-full aspect-square" style={{ maxWidth: "120px", margin: "0 auto" }}>
-                      <Pie 
-                        data={{
-                          ...createDonutChartData(mockTokens),
-                          datasets: [
-                            {
-                              ...createDonutChartData(mockTokens).datasets[0],
-                              label: 'Tokens'
+              <div className="flex flex-col items-center justify-center p-2">
+                {refreshing ? (
+                  <div className="flex items-center justify-center h-40">
+                    <RefreshCw className="animate-spin h-8 w-8 text-gray-400" />
+                  </div>
+                ) : tokens.length === 0 ? (
+                  <div className="text-center text-gray-400 p-10">
+                    No assets detected yet
+                  </div>
+                ) : (
+                  <>
+                    <div className="w-full max-w-xs">
+                      <Doughnut 
+                        data={createDonutChartData(tokens)} 
+                        options={{
+                          responsive: true,
+                          maintainAspectRatio: true,
+                          plugins: {
+                            legend: {
+                              position: 'bottom',
+                              labels: {
+                                color: '#fff',
+                                font: {
+                                  size: 12
+                                }
+                              }
                             }
-                          ]
+                          },
+                          cutout: '70%'
                         }} 
-                        options={donutChartOptions}
                       />
                     </div>
-                  </div>
-                  
-                  {/* Right column - Legend */}
-                  <div className="w-full sm:w-3/5 flex items-center justify-center sm:justify-start mt-4 sm:mt-0">
-                    <div className="grid grid-cols-2 gap-2 w-full">
-                      {mockTokens.map(token => (
-                        <div key={token.name} className="flex items-center">
-                          <div 
-                            className="w-2 h-2 rounded-full mr-2"
-                            style={{ backgroundColor: token.color }}
-                          />
-                          <span className="text-xs text-gray-400 truncate">{token.name}</span>
-                        </div>
-                      ))}
+                    <div className="mt-4 w-full">
+                      <div className="grid grid-cols-1 gap-2">
+                        {tokens.slice(0, 5).map((token, index) => (
+                          <div key={token.tokenId || index} className="flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div className="h-3 w-3 rounded-sm mr-2" style={{ 
+                                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'][index % 5]
+                              }}></div>
+                              <span className="text-sm text-gray-300">{token.symbol || 'Unknown'}</span>
+                            </div>
+                            <span className="text-sm text-gray-300">
+                              {formatCurrency(token.balance ? token.balance * (token.price || 0) : 0)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="h-40 flex items-center justify-center text-gray-400">
-                  <p>No tokens found for this DAO</p>
-                </div>
-              )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -1323,6 +1114,35 @@ const Dashboard = () => {
           onVote={handleVoteOnProposal}
           onVoteSubmitted={fetchProposalsData}
         />
+      )}
+
+      {/* Leave Confirmation Modal */}
+      {showLeaveConfirmation && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-[#1A1A1A] border border-red-500/20 rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertCircle size={24} className="text-red-500" />
+              <h3 className="text-xl font-semibold text-white">Leave DAO</h3>
+            </div>
+            <p className="text-gray-400 mb-6">
+              Are you sure you want to leave this DAO? You will lose access to all DAO features and will need to rejoin to regain access.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowLeaveConfirmation(false)}
+                className="px-4 py-2 rounded-lg bg-[#111] hover:bg-[#222] border border-gray-800 text-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleLeaveConfirm}
+                className="px-4 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/50 text-red-500 transition-colors"
+              >
+                Leave DAO
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
