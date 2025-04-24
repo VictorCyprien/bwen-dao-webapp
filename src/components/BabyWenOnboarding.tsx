@@ -6,6 +6,7 @@ import ApiAuthStatus from './common/ApiAuthStatus';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { daosService } from '../services/DaosService';
 import { onboardingMessages } from './BabyWenOnboarding/steps/messages';
+import { useWallet } from '@solana/wallet-adapter-react';
 
 // Import components for the onboarding experience
 
@@ -260,6 +261,9 @@ const BabyWenOnboarding: React.FC = () => {
   
   // Get API and wallet status
   const { apiStatus, userDisplayInfo, connected, publicKey, userInfo } = useApiAndWallet();
+  
+  // Get the wallet for signing transactions
+  const wallet = useWallet();
   
   // Check if wallet is connected
   const isWalletConnected = userDisplayInfo?.isAuthenticated || false;
@@ -1127,9 +1131,7 @@ const BabyWenOnboarding: React.FC = () => {
         tokenAddress, // Pass the token address
       );
       
-      // Get the wallet from the context or appropriate source
-      const wallet = window.solana;
-      
+      // Use the wallet from the top-level hook instead of calling useWallet() again
       if (wallet && wallet.signTransaction) {
         // Send the transaction
         const txSignature = await signAndSendTransaction(
