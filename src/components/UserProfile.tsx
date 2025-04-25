@@ -33,11 +33,25 @@ const TelegramLoginWidget: React.FC<{
       script.setAttribute('data-telegram-login', botName);
       script.setAttribute('data-size', size);
       script.setAttribute('data-userpic', showUserPic.toString());
-      script.setAttribute('data-radius', cornerRadius.toString());
+      script.setAttribute('data-radius', '9999'); // Override to make it fully rounded
       script.setAttribute('data-auth-url', authUrl);
       script.async = true;
 
       container.appendChild(script);
+      
+      // Add a style tag to apply Arial font to Telegram widget buttons
+      const style = document.createElement('style');
+      style.textContent = `
+        .tgme_widget_login button {
+          font-family: Arial, sans-serif !important;
+          border-radius: 9999px !important;
+        }
+      `;
+      document.head.appendChild(style);
+
+      return () => {
+        document.head.removeChild(style);
+      };
     }
 
     // Cleanup function
@@ -50,7 +64,69 @@ const TelegramLoginWidget: React.FC<{
     };
   }, [botName, size, showUserPic, cornerRadius, authUrl]);
 
-  return <div ref={containerRef}></div>;
+  return <div ref={containerRef} className="telegram-widget"></div>;
+};
+
+// Discord Login Button component that matches Telegram style
+const DiscordLoginButton: React.FC<{
+  size?: 'large' | 'medium' | 'small',
+  onClick: () => void 
+}> = ({ size = 'medium', onClick }: { size?: 'large' | 'medium' | 'small', onClick: () => void }) => {
+  // Map size to actual dimensions
+  const sizeClasses: Record<'large' | 'medium' | 'small', string> = {
+    'large': 'h-12 text-base px-4',
+    'medium': 'h-10 text-sm px-3',
+    'small': 'h-8 text-xs px-2'
+  };
+  
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center justify-center w-full rounded-full bg-[#7289DA] text-white font-medium ${sizeClasses[size as 'large' | 'medium' | 'small']} hover:bg-[#5f73bb] transition-colors font-arial`}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" 
+        className="mr-2" 
+        width={size === 'small' ? 16 : 20} 
+        height={size === 'small' ? 16 : 20} 
+        viewBox="0 0 24 24" 
+        fill="white" 
+        stroke="none">
+        <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.39-.444.977-.608 1.414a15.932 15.932 0 0 0-4.746 0 9.698 9.698 0 0 0-.616-1.414.077.077 0 0 0-.079-.036c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055c1.998 1.483 3.948 2.388 5.851 2.98a.075.075 0 0 0 .082-.026c.446-.61.847-1.254 1.194-1.932a.075.075 0 0 0-.041-.104 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.127c.126-.095.252-.193.372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.099.246.198.373.292a.077.077 0 0 1-.006.127c-.598.35-1.22.645-1.873.892a.075.075 0 0 0-.041.105c.348.678.747 1.323 1.194 1.932a.076.076 0 0 0 .082.026c1.904-.592 3.854-1.497 5.852-2.98a.077.077 0 0 0 .032-.055c.505-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z" />
+      </svg>
+      Log in with Discord
+    </button>
+  );
+};
+
+// X (formerly Twitter) Login Button component that matches Telegram style
+const TwitterLoginButton: React.FC<{
+  size?: 'large' | 'medium' | 'small',
+  onClick: () => void
+}> = ({ size = 'medium', onClick }: { size?: 'large' | 'medium' | 'small', onClick: () => void }) => {
+  // Map size to actual dimensions
+  const sizeClasses: Record<'large' | 'medium' | 'small', string> = {
+    'large': 'h-12 text-base px-4',
+    'medium': 'h-10 text-sm px-3',
+    'small': 'h-8 text-xs px-2'
+  };
+  
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center justify-center w-full rounded-full bg-black text-white font-medium ${sizeClasses[size as 'large' | 'medium' | 'small']} hover:bg-[#333] transition-colors font-arial`}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" 
+        className="mr-2" 
+        width={size === 'small' ? 16 : 20} 
+        height={size === 'small' ? 16 : 20} 
+        viewBox="0 0 24 24" 
+        fill="white" 
+        stroke="none">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+      </svg>
+      Log in with X
+    </button>
+  );
 };
 
 const UserProfile: React.FC = () => {
@@ -72,6 +148,28 @@ const UserProfile: React.FC = () => {
     twitterUsername: null as string | null,
     telegramUsername: null as string | null
   });
+
+  // Add global styles for button styling
+  useEffect(() => {
+    // Add styles for Telegram widget
+    const style = document.createElement('style');
+    style.textContent = `
+      /* Custom styling for social login buttons */
+      .telegram-widget iframe {
+        border-radius: 9999px !important;
+      }
+      
+      /* Apply Arial font to all buttons */
+      button, .telegram-widget button {
+        font-family: Arial, sans-serif !important;
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   // Check URL for auth callback data when component mounts
   useEffectOnce(() => {
@@ -460,85 +558,8 @@ const UserProfile: React.FC = () => {
           </div>
         </div>
 
-        {/* Social Connections */}
-        <div className="mt-6">
-          <h2 className="text-base font-medium text-white mb-3">Social Connections</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* Discord */}
-            <div className="p-3 bg-[#191919] border border-gray-800 rounded-md">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-white">Discord</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-indigo-500">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <path d="M8.5 14.5C10.5 13.5 11 12.5 11 12.5L15.5 14.5"></path>
-                  <path d="M8.5 9.5H15.5"></path>
-                </svg>
-              </div>
-              {userInfo?.discordUsername ? (
-                <p className="text-xs text-gray-300">{userInfo.discordUsername}</p>
-              ) : (
-                <p className="text-xs text-gray-500 mb-2">Not connected</p>
-              )}
-              <button
-                type="button"
-                onClick={connectDiscord}
-                className="mt-2 w-full py-1.5 px-3 bg-indigo-600 text-white text-xs rounded-md hover:bg-indigo-700 transition"
-              >
-                {userInfo?.discordUsername ? 'Reconnect' : 'Connect'}
-              </button>
-            </div>
-
-            {/* Twitter */}
-            <div className="p-3 bg-[#191919] border border-gray-800 rounded-md">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-white">Twitter</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400">
-                  <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
-                </svg>
-              </div>
-              {userInfo?.twitterUsername ? (
-                <p className="text-xs text-gray-300">{userInfo.twitterUsername}</p>
-              ) : (
-                <p className="text-xs text-gray-500 mb-2">Not connected</p>
-              )}
-              <button
-                type="button"
-                onClick={connectTwitter}
-                className="mt-2 w-full py-1.5 px-3 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition"
-              >
-                {userInfo?.twitterUsername ? 'Reconnect' : 'Connect'}
-              </button>
-            </div>
-
-            {/* Telegram */}
-            <div className="p-3 bg-[#191919] border border-gray-800 rounded-md">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-white">Telegram</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-500">
-                  <path d="m15 10-4 4 6 6 4-16-18 7 4 2 2 6 3-4"></path>
-                </svg>
-              </div>
-              {userInfo?.telegramUsername ? (
-                <p className="text-xs text-gray-300">{userInfo.telegramUsername}</p>
-              ) : (
-                <p className="text-xs text-gray-500 mb-2">Not connected</p>
-              )}
-              {/* Telegram Login Widget */}
-              <div className="mt-2">
-                  <TelegramLoginWidget 
-                    botName="BwenDaoBot"
-                    size="medium"
-                    showUserPic={false}
-                    cornerRadius={20}
-                    authUrl={window.location.origin}
-                  />
-                </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 flex justify-end space-x-3">
+        {/* Save Changes Button - Centered */}
+        <div className="flex justify-center mt-6">
           <button
             type="submit"
             disabled={isLoading}
@@ -549,9 +570,37 @@ const UserProfile: React.FC = () => {
         </div>
       </form>
 
-      <div className="mt-8">
-        <h3 className="text-xl font-semibold text-white mb-4">API Keys</h3>
-        <p className="text-gray-400 mb-4">Manage your API keys to access DAO API programmatically.</p>
+      {/* Social Connections */}
+      <div className="mt-6">
+        <h2 className="text-base font-medium text-white mb-3">Social Connections</h2>
+        
+        {/* Connection buttons in 3 columns on desktop, 1 column on mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Discord Button */}
+          <DiscordLoginButton 
+            size="medium" 
+            onClick={connectDiscord}
+          />
+
+          {/* Twitter Button */}
+          <TwitterLoginButton 
+            size="medium" 
+            onClick={connectTwitter}
+          />
+
+          {/* Telegram Widget */}
+          <TelegramLoginWidget 
+            botName="BwenDaoBot"
+            size="medium"
+            showUserPic={false}
+            cornerRadius={20}
+            authUrl={window.location.origin}
+          />
+        </div>
+      </div>
+
+      {/* API Keys Button (centered) */}
+      <div className="mt-8 flex justify-center">
         <button
           onClick={openApiKeyModal}
           className="flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-md transition"
