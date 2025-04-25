@@ -95,7 +95,12 @@ interface CommunityLinks {
   website: string | null;
 }
 
-const Dashboard = () => {
+// Define props for Dashboard component
+interface DashboardProps {
+  recheckMembership?: () => void;
+}
+
+const Dashboard = ({ recheckMembership }: DashboardProps = {}) => {
   const { daoId } = useParams<{ daoId: string }>();
   const [treasury, setTreasury] = useState<Treasury | null>(null);
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -144,13 +149,36 @@ const Dashboard = () => {
   const createDonutChartData = (items: Token[]) => {
     if (!items || items.length === 0) return null;
     
-    const labels = items.map((token) => token.symbol || 'Unknown');
-    const data = items.map((token) => 
+    // Sort tokens by value (balance * price) in descending order
+    const sortedTokens = [...items].sort((a, b) => {
+      const valueA = a.balance && a.price ? a.balance * a.price : 0;
+      const valueB = b.balance && b.price ? b.balance * b.price : 0;
+      return valueB - valueA;
+    });
+    
+    // Take top 5 tokens and calculate their values
+    const top5Tokens = sortedTokens.slice(0, 5);
+    const otherTokens = sortedTokens.slice(5);
+    
+    // Calculate total value of "Other" tokens
+    const otherValue = otherTokens.reduce((sum, token) => {
+      return sum + (token.balance && token.price ? token.balance * token.price : 0);
+    }, 0);
+    
+    let labels = top5Tokens.map((token) => token.symbol || 'Unknown');
+    let data = top5Tokens.map((token) => 
       token.balance && token.price ? token.balance * token.price : 0
     );
+    
+    // Add "Other" category if there are more than 5 tokens
+    if (otherTokens.length > 0) {
+      labels.push('Other');
+      data.push(otherValue);
+    }
+    
     const backgroundColor = [
       '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
-      '#FF9F40', '#8AC94A', '#F2C94C', '#EA4C89', '#614AE2'
+      '#FF9F40' // Color for "Other"
     ];
     
     return {
@@ -158,7 +186,7 @@ const Dashboard = () => {
       datasets: [
         {
           data,
-          backgroundColor: backgroundColor.slice(0, items.length),
+          backgroundColor: backgroundColor.slice(0, labels.length),
           borderWidth: 0,
         },
       ],
@@ -405,8 +433,9 @@ const Dashboard = () => {
       if (result) {
         console.log('Successfully left DAO');
         setUserIsDaoMember(false);
-        fetchMemberData();
-        fetchTokenAddress();
+        
+        // Redirect to landing page
+        window.location.href = '/';
       } else {
         console.error('Failed to leave DAO');
         checkDaoMembership();
@@ -417,6 +446,12 @@ const Dashboard = () => {
       setMembershipLoading(false);
       checkDaoMembership();
     }
+  };
+
+  // Handle the confirmation to leave DAO
+  const handleLeaveConfirm = () => {
+    handleLeaveDao();
+    setShowLeaveConfirmation(false);
   };
 
   // Check membership when component loads or when relevant data changes
@@ -1060,19 +1095,55 @@ const Dashboard = () => {
                     </div>
                     <div className="mt-4 w-full">
                       <div className="grid grid-cols-1 gap-2">
-                        {tokens.slice(0, 5).map((token, index) => (
-                          <div key={token.tokenId || index} className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <div className="h-3 w-3 rounded-sm mr-2" style={{ 
-                                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'][index % 5]
-                              }}></div>
-                              <span className="text-sm text-gray-300">{token.symbol || 'Unknown'}</span>
-                            </div>
-                            <span className="text-sm text-gray-300">
-                              {formatCurrency(token.balance ? token.balance * (token.price || 0) : 0)}
-                            </span>
-                          </div>
-                        ))}
+                        {tokens.length > 0 && (
+                          <>
+                            {/* Sort tokens by value and take top 5 */}
+                            {[...tokens]
+                              .sort((a, b) => {
+                                const valueA = a.balance && a.price ? a.balance * a.price : 0;
+                                const valueB = b.balance && b.price ? b.balance * b.price : 0;
+                                return valueB - valueA;
+                              })
+                              .slice(0, 5)
+                              .map((token, index) => (
+                                <div key={token.tokenId || index} className="flex items-center justify-between">
+                                  <div className="flex items-center">
+                                    <div 
+                                      className="h-3 w-3 rounded-sm mr-2" 
+                                      style={{ backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'][index % 5] }}
+                                    ></div>
+                                    <span className="text-sm text-gray-300">{token.symbol || 'Unknown'}</span>
+                                  </div>
+                                  <span className="text-sm text-gray-300">
+                                    {formatCurrency(token.balance ? token.balance * (token.price || 0) : 0)}
+                                  </span>
+                                </div>
+                              ))
+                            }
+                            
+                            {/* Show "Other" category if more than 5 tokens exist */}
+                            {tokens.length > 5 && (
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center">
+                                  <div className="h-3 w-3 rounded-sm mr-2" style={{ backgroundColor: '#FF9F40' }}></div>
+                                  <span className="text-sm text-gray-300">Other</span>
+                                </div>
+                                <span className="text-sm text-gray-300">
+                                  {formatCurrency(
+                                    [...tokens]
+                                      .sort((a, b) => {
+                                        const valueA = a.balance && a.price ? a.balance * a.price : 0;
+                                        const valueB = b.balance && b.price ? b.balance * b.price : 0;
+                                        return valueB - valueA;
+                                      })
+                                      .slice(5)
+                                      .reduce((sum, token) => sum + (token.balance && token.price ? token.balance * token.price : 0), 0)
+                                  )}
+                                </span>
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
                     </div>
                   </>

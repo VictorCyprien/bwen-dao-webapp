@@ -13,6 +13,123 @@ import BabyWenOnboarding from './components/BabyWenOnboarding';
 import ChatBot from './components/ChatBot';
 import { useEffectOnce } from './hooks/useEffectOnce';
 import useMediaQuery from './hooks/useMediaQuery';
+import { userService } from './services/UserService';
+import { daosService } from './services/DaosService';
+import { useAuth } from './context/AuthContext';
+import { useWallet } from '@solana/wallet-adapter-react';
+
+// DAO Access Check Component
+const DaoAccessCheck = ({ children }: { children: React.ReactNode }) => {
+  const { daoId } = useParams();
+  const navigate = useNavigate();
+  const { userInfo, isAuthenticated } = useAuth();
+  const { publicKey, connected } = useWallet();
+  const [loading, setLoading] = React.useState(true);
+  const [isMember, setIsMember] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [checkTimestamp, setCheckTimestamp] = React.useState(Date.now());
+
+  // Function to force a re-check of membership
+  const recheckMembership = () => {
+    setCheckTimestamp(Date.now());
+  };
+
+  // Check if the user is a member of this DAO
+  React.useEffect(() => {
+    async function checkMembership() {
+      if (!daoId) {
+        setLoading(false);
+        return;
+      }
+
+      if (!publicKey || !connected || !isAuthenticated) {
+        setError("Please connect your wallet to access this DAO");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        
+        // Get current user ID
+        const currentUser = await userService.getCurrentUser();
+        if (!currentUser || !currentUser.userId) {
+          setError("Could not verify your identity");
+          setLoading(false);
+          return;
+        }
+        
+        // Get DAO members
+        const members = await daosService.getDaoMembers(daoId);
+        
+        // Check if user is a member
+        const userIsMember = members.some((member: any) => member.userId === currentUser.userId);
+        
+        setIsMember(userIsMember);
+        setLoading(false);
+      } catch (err) {
+        console.error("Error checking DAO membership:", err);
+        setError("Failed to verify membership");
+        setLoading(false);
+      }
+    }
+
+    checkMembership();
+
+    // Set up an interval to periodically check membership status
+    const intervalId = setInterval(() => {
+      checkMembership();
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(intervalId);
+  }, [daoId, publicKey, connected, isAuthenticated, checkTimestamp]);
+
+  const handleGoHome = () => {
+    navigate('/');
+  };
+
+  // Pass the recheckMembership function to children
+  const childrenWithProps = React.Children.map(children, child => {
+    if (React.isValidElement(child)) {
+      return React.cloneElement(child as React.ReactElement<any>, { 
+        recheckMembership 
+      });
+    }
+    return child;
+  });
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-background flex flex-col items-center justify-center z-50">
+        <div className="w-12 h-12 rounded-full border-t-2 border-l-2 border-indigo-600 animate-spin mb-4"></div>
+        <p className="text-white text-lg">Verifying membership...</p>
+      </div>
+    );
+  }
+
+  if (!isMember && daoId) {
+    return (
+      <div className="fixed inset-0 bg-background flex flex-col items-center justify-center z-50 p-4">
+        <div className="bg-[#1A1A1A] rounded-xl p-6 max-w-md w-full shadow-2xl border border-red-500/20">
+          <h2 className="text-2xl font-bold text-white mb-4">Access Denied</h2>
+          <p className="text-gray-300 mb-6">
+            {error || "You're not a member of this DAO. You need to join this DAO to access its dashboard."}
+          </p>
+          <div className="flex justify-center">
+            <button
+              onClick={handleGoHome}
+              className="px-6 py-2 border border-white text-white rounded-md hover:bg-white/10 transition-all"
+            >
+              Go back to home
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return <>{childrenWithProps}</>;
+};
 
 // Dashboard component that handles DAO-specific routing
 const Dashboard = () => {
@@ -156,7 +273,7 @@ function App() {
       <Route path="/" element={<LandingPage onEnterDashboard={handleEnterDashboard} />} />
       <Route path="/create/babywen" element={<BabyWenOnboarding />} />
       <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/daos/:daoId" element={<Dashboard />} />
+      <Route path="/daos/:daoId" element={<DaoAccessCheck><Dashboard /></DaoAccessCheck>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
