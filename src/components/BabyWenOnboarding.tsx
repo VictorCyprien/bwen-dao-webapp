@@ -22,6 +22,7 @@ import DaoReviewDisplay from './BabyWenOnboarding/components/DaoReviewDisplay';
 
 // Import the DAO introduction steps
 import DaoNameStep from './BabyWenOnboarding/steps/1_Information/1_DaoName';
+import DaoTransactionStep from './BabyWenOnboarding/steps/1_Information/1.1_DaoTransaction.tsx';
 import DaoDescriptionStep from './BabyWenOnboarding/steps/1_Information/2_DaoDescription';
 import DaoLogoStep from './BabyWenOnboarding/steps/1_Information/3_DaoLogo';
 import DaoSocialStep, { getInitialSocialLinks } from './BabyWenOnboarding/steps/1_Information/4_DaoSocial';
@@ -54,7 +55,7 @@ const proposalService = new ProposalService();
 const userService = new UserService();
 
 // Types for the onboarding flow
-export type StepId = 'dao-name' | 'dao-description' | 'dao-logo' | 'dao-social' | 
+export type StepId = 'dao-name' | 'dao-transaction' | 'dao-description' | 'dao-logo' | 'dao-social' | 
                      'dao-governance-model' | 'dao-idea-rights' | 'dao-vote-rights' | 
                      'dao-survalidation' | 'dao-voting-power' | 'dao-vote-delegation' |
                      'dao-token-existence' | 'dao-token-address' | 'dao-token-name' | 
@@ -280,6 +281,10 @@ const BabyWenOnboarding: React.FC = () => {
   // Check if user is registered (has username)
   const isUserRegistered = userInfo?.username ? true : false;
   
+  // State to track if user already owns a DAO
+  const [isAlreadyDaoOwner, setIsAlreadyDaoOwner] = React.useState<boolean>(false);
+  const [checkingDaoOwnership, setCheckingDaoOwnership] = React.useState<boolean>(false);
+  
   // Blockchain transaction state
   const [blockchainTxInProgress, setBlockchainTxInProgress] = React.useState<boolean>(false);
   const [blockchainTxCompleted, setBlockchainTxCompleted] = React.useState<boolean>(false);
@@ -288,6 +293,7 @@ const BabyWenOnboarding: React.FC = () => {
   // Create an object that maps step IDs to step objects
   const steps: Record<StepId, OnboardingStep> = {
     'dao-name': DaoNameStep,
+    'dao-transaction': DaoTransactionStep,
     'dao-description': DaoDescriptionStep,
     'dao-logo': DaoLogoStep,
     'dao-social': DaoSocialStep,
@@ -309,7 +315,7 @@ const BabyWenOnboarding: React.FC = () => {
   };
 
   // Start onboarding after welcome modal is closed
-  const startOnboarding = () => {
+  const startOnboarding = async () => {
     // Check if wallet is connected
     if (!isWalletConnected) {
       // Redirect to connect wallet page or show connection modal
@@ -378,6 +384,23 @@ const BabyWenOnboarding: React.FC = () => {
     if (createdDaoId) {
       sessionStorage.setItem('createdDaoId', createdDaoId);
     }
+    
+    // Check if the user already owns a DAO when they are registered and have a wallet connected
+    if (isWalletConnected && isUserRegistered) {
+      const checkDaoOwnership = async () => {
+        setCheckingDaoOwnership(true);
+        try {
+          const isOwner = await daosService.checkUserDaoOwnership();
+          setIsAlreadyDaoOwner(isOwner);
+        } catch (error) {
+          console.error("Error checking DAO ownership:", error);
+        }
+        setCheckingDaoOwnership(false);
+      };
+      
+      checkDaoOwnership();
+    }
+    
     // Animation starts after user proceeds from welcome modal
     
     // Clean up audio on unmount
@@ -386,7 +409,7 @@ const BabyWenOnboarding: React.FC = () => {
         audioManager.stop();
       }
     };
-  }, [audioManager]);
+  }, [audioManager, isWalletConnected, isUserRegistered]);
 
   // Function to determine the input type based on the step
   const determineInputType = (step: OnboardingStep) => {
@@ -512,6 +535,7 @@ const BabyWenOnboarding: React.FC = () => {
       const flowOrder: StepId[] = [
         // Information section
         'dao-name', 
+        'dao-transaction',
         'dao-description',
         'dao-logo',
         'dao-social',
@@ -642,9 +666,6 @@ const BabyWenOnboarding: React.FC = () => {
         telegram: sessionStorage.getItem('daoTelegram') || undefined,
         tiktok: sessionStorage.getItem('daoTiktok') || undefined,
         instagram: sessionStorage.getItem('daoInstagram') || undefined,
-        // Required fields for the API
-        pubkey: sessionStorage.getItem('blockchainDaoAddress') || '',
-        transaction: sessionStorage.getItem('blockchainTxSignature') || '',
         // Token address from the token step
         tokenAddress: sessionStorage.getItem('tokenAddress') || '',
       };
@@ -721,12 +742,8 @@ const BabyWenOnboarding: React.FC = () => {
         website: collectedData.website?.trim() || undefined,
         // Use the converted file if available
         profilePicture: logoFile,
-        // Add blockchain DAO address if transaction was successful
-        blockchainAddress: sessionStorage.getItem('blockchainDaoAddress') || undefined,
-        // Add transaction signature if transaction was successful
-        transactionSignature: sessionStorage.getItem('blockchainTxSignature') || undefined,
         // Add token address
-        tokenAddress: sessionStorage.getItem('tokenAddress') || undefined
+        tokenAddress: collectedData.tokenAddress || undefined
       } as any).then(result => {
         if (result) {
           const daoId = result.daoId?.toString() || '';
@@ -1024,6 +1041,66 @@ const BabyWenOnboarding: React.FC = () => {
     
     console.log("handleCustomComponentResponse called with option:", option, "and data:", data);
     
+    // Special handling for blockchain transaction component
+    if (option === 'start_transaction') {
+      // Show loading immediately
+      setIsTyping(true);
+      setShowInput(false);
+      
+      // Add user message
+      setMessages((prev: Message[]) => [...prev, { 
+        sender: 'user' as const, 
+        text: 'Starting blockchain transaction...' 
+      }]);
+      
+      // Execute the blockchain transaction
+      await handleCreateBlockchainTransaction();
+      
+      // After transaction is complete, proceed to the next step
+      if (currentStepObj?.onCustomComponentResponse) {
+        const result = currentStepObj.onCustomComponentResponse(option, data);
+        
+        if (result.responseMessage) {
+          await simulateBabyWenTyping(result.responseMessage);
+        }
+        
+        if (result.nextStep) {
+          console.log("Moving to next step:", result.nextStep);
+          // Update step history
+          setStepHistory((prev: StepId[]) => [...prev, result.nextStep!]);
+          // Use the updateCurrentStep function instead of directly setting the state
+          await updateCurrentStep(result.nextStep);
+        }
+      }
+      
+      return;
+    }
+    
+    // Handling for when transaction already exists
+    if (option === 'transaction_exists') {
+      console.log("Transaction already exists, skipping to next step");
+      
+      // Process the response via the step's handler to get nextStep
+      if (currentStepObj?.onCustomComponentResponse) {
+        const result = currentStepObj.onCustomComponentResponse(option, data);
+        
+        if (result.responseMessage) {
+          await simulateBabyWenTyping(result.responseMessage);
+        }
+        
+        if (result.nextStep) {
+          console.log("Moving to next step:", result.nextStep);
+          // Update step history
+          setStepHistory((prev: StepId[]) => [...prev, result.nextStep!]);
+          // Use the updateCurrentStep function instead of directly setting the state
+          await updateCurrentStep(result.nextStep);
+        }
+      }
+      
+      return;
+    }
+    
+    // Default handling for other custom components
     if (currentStepObj?.onCustomComponentResponse) {
       const result = currentStepObj.onCustomComponentResponse(option, data);
       console.log("Custom component response result:", result);
@@ -1057,6 +1134,13 @@ const BabyWenOnboarding: React.FC = () => {
       return;
     }
     
+    // Get the DAO name from sessionStorage
+    const daoName = sessionStorage.getItem('daoName') || '';
+    if (!daoName) {
+      setBlockchainTxError("DAO name is required");
+      return;
+    }
+    
     // Update state to show we're working on the transaction
     setBlockchainTxInProgress(true);
     setBlockchainTxCompleted(false);
@@ -1064,66 +1148,6 @@ const BabyWenOnboarding: React.FC = () => {
     
     try {
       simulateBabyWenTyping("Creating blockchain transaction for your DAO...");
-      
-      // Get data from sessionStorage
-      const daoName = sessionStorage.getItem('daoName') || '';
-      const daoDescription = sessionStorage.getItem('daoDescription') || '';
-      const discordServer = sessionStorage.getItem('daoDiscord') || '';
-      const twitter = sessionStorage.getItem('daoTwitter') || '';
-      const website = sessionStorage.getItem('daoWebsite') || '';
-      const telegram = sessionStorage.getItem('daoTelegram') || '';
-      const tiktok = sessionStorage.getItem('daoTiktok') || '';
-      const instagram = sessionStorage.getItem('daoInstagram') || '';
-      const tokenAddress = sessionStorage.getItem('tokenAddress') || '';
-      
-      // Handle logo file if it exists
-      let logoFile: File | undefined = undefined;
-      const logoFileString = sessionStorage.getItem('daoLogoFile');
-      const logoType = sessionStorage.getItem('daoLogoType');
-      const logoUrl = sessionStorage.getItem('daoLogoUrl');
-      
-      // Convert dataURL back to File object for uploaded files
-      if (logoFileString && logoType === 'upload') {
-        try {
-          const fileData = JSON.parse(logoFileString);
-          if (fileData.dataUrl) {
-            // Convert base64 data to blob
-            const byteString = atob(fileData.dataUrl.split(',')[1]);
-            const mimeType = fileData.dataUrl.split(',')[0].split(':')[1].split(';')[0];
-            const arrayBuffer = new ArrayBuffer(byteString.length);
-            const uint8Array = new Uint8Array(arrayBuffer);
-            
-            for (let i = 0; i < byteString.length; i++) {
-              uint8Array[i] = byteString.charCodeAt(i);
-            }
-            
-            const blob = new Blob([arrayBuffer], { type: mimeType });
-            logoFile = new File([blob], fileData.name, { type: fileData.type });
-            console.log("Restored file from sessionStorage:", fileData.name);
-          }
-        } catch (err) {
-          console.error("Error converting stored logo data to File:", err);
-        }
-      } 
-      // Handle generated logo URLs
-      else if (logoType === 'generate' && logoUrl) {
-        try {
-          console.log("Converting generated logo URL to File:", logoUrl);
-          
-          // Fetch the image from the URL
-          const response = await fetch(logoUrl);
-          const blob = await response.blob();
-          
-          // Create a File object from the blob
-          // Use a meaningful filename with timestamp
-          const fileName = `dao_logo_${Date.now()}.png`;
-          logoFile = new File([blob], fileName, { type: 'image/png' });
-          
-          console.log("Successfully converted logo URL to File:", fileName);
-        } catch (err) {
-          console.error("Error converting logo URL to File:", err);
-        }
-      }
       
       // Import necessary functions and create the connection
       const { Connection } = await import('@solana/web3.js');
@@ -1134,20 +1158,21 @@ const BabyWenOnboarding: React.FC = () => {
       const connection = new Connection(SOLANA_RPC_ENDPOINT, 'confirmed');
       
       // Create the transaction for DAO creation
+      // For the initial transaction, we only need the minimum required fields
       const { transaction, daoAccount } = await createDaoTransaction(
         connection,
         { publicKey },
-        daoName,
-        daoDescription,
-        discordServer,
-        twitter,
-        telegram,
-        instagram,
-        tiktok,
-        website,
-        '', // treasury
-        logoFile ? URL.createObjectURL(logoFile) : '', // profile picture URL
-        tokenAddress, // Pass the token address
+        daoName,                  // Use the DAO name from sessionStorage
+        '',                       // No description yet
+        '',                       // No social links yet
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',                       // No treasury
+        '',                       // No profile picture yet
+        '',                       // No token address yet
       );
       
       // Use the wallet from the top-level hook instead of calling useWallet() again
@@ -1172,7 +1197,25 @@ const BabyWenOnboarding: React.FC = () => {
         setBlockchainTxInProgress(false);
         setBlockchainTxCompleted(true);
         
-        simulateBabyWenTyping("Blockchain transaction successful! You can now create your DAO in our database.");
+        // STEP 1: Initialize DAO creation after successful blockchain transaction
+        try {
+          // Call the initializeDAOCreation method with the pubkey and transaction
+          const initResult = await daosService.initializeDAOCreation(
+            daoAccount.publicKey.toString(),
+            txSignature
+          );
+          
+          if (initResult) {
+            console.log('DAO initialization successful:', initResult);
+            simulateBabyWenTyping("Blockchain transaction successful! You can now continue with your DAO setup.");
+          } else {
+            console.error('DAO initialization failed');
+            simulateBabyWenTyping("Blockchain transaction successful, but there was an error initializing your DAO on the server. You can still proceed.");
+          }
+        } catch (initError: any) {
+          console.error('Error initializing DAO on server:', initError);
+          simulateBabyWenTyping("Blockchain transaction successful, but there was an error initializing your DAO: " + (initError.message || "Unknown error"));
+        }
       } else {
         console.error('Wallet not available or does not support signing');
         setBlockchainTxInProgress(false);
@@ -1288,68 +1331,12 @@ const BabyWenOnboarding: React.FC = () => {
             <DaoReviewDisplay />
           </div>
           
-          {/* Blockchain Transaction Status */}
-          {blockchainTxInProgress && !blockchainTxCompleted && !blockchainTxError && (
-            <div className="w-full mb-4">
-              <div className="bg-blue-500/20 rounded-xl p-4 border border-blue-500/30">
-                <div className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <p className="text-blue-200">Creating blockchain transaction... Please wait</p>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {blockchainTxCompleted && (
-            <div className="w-full mb-4">
-              <div className="bg-green-500/20 rounded-xl p-4 border border-green-500/30">
-                <div className="flex items-center">
-                  <svg className="h-5 w-5 text-green-500 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  <p className="text-green-200">Blockchain transaction successful! You can now create your DAO</p>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {blockchainTxError && (
-            <div className="w-full mb-4">
-              <div className="bg-red-500/20 rounded-xl p-4 border border-red-500/30">
-                <div className="flex items-center">
-                  <svg className="h-5 w-5 text-red-500 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <div>
-                    <p className="text-red-200">Transaction failed: {blockchainTxError}</p>
-                    <p className="text-red-300 text-xs mt-1">You can still create your DAO without blockchain integration</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <div className="w-full flex flex-col gap-3 sm:flex-row sm:justify-center">
-            {/* Show Create Transaction button if connected and transaction not started */}
-            {connected && publicKey && !blockchainTxInProgress && !blockchainTxCompleted && (
-              <ButtonAction
-                label="Create Blockchain Transaction"
-                onClick={handleCreateBlockchainTransaction}
-                variant="secondary"
-              />
-            )}
-            
-            {/* Main Create DAO button */}
-            <ButtonAction
-              label={currentStepObj?.buttonAction?.label || 'Create DAO'}
-              onClick={handleButtonAction}
-              variant={currentStepObj?.buttonAction?.variant as ButtonVariant || 'primary'}
-              disabled={connected && publicKey && !blockchainTxCompleted}
-            />
-          </div>
+          {/* Main Create DAO button */}
+          <ButtonAction
+            label="Complete DAO Setup"
+            onClick={handleButtonAction}
+            variant={currentStepObj?.buttonAction?.variant as ButtonVariant || 'primary'}
+          />
           
           {/* Back button */}
           {canGoBack && (
@@ -1585,6 +1572,28 @@ const BabyWenOnboarding: React.FC = () => {
                       </button>
                     </div>
                   )}
+                  
+                  {/* Show error if user already owns a DAO */}
+                  {isWalletConnected && isUserRegistered && isAlreadyDaoOwner && (
+                    <div className="mt-2 pt-2 border-t border-red-500/20">
+                      <p className="text-red-400 text-sm mb-2">
+                        You already own a DAO. Each user is limited to one DAO.
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Show loading state when checking DAO ownership */}
+                  {checkingDaoOwnership && (
+                    <div className="mt-2 pt-2 border-t border-indigo-500/20">
+                      <div className="flex items-center justify-center">
+                        <svg className="animate-spin h-5 w-5 text-indigo-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p className="text-indigo-300 text-sm">Checking DAO ownership...</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1602,10 +1611,17 @@ const BabyWenOnboarding: React.FC = () => {
               </button>
               <button 
                 onClick={startOnboarding}
-                className={`w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg transition-all shadow-lg hover:shadow-indigo-500/25 font-medium ${!isWalletConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
-                disabled={!isWalletConnected}
+                className={`w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg transition-all shadow-lg hover:shadow-indigo-500/25 font-medium ${!isWalletConnected || checkingDaoOwnership || isAlreadyDaoOwner ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={!isWalletConnected || checkingDaoOwnership || isAlreadyDaoOwner}
               >
-                {isWalletConnected ? 'Start DAO Creation' : 'Connect Wallet to Begin'}
+                {isWalletConnected 
+                  ? checkingDaoOwnership 
+                    ? 'Checking DAO Ownership...' 
+                    : isAlreadyDaoOwner 
+                      ? 'DAO Creation Not Available' 
+                      : 'Start DAO Creation'
+                  : 'Connect Wallet to Begin'
+                }
               </button>
             </div>
           </div>

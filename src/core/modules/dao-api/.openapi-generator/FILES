@@ -39,6 +39,10 @@ models/CreateDeviceResponse.ts
 models/DAO.ts
 models/DAOMembership.ts
 models/DAOMembershipResponse.ts
+models/DAOModule.ts
+models/DAOModuleAccessResponse.ts
+models/DAOModuleResponse.ts
+models/DAOModulesList.ts
 models/DAOSchemaResponse.ts
 models/DAOUpdate.ts
 models/DeleteDeviceResponse.ts
@@ -51,10 +55,12 @@ models/DiscordChannelResponse.ts
 models/DiscordChannelsResponse.ts
 models/DiscordMessage.ts
 models/DiscordMessagesResponse.ts
+models/InitDAOResponse.ts
 models/InputCreateDAO.ts
 models/InputCreatePOD.ts
 models/InputCreateProposal.ts
 models/InputCreateUser.ts
+models/InputInitDAO.ts
 models/InputUpdateUser.ts
 models/LinkDiscordChannel.ts
 models/LoginResponse.ts
@@ -87,6 +93,7 @@ models/Treasury.ts
 models/User.ts
 models/UserBasic.ts
 models/UserBasic1.ts
+models/UserDAOOwnershipResponse.ts
 models/UserExistResponse.ts
 models/UserInfoError.ts
 models/UserResponse.ts

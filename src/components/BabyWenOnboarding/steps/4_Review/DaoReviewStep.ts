@@ -4,11 +4,11 @@ const DaoReviewStep: OnboardingStep = {
   id: 'dao-review',
   messages: [
     {
-      content: "Great job! Let's review all the information you've provided for your DAO before we create it:"
+      content: "Great job! Let's review all the information you've provided for your DAO. Your blockchain transaction was already processed at the beginning, so now we just need to finalize your DAO setup with the details below :"
     }
   ],
   buttonAction: {
-    label: 'Create DAO',
+    label: 'Complete DAO Setup',
     action: 'createDao',
     variant: 'primary'
   },

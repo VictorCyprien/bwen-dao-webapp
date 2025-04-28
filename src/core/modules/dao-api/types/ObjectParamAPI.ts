@@ -11,6 +11,10 @@ import { CreateDeviceResponse } from '../models/CreateDeviceResponse';
 import { DAO } from '../models/DAO';
 import { DAOMembership } from '../models/DAOMembership';
 import { DAOMembershipResponse } from '../models/DAOMembershipResponse';
+import { DAOModule } from '../models/DAOModule';
+import { DAOModuleAccessResponse } from '../models/DAOModuleAccessResponse';
+import { DAOModuleResponse } from '../models/DAOModuleResponse';
+import { DAOModulesList } from '../models/DAOModulesList';
 import { DAOSchemaResponse } from '../models/DAOSchemaResponse';
 import { DAOUpdate } from '../models/DAOUpdate';
 import { DeleteDeviceResponse } from '../models/DeleteDeviceResponse';
@@ -23,10 +27,12 @@ import { DiscordChannelResponse } from '../models/DiscordChannelResponse';
 import { DiscordChannelsResponse } from '../models/DiscordChannelsResponse';
 import { DiscordMessage } from '../models/DiscordMessage';
 import { DiscordMessagesResponse } from '../models/DiscordMessagesResponse';
+import { InitDAOResponse } from '../models/InitDAOResponse';
 import { InputCreateDAO } from '../models/InputCreateDAO';
 import { InputCreatePOD } from '../models/InputCreatePOD';
 import { InputCreateProposal } from '../models/InputCreateProposal';
 import { InputCreateUser } from '../models/InputCreateUser';
+import { InputInitDAO } from '../models/InputInitDAO';
 import { InputUpdateUser } from '../models/InputUpdateUser';
 import { LinkDiscordChannel } from '../models/LinkDiscordChannel';
 import { LoginResponse } from '../models/LoginResponse';
@@ -58,6 +64,7 @@ import { Treasury } from '../models/Treasury';
 import { User } from '../models/User';
 import { UserBasic } from '../models/UserBasic';
 import { UserBasic1 } from '../models/UserBasic1';
+import { UserDAOOwnershipResponse } from '../models/UserDAOOwnershipResponse';
 import { UserExistResponse } from '../models/UserExistResponse';
 import { UserInfoError } from '../models/UserInfoError';
 import { UserResponse } from '../models/UserResponse';
@@ -252,6 +259,23 @@ export class ObjectAuthApi {
 import { ObservableDaosApi } from "./ObservableAPI";
 import { DaosApiRequestFactory, DaosApiResponseProcessor} from "../apis/DaosApi";
 
+export interface DaosApiAccessDAOModuleRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiaccessDAOModule
+     */
+    daoId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiaccessDAOModule
+     */
+    moduleName: string
+}
+
 export interface DaosApiAddAdminToDAORequest {
     /**
      * 
@@ -266,6 +290,22 @@ export interface DaosApiAddAdminToDAORequest {
      * @memberof DaosApiaddAdminToDAO
      */
     dAOMembership: DAOMembership
+}
+
+export interface DaosApiAddDAOModuleRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiaddDAOModule
+     */
+    daoId: string
+    /**
+     * 
+     * @type DAOModule
+     * @memberof DaosApiaddDAOModule
+     */
+    dAOModule: DAOModule
 }
 
 export interface DaosApiAddMemberToDAORequest {
@@ -293,6 +333,12 @@ export interface DaosApiAddMemberToPODRequest {
      * @memberof DaosApiaddMemberToPOD
      */
     podId: string
+}
+
+export interface DaosApiCheckDAOInitializationRequest {
+}
+
+export interface DaosApiCheckUserDAOOwnershipRequest {
 }
 
 export interface DaosApiCreateDAORequest {
@@ -411,6 +457,16 @@ export interface DaosApiGetDAOByIdRequest {
     daoId: string
 }
 
+export interface DaosApiGetDAOModulesRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApigetDAOModules
+     */
+    daoId: string
+}
+
 export interface DaosApiGetPODByIdRequest {
     /**
      * 
@@ -462,6 +518,15 @@ export interface DaosApiGetPODFeedRequest {
     podId: string
 }
 
+export interface DaosApiInitializeDAOCreationRequest {
+    /**
+     * 
+     * @type InputInitDAO
+     * @memberof DaosApiinitializeDAOCreation
+     */
+    inputInitDAO: InputInitDAO
+}
+
 export interface DaosApiLinkDiscordChannelToPODRequest {
     /**
      * 
@@ -499,6 +564,22 @@ export interface DaosApiRemoveAdminFromDAORequest {
      * @memberof DaosApiremoveAdminFromDAO
      */
     dAOMembership: DAOMembership
+}
+
+export interface DaosApiRemoveDAOModuleRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiremoveDAOModule
+     */
+    daoId: string
+    /**
+     * 
+     * @type DAOModule
+     * @memberof DaosApiremoveDAOModule
+     */
+    dAOModule: DAOModule
 }
 
 export interface DaosApiRemoveMemberFromDAORequest {
@@ -611,6 +692,22 @@ export class ObjectDaosApi {
     }
 
     /**
+     * Access a specific module for a DAO
+     * @param param the request object
+     */
+    public accessDAOModuleWithHttpInfo(param: DaosApiAccessDAOModuleRequest, options?: ConfigurationOptions): Promise<HttpInfo<DAOModuleAccessResponse>> {
+        return this.api.accessDAOModuleWithHttpInfo(param.daoId, param.moduleName,  options).toPromise();
+    }
+
+    /**
+     * Access a specific module for a DAO
+     * @param param the request object
+     */
+    public accessDAOModule(param: DaosApiAccessDAOModuleRequest, options?: ConfigurationOptions): Promise<DAOModuleAccessResponse> {
+        return this.api.accessDAOModule(param.daoId, param.moduleName,  options).toPromise();
+    }
+
+    /**
      * Add an admin to a DAO
      * @param param the request object
      */
@@ -624,6 +721,22 @@ export class ObjectDaosApi {
      */
     public addAdminToDAO(param: DaosApiAddAdminToDAORequest, options?: ConfigurationOptions): Promise<DAOMembershipResponse> {
         return this.api.addAdminToDAO(param.daoId, param.dAOMembership,  options).toPromise();
+    }
+
+    /**
+     * Add a module to a DAO
+     * @param param the request object
+     */
+    public addDAOModuleWithHttpInfo(param: DaosApiAddDAOModuleRequest, options?: ConfigurationOptions): Promise<HttpInfo<DAOModuleResponse>> {
+        return this.api.addDAOModuleWithHttpInfo(param.daoId, param.dAOModule,  options).toPromise();
+    }
+
+    /**
+     * Add a module to a DAO
+     * @param param the request object
+     */
+    public addDAOModule(param: DaosApiAddDAOModuleRequest, options?: ConfigurationOptions): Promise<DAOModuleResponse> {
+        return this.api.addDAOModule(param.daoId, param.dAOModule,  options).toPromise();
     }
 
     /**
@@ -659,7 +772,39 @@ export class ObjectDaosApi {
     }
 
     /**
-     * Create a new DAO
+     * Check if user has already initialized DAO creation (useful after disconnections)
+     * @param param the request object
+     */
+    public checkDAOInitializationWithHttpInfo(param: DaosApiCheckDAOInitializationRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<InitDAOResponse>> {
+        return this.api.checkDAOInitializationWithHttpInfo( options).toPromise();
+    }
+
+    /**
+     * Check if user has already initialized DAO creation (useful after disconnections)
+     * @param param the request object
+     */
+    public checkDAOInitialization(param: DaosApiCheckDAOInitializationRequest = {}, options?: ConfigurationOptions): Promise<InitDAOResponse> {
+        return this.api.checkDAOInitialization( options).toPromise();
+    }
+
+    /**
+     * Check if the authenticated user owns a DAO
+     * @param param the request object
+     */
+    public checkUserDAOOwnershipWithHttpInfo(param: DaosApiCheckUserDAOOwnershipRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<UserDAOOwnershipResponse>> {
+        return this.api.checkUserDAOOwnershipWithHttpInfo( options).toPromise();
+    }
+
+    /**
+     * Check if the authenticated user owns a DAO
+     * @param param the request object
+     */
+    public checkUserDAOOwnership(param: DaosApiCheckUserDAOOwnershipRequest = {}, options?: ConfigurationOptions): Promise<UserDAOOwnershipResponse> {
+        return this.api.checkUserDAOOwnership( options).toPromise();
+    }
+
+    /**
+     * Create a new DAO (Step 2) - Complete DAO creation with all required fields
      * @param param the request object
      */
     public createDAOWithHttpInfo(param: DaosApiCreateDAORequest, options?: ConfigurationOptions): Promise<HttpInfo<DAOSchemaResponse>> {
@@ -667,7 +812,7 @@ export class ObjectDaosApi {
     }
 
     /**
-     * Create a new DAO
+     * Create a new DAO (Step 2) - Complete DAO creation with all required fields
      * @param param the request object
      */
     public createDAO(param: DaosApiCreateDAORequest, options?: ConfigurationOptions): Promise<DAOSchemaResponse> {
@@ -803,6 +948,22 @@ export class ObjectDaosApi {
     }
 
     /**
+     * Get all modules enabled for a DAO
+     * @param param the request object
+     */
+    public getDAOModulesWithHttpInfo(param: DaosApiGetDAOModulesRequest, options?: ConfigurationOptions): Promise<HttpInfo<DAOModulesList>> {
+        return this.api.getDAOModulesWithHttpInfo(param.daoId,  options).toPromise();
+    }
+
+    /**
+     * Get all modules enabled for a DAO
+     * @param param the request object
+     */
+    public getDAOModules(param: DaosApiGetDAOModulesRequest, options?: ConfigurationOptions): Promise<DAOModulesList> {
+        return this.api.getDAOModules(param.daoId,  options).toPromise();
+    }
+
+    /**
      * Get a POD by ID
      * @param param the request object
      */
@@ -851,6 +1012,22 @@ export class ObjectDaosApi {
     }
 
     /**
+     * Initialize DAO creation (Step 1) - Store pubkey and transaction in Redis
+     * @param param the request object
+     */
+    public initializeDAOCreationWithHttpInfo(param: DaosApiInitializeDAOCreationRequest, options?: ConfigurationOptions): Promise<HttpInfo<InitDAOResponse>> {
+        return this.api.initializeDAOCreationWithHttpInfo(param.inputInitDAO,  options).toPromise();
+    }
+
+    /**
+     * Initialize DAO creation (Step 1) - Store pubkey and transaction in Redis
+     * @param param the request object
+     */
+    public initializeDAOCreation(param: DaosApiInitializeDAOCreationRequest, options?: ConfigurationOptions): Promise<InitDAOResponse> {
+        return this.api.initializeDAOCreation(param.inputInitDAO,  options).toPromise();
+    }
+
+    /**
      * Link a Discord channel to a POD
      * @param param the request object
      */
@@ -880,6 +1057,22 @@ export class ObjectDaosApi {
      */
     public removeAdminFromDAO(param: DaosApiRemoveAdminFromDAORequest, options?: ConfigurationOptions): Promise<DAOMembershipResponse> {
         return this.api.removeAdminFromDAO(param.daoId, param.dAOMembership,  options).toPromise();
+    }
+
+    /**
+     * Remove a module from a DAO
+     * @param param the request object
+     */
+    public removeDAOModuleWithHttpInfo(param: DaosApiRemoveDAOModuleRequest, options?: ConfigurationOptions): Promise<HttpInfo<DAOModuleResponse>> {
+        return this.api.removeDAOModuleWithHttpInfo(param.daoId, param.dAOModule,  options).toPromise();
+    }
+
+    /**
+     * Remove a module from a DAO
+     * @param param the request object
+     */
+    public removeDAOModule(param: DaosApiRemoveDAOModuleRequest, options?: ConfigurationOptions): Promise<DAOModuleResponse> {
+        return this.api.removeDAOModule(param.daoId, param.dAOModule,  options).toPromise();
     }
 
     /**

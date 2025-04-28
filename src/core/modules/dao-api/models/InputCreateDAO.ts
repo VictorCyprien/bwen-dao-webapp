@@ -25,8 +25,6 @@ export class InputCreateDAO {
     'tiktok'?: string;
     'website'?: string;
     'treasury'?: string;
-    'pubkey': string;
-    'transaction': string;
     'tokenAddress': string;
     'profile'?: HttpFile;
 
@@ -86,18 +84,6 @@ export class InputCreateDAO {
         {
             "name": "treasury",
             "baseName": "treasury",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "pubkey",
-            "baseName": "pubkey",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "transaction",
-            "baseName": "transaction",
             "type": "string",
             "format": ""
         },

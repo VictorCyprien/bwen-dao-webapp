@@ -28,12 +28,12 @@ const DaoNameStep: OnboardingStep = {
       }
       
       return {
-        nextStep: 'dao-description'
+        nextStep: 'dao-transaction'
       };
     } catch (e) {
       // If there's an error, just continue
       return {
-        nextStep: 'dao-description'
+        nextStep: 'dao-transaction'
       };
     }
   }

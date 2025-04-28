@@ -30,6 +30,7 @@ export class DAO {
     'website'?: string;
     'profilePicture'?: string;
     'treasuryAddress'?: string;
+    'modules'?: Array<string>;
     'pubkey'?: string;
     'transaction'?: string;
     'tokenAddress'?: string;
@@ -117,6 +118,12 @@ export class DAO {
             "name": "treasuryAddress",
             "baseName": "treasury_address",
             "type": "string",
+            "format": ""
+        },
+        {
+            "name": "modules",
+            "baseName": "modules",
+            "type": "Array<string>",
             "format": ""
         },
         {
