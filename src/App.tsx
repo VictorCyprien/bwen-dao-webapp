@@ -75,13 +75,6 @@ const DaoAccessCheck = ({ children }: { children: React.ReactNode }) => {
     }
 
     checkMembership();
-
-    // Set up an interval to periodically check membership status
-    const intervalId = setInterval(() => {
-      checkMembership();
-    }, 30000); // Check every 30 seconds
-
-    return () => clearInterval(intervalId);
   }, [daoId, publicKey, connected, isAuthenticated, checkTimestamp]);
 
   const handleGoHome = () => {
@@ -89,7 +82,7 @@ const DaoAccessCheck = ({ children }: { children: React.ReactNode }) => {
   };
 
   // Pass the recheckMembership function to children
-  const childrenWithProps = React.Children.map(children, child => {
+  const childrenWithProps = React.Children.map(children, (child: React.ReactNode) => {
     if (React.isValidElement(child)) {
       return React.cloneElement(child as React.ReactElement<any>, { 
         recheckMembership 
