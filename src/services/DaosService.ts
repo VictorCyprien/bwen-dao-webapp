@@ -3,7 +3,7 @@
  * Handles all API interactions related to DAOs
  */
 
-import { createConfiguration, DaosApi, DAO, DAOUpdate, DAOMembership, InputCreateDAO, UserDAOOwnershipResponse } from '../core/modules/dao-api';
+import { createConfiguration, DaosApi, DAO, DAOUpdate, DAOMembership, InputCreateDAO, UserDAOOwnershipResponse, InputInitDAO } from '../core/modules/dao-api';
 import { ServerConfiguration } from '../core/modules/dao-api/servers';
 import { walletAuthService } from './WalletAuthService';
 import { fileToMinioStorage } from '../utils/fileUtils';
@@ -148,6 +148,32 @@ export class DaosService {
   }
 
   /**
+   * Initialize DAO creation (Step 1)
+   * This creates an initial DAO record with just the blockchain transaction details
+   * @param pubkey The public key of the DAO (from Solana)
+   * @param transaction The transaction signature
+   * @returns The initialization response or null if there was an error
+   */
+  async initializeDAOCreation(pubkey: string, transaction: string): Promise<any | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      // Create the request payload
+      const inputInitDAO = new InputInitDAO();
+      inputInitDAO.pubkey = pubkey;
+      inputInitDAO.transaction = transaction;
+
+      const response = await apiClient.initializeDAOCreation(inputInitDAO);
+      console.log('DAO initialization response:', response);
+      return response || null;
+    } catch (error) {
+      console.error('Error initializing DAO creation:', error);
+      return null;
+    }
+  }
+
+  /**
    * Create a new DAO
    */
   async createDao(daoData: {
@@ -163,9 +189,7 @@ export class DaosService {
     website?: string;
     profilePicture?: File;
     bannerPicture?: File;
-    blockchainAddress: string; // Solana account address
-    transactionSignature: string; // Transaction hash
-    tokenAddress: string; // Token address
+    tokenAddress?: string; // Token address
   }): Promise<DAO | null> {
     try {
       const apiClient = this.createAuthenticatedApiClient();
@@ -181,7 +205,7 @@ export class DaosService {
       daoInput.instagram = daoData.instagram?.trim() ? daoData.instagram : undefined;
       daoInput.tiktok = daoData.tiktok?.trim() ? daoData.tiktok : undefined;
       daoInput.website = daoData.website?.trim() ? daoData.website : undefined;
-      daoInput.tokenAddress = daoData.tokenAddress;
+      daoInput.tokenAddress = daoData.tokenAddress || '';
       
       // Convert File objects to FileStorage objects for Minio
       if (daoData.profilePicture != undefined) {
@@ -295,6 +319,29 @@ export class DaosService {
       return response?.hasDao || false;
     } catch (error) {
       console.error('Error checking if user owns a DAO:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Check if the DAO initialization has already been done (Step 1)
+   * This checks if the user has already created and stored a blockchain transaction
+   * @returns A boolean indicating whether the DAO has been initialized or not
+   */
+  async checkDAOInitialization(): Promise<boolean> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return false;
+
+      // Call the API to check if the DAO has been initialized
+      const response = await apiClient.checkDAOInitialization();
+      console.log('DAO initialization check response:', response);
+      
+      // The API returns a response with a status field
+      // If status is "found", return true, otherwise false
+      return !!response && response.status === "found";
+    } catch (error) {
+      console.error('Error checking DAO initialization:', error);
       return false;
     }
   }
