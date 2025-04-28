@@ -11,6 +11,10 @@ import { CreateDeviceResponse } from '../models/CreateDeviceResponse';
 import { DAO } from '../models/DAO';
 import { DAOMembership } from '../models/DAOMembership';
 import { DAOMembershipResponse } from '../models/DAOMembershipResponse';
+import { DAOModule } from '../models/DAOModule';
+import { DAOModuleAccessResponse } from '../models/DAOModuleAccessResponse';
+import { DAOModuleResponse } from '../models/DAOModuleResponse';
+import { DAOModulesList } from '../models/DAOModulesList';
 import { DAOSchemaResponse } from '../models/DAOSchemaResponse';
 import { DAOUpdate } from '../models/DAOUpdate';
 import { DeleteDeviceResponse } from '../models/DeleteDeviceResponse';
@@ -23,10 +27,12 @@ import { DiscordChannelResponse } from '../models/DiscordChannelResponse';
 import { DiscordChannelsResponse } from '../models/DiscordChannelsResponse';
 import { DiscordMessage } from '../models/DiscordMessage';
 import { DiscordMessagesResponse } from '../models/DiscordMessagesResponse';
+import { InitDAOResponse } from '../models/InitDAOResponse';
 import { InputCreateDAO } from '../models/InputCreateDAO';
 import { InputCreatePOD } from '../models/InputCreatePOD';
 import { InputCreateProposal } from '../models/InputCreateProposal';
 import { InputCreateUser } from '../models/InputCreateUser';
+import { InputInitDAO } from '../models/InputInitDAO';
 import { InputUpdateUser } from '../models/InputUpdateUser';
 import { LinkDiscordChannel } from '../models/LinkDiscordChannel';
 import { LoginResponse } from '../models/LoginResponse';
@@ -58,6 +64,7 @@ import { Treasury } from '../models/Treasury';
 import { User } from '../models/User';
 import { UserBasic } from '../models/UserBasic';
 import { UserBasic1 } from '../models/UserBasic1';
+import { UserDAOOwnershipResponse } from '../models/UserDAOOwnershipResponse';
 import { UserExistResponse } from '../models/UserExistResponse';
 import { UserInfoError } from '../models/UserInfoError';
 import { UserResponse } from '../models/UserResponse';
@@ -407,6 +414,50 @@ export class PromiseDaosApi {
     }
 
     /**
+     * Access a specific module for a DAO
+     * @param daoId
+     * @param moduleName
+     */
+    public accessDAOModuleWithHttpInfo(daoId: string, moduleName: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DAOModuleAccessResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.accessDAOModuleWithHttpInfo(daoId, moduleName, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Access a specific module for a DAO
+     * @param daoId
+     * @param moduleName
+     */
+    public accessDAOModule(daoId: string, moduleName: string, _options?: PromiseConfigurationOptions): Promise<DAOModuleAccessResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.accessDAOModule(daoId, moduleName, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
      * Add an admin to a DAO
      * @param daoId
      * @param dAOMembership
@@ -447,6 +498,50 @@ export class PromiseDaosApi {
 	    }
 	}
         const result = this.api.addAdminToDAO(daoId, dAOMembership, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Add a module to a DAO
+     * @param daoId
+     * @param dAOModule
+     */
+    public addDAOModuleWithHttpInfo(daoId: string, dAOModule: DAOModule, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DAOModuleResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.addDAOModuleWithHttpInfo(daoId, dAOModule, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Add a module to a DAO
+     * @param daoId
+     * @param dAOModule
+     */
+    public addDAOModule(daoId: string, dAOModule: DAOModule, _options?: PromiseConfigurationOptions): Promise<DAOModuleResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.addDAOModule(daoId, dAOModule, observableOptions);
         return result.toPromise();
     }
 
@@ -537,7 +632,47 @@ export class PromiseDaosApi {
     }
 
     /**
-     * Create a new DAO
+     * Check if the authenticated user owns a DAO
+     */
+    public checkUserDAOOwnershipWithHttpInfo(_options?: PromiseConfigurationOptions): Promise<HttpInfo<UserDAOOwnershipResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.checkUserDAOOwnershipWithHttpInfo(observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Check if the authenticated user owns a DAO
+     */
+    public checkUserDAOOwnership(_options?: PromiseConfigurationOptions): Promise<UserDAOOwnershipResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.checkUserDAOOwnership(observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Create a new DAO (Step 2) - Complete DAO creation with all required fields
      * @param inputCreateDAO
      */
     public createDAOWithHttpInfo(inputCreateDAO: InputCreateDAO, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DAOSchemaResponse>> {
@@ -558,7 +693,7 @@ export class PromiseDaosApi {
     }
 
     /**
-     * Create a new DAO
+     * Create a new DAO (Step 2) - Complete DAO creation with all required fields
      * @param inputCreateDAO
      */
     public createDAO(inputCreateDAO: InputCreateDAO, _options?: PromiseConfigurationOptions): Promise<DAOSchemaResponse> {
@@ -923,6 +1058,48 @@ export class PromiseDaosApi {
     }
 
     /**
+     * Get all modules enabled for a DAO
+     * @param daoId
+     */
+    public getDAOModulesWithHttpInfo(daoId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DAOModulesList>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getDAOModulesWithHttpInfo(daoId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get all modules enabled for a DAO
+     * @param daoId
+     */
+    public getDAOModules(daoId: string, _options?: PromiseConfigurationOptions): Promise<DAOModulesList> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getDAOModules(daoId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
      * Get a POD by ID
      * @param daoId
      * @param podId
@@ -1055,6 +1232,48 @@ export class PromiseDaosApi {
     }
 
     /**
+     * Initialize DAO creation (Step 1) - Store pubkey and transaction in Redis
+     * @param inputInitDAO
+     */
+    public initializeDAOCreationWithHttpInfo(inputInitDAO: InputInitDAO, _options?: PromiseConfigurationOptions): Promise<HttpInfo<InitDAOResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.initializeDAOCreationWithHttpInfo(inputInitDAO, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Initialize DAO creation (Step 1) - Store pubkey and transaction in Redis
+     * @param inputInitDAO
+     */
+    public initializeDAOCreation(inputInitDAO: InputInitDAO, _options?: PromiseConfigurationOptions): Promise<InitDAOResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.initializeDAOCreation(inputInitDAO, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
      * Link a Discord channel to a POD
      * @param daoId
      * @param podId
@@ -1141,6 +1360,50 @@ export class PromiseDaosApi {
 	    }
 	}
         const result = this.api.removeAdminFromDAO(daoId, dAOMembership, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Remove a module from a DAO
+     * @param daoId
+     * @param dAOModule
+     */
+    public removeDAOModuleWithHttpInfo(daoId: string, dAOModule: DAOModule, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DAOModuleResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.removeDAOModuleWithHttpInfo(daoId, dAOModule, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Remove a module from a DAO
+     * @param daoId
+     * @param dAOModule
+     */
+    public removeDAOModule(daoId: string, dAOModule: DAOModule, _options?: PromiseConfigurationOptions): Promise<DAOModuleResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.removeDAOModule(daoId, dAOModule, observableOptions);
         return result.toPromise();
     }
 

@@ -7,6 +7,10 @@ export * from '../models/CreateDeviceResponse';
 export * from '../models/DAO';
 export * from '../models/DAOMembership';
 export * from '../models/DAOMembershipResponse';
+export * from '../models/DAOModule';
+export * from '../models/DAOModuleAccessResponse';
+export * from '../models/DAOModuleResponse';
+export * from '../models/DAOModulesList';
 export * from '../models/DAOSchemaResponse';
 export * from '../models/DAOUpdate';
 export * from '../models/DeleteDeviceResponse';
@@ -19,10 +23,12 @@ export * from '../models/DiscordChannelResponse';
 export * from '../models/DiscordChannelsResponse';
 export * from '../models/DiscordMessage';
 export * from '../models/DiscordMessagesResponse';
+export * from '../models/InitDAOResponse';
 export * from '../models/InputCreateDAO';
 export * from '../models/InputCreatePOD';
 export * from '../models/InputCreateProposal';
 export * from '../models/InputCreateUser';
+export * from '../models/InputInitDAO';
 export * from '../models/InputUpdateUser';
 export * from '../models/LinkDiscordChannel';
 export * from '../models/LoginResponse';
@@ -54,6 +60,7 @@ export * from '../models/Treasury';
 export * from '../models/User';
 export * from '../models/UserBasic';
 export * from '../models/UserBasic1';
+export * from '../models/UserDAOOwnershipResponse';
 export * from '../models/UserExistResponse';
 export * from '../models/UserInfoError';
 export * from '../models/UserResponse';
@@ -68,6 +75,10 @@ import { CreateDeviceResponse } from '../models/CreateDeviceResponse';
 import { DAO } from '../models/DAO';
 import { DAOMembership } from '../models/DAOMembership';
 import { DAOMembershipResponse } from '../models/DAOMembershipResponse';
+import { DAOModule } from '../models/DAOModule';
+import { DAOModuleAccessResponse } from '../models/DAOModuleAccessResponse';
+import { DAOModuleResponse } from '../models/DAOModuleResponse';
+import { DAOModulesList } from '../models/DAOModulesList';
 import { DAOSchemaResponse } from '../models/DAOSchemaResponse';
 import { DAOUpdate } from '../models/DAOUpdate';
 import { DeleteDeviceResponse } from '../models/DeleteDeviceResponse';
@@ -80,10 +91,12 @@ import { DiscordChannelResponse } from '../models/DiscordChannelResponse';
 import { DiscordChannelsResponse } from '../models/DiscordChannelsResponse';
 import { DiscordMessage } from '../models/DiscordMessage';
 import { DiscordMessagesResponse } from '../models/DiscordMessagesResponse';
+import { InitDAOResponse } from '../models/InitDAOResponse';
 import { InputCreateDAO } from '../models/InputCreateDAO';
 import { InputCreatePOD } from '../models/InputCreatePOD';
 import { InputCreateProposal } from '../models/InputCreateProposal';
 import { InputCreateUser } from '../models/InputCreateUser';
+import { InputInitDAO } from '../models/InputInitDAO';
 import { InputUpdateUser } from '../models/InputUpdateUser';
 import { LinkDiscordChannel } from '../models/LinkDiscordChannel';
 import { LoginResponse } from '../models/LoginResponse';
@@ -115,6 +128,7 @@ import { Treasury } from '../models/Treasury';
 import { User } from '../models/User';
 import { UserBasic } from '../models/UserBasic';
 import { UserBasic1 } from '../models/UserBasic1';
+import { UserDAOOwnershipResponse } from '../models/UserDAOOwnershipResponse';
 import { UserExistResponse } from '../models/UserExistResponse';
 import { UserInfoError } from '../models/UserInfoError';
 import { UserResponse } from '../models/UserResponse';
@@ -147,6 +161,10 @@ let typeMap: {[index: string]: any} = {
     "DAO": DAO,
     "DAOMembership": DAOMembership,
     "DAOMembershipResponse": DAOMembershipResponse,
+    "DAOModule": DAOModule,
+    "DAOModuleAccessResponse": DAOModuleAccessResponse,
+    "DAOModuleResponse": DAOModuleResponse,
+    "DAOModulesList": DAOModulesList,
     "DAOSchemaResponse": DAOSchemaResponse,
     "DAOUpdate": DAOUpdate,
     "DeleteDeviceResponse": DeleteDeviceResponse,
@@ -159,10 +177,12 @@ let typeMap: {[index: string]: any} = {
     "DiscordChannelsResponse": DiscordChannelsResponse,
     "DiscordMessage": DiscordMessage,
     "DiscordMessagesResponse": DiscordMessagesResponse,
+    "InitDAOResponse": InitDAOResponse,
     "InputCreateDAO": InputCreateDAO,
     "InputCreatePOD": InputCreatePOD,
     "InputCreateProposal": InputCreateProposal,
     "InputCreateUser": InputCreateUser,
+    "InputInitDAO": InputInitDAO,
     "InputUpdateUser": InputUpdateUser,
     "LinkDiscordChannel": LinkDiscordChannel,
     "LoginResponse": LoginResponse,
@@ -194,6 +214,7 @@ let typeMap: {[index: string]: any} = {
     "User": User,
     "UserBasic": UserBasic,
     "UserBasic1": UserBasic1,
+    "UserDAOOwnershipResponse": UserDAOOwnershipResponse,
     "UserExistResponse": UserExistResponse,
     "UserInfoError": UserInfoError,
     "UserResponse": UserResponse,

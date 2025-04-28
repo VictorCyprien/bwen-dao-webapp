@@ -4,10 +4,13 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**accessDAOModule**](DaosApi.md#accessDAOModule) | **GET** /daos/{dao_id}/modules/{module_name} | Access a specific module for a DAO
 [**addAdminToDAO**](DaosApi.md#addAdminToDAO) | **POST** /daos/{dao_id}/admins | Add an admin to a DAO
+[**addDAOModule**](DaosApi.md#addDAOModule) | **POST** /daos/{dao_id}/modules/add | Add a module to a DAO
 [**addMemberToDAO**](DaosApi.md#addMemberToDAO) | **POST** /daos/{dao_id}/members | Add a member to a DAO
 [**addMemberToPOD**](DaosApi.md#addMemberToPOD) | **POST** /daos/{dao_id}/pods/{pod_id}/members | Add a member to a POD
-[**createDAO**](DaosApi.md#createDAO) | **POST** /daos/ | Create a new DAO
+[**checkUserDAOOwnership**](DaosApi.md#checkUserDAOOwnership) | **GET** /daos/ownership | Check if the authenticated user owns a DAO
+[**createDAO**](DaosApi.md#createDAO) | **POST** /daos/ | Create a new DAO (Step 2) - Complete DAO creation with all required fields
 [**createPOD**](DaosApi.md#createPOD) | **POST** /daos/{dao_id}/pods | Create a new POD
 [**deleteDAO**](DaosApi.md#deleteDAO) | **DELETE** /daos/{dao_id} | Delete a DAO
 [**deletePOD**](DaosApi.md#deletePOD) | **DELETE** /daos/{dao_id}/pods/{pod_id} | Delete a POD
@@ -16,17 +19,79 @@ Method | HTTP request | Description
 [**getAllPODsForDAO**](DaosApi.md#getAllPODsForDAO) | **GET** /daos/{dao_id}/pods | Get all PODs for a DAO
 [**getChannelMessages**](DaosApi.md#getChannelMessages) | **GET** /daos/{dao_id}/pods/{pod_id}/discord-channels/{channel_id}/messages | Get messages from a specific Discord channel
 [**getDAOById**](DaosApi.md#getDAOById) | **GET** /daos/{dao_id} | Get a DAO by ID
+[**getDAOModules**](DaosApi.md#getDAOModules) | **GET** /daos/{dao_id}/modules | Get all modules enabled for a DAO
 [**getPODById**](DaosApi.md#getPODById) | **GET** /daos/{dao_id}/pods/{pod_id} | Get a POD by ID
 [**getPODDiscordChannels**](DaosApi.md#getPODDiscordChannels) | **GET** /daos/{dao_id}/pods/{pod_id}/discord-channels | Get all Discord channels for a POD
 [**getPODFeed**](DaosApi.md#getPODFeed) | **GET** /daos/{dao_id}/pods/{pod_id}/feed | Get Discord feed for a POD
+[**initializeDAOCreation**](DaosApi.md#initializeDAOCreation) | **POST** /daos/init | Initialize DAO creation (Step 1) - Store pubkey and transaction in Redis
 [**linkDiscordChannelToPOD**](DaosApi.md#linkDiscordChannelToPOD) | **POST** /daos/{dao_id}/pods/{pod_id}/discord-channels | Link a Discord channel to a POD
 [**removeAdminFromDAO**](DaosApi.md#removeAdminFromDAO) | **DELETE** /daos/{dao_id}/admins | Remove an admin from a DAO
+[**removeDAOModule**](DaosApi.md#removeDAOModule) | **POST** /daos/{dao_id}/modules/remove | Remove a module from a DAO
 [**removeMemberFromDAO**](DaosApi.md#removeMemberFromDAO) | **DELETE** /daos/{dao_id}/members | Remove a member from a DAO
 [**removeMemberFromPOD**](DaosApi.md#removeMemberFromPOD) | **DELETE** /daos/{dao_id}/pods/{pod_id}/members | Remove a member from a POD
 [**unlinkDiscordChannelFromPOD**](DaosApi.md#unlinkDiscordChannelFromPOD) | **DELETE** /daos/{dao_id}/pods/{pod_id}/discord-channels/{channel_id} | Unlink a Discord channel from a POD
 [**updateDAO**](DaosApi.md#updateDAO) | **PUT** /daos/{dao_id} | Update a DAO
 [**updatePOD**](DaosApi.md#updatePOD) | **PUT** /daos/{dao_id}/pods/{pod_id} | Update a POD
 
+
+# **accessDAOModule**
+> DAOModuleAccessResponse accessDAOModule()
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+import type { DaosApiAccessDAOModuleRequest } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request: DaosApiAccessDAOModuleRequest = {
+  
+  daoId: "dao_id_example",
+  
+  moduleName: "module_name_example",
+};
+
+const data = await apiInstance.accessDAOModule(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **daoId** | [**string**] |  | defaults to undefined
+ **moduleName** | [**string**] |  | defaults to undefined
+
+
+### Return type
+
+**DAOModuleAccessResponse**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Module accessed successfully |  -  |
+**400** | Bad Request - Invalid module |  -  |
+**401** | Unauthorized - Invalid or missing token |  -  |
+**404** | DAO or module not found |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
 
 # **addAdminToDAO**
 > DAOMembershipResponse addAdminToDAO(dAOMembership)
@@ -86,6 +151,68 @@ No authorization required
 **400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | User or DAO not found |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
+# **addDAOModule**
+> DAOModuleResponse addDAOModule(dAOModule)
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+import type { DaosApiAddDAOModuleRequest } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request: DaosApiAddDAOModuleRequest = {
+  
+  daoId: "dao_id_example",
+  
+  dAOModule: {
+    module: "module_example",
+  },
+};
+
+const data = await apiInstance.addDAOModule(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **dAOModule** | **DAOModule**|  |
+ **daoId** | [**string**] |  | defaults to undefined
+
+
+### Return type
+
+**DAOModuleResponse**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**422** | Unprocessable Entity |  -  |
+**200** | Module added successfully |  -  |
+**400** | Bad Request - Invalid module |  -  |
+**401** | Unauthorized - Invalid or missing token |  -  |
+**404** | DAO not found |  -  |
 **0** | Default error response |  -  |
 
 [[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
@@ -204,6 +331,54 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
 
+# **checkUserDAOOwnership**
+> UserDAOOwnershipResponse checkUserDAOOwnership()
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request = {};
+
+const data = await apiInstance.checkUserDAOOwnership(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+This endpoint does not need any parameter.
+
+
+### Return type
+
+**UserDAOOwnershipResponse**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | User DAO ownership status |  -  |
+**404** | User not found |  -  |
+**401** | Unauthorized - Invalid or missing token |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
 # **createDAO**
 > DAOSchemaResponse createDAO(inputCreateDAO)
 
@@ -230,8 +405,6 @@ const request: DaosApiCreateDAORequest = {
     tiktok: "tiktok_example",
     website: "website_example",
     treasury: "treasury_example",
-    pubkey: "pubkey_example",
-    transaction: "transaction_example",
     tokenAddress: "tokenAddress_example",
     profile: { data: Buffer.from(fs.readFileSync('/path/to/file', 'utf-8')), name: '/path/to/file' },
   },
@@ -729,6 +902,60 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
 
+# **getDAOModules**
+> DAOModulesList getDAOModules()
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+import type { DaosApiGetDAOModulesRequest } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request: DaosApiGetDAOModulesRequest = {
+  
+  daoId: "dao_id_example",
+};
+
+const data = await apiInstance.getDAOModules(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **daoId** | [**string**] |  | defaults to undefined
+
+
+### Return type
+
+**DAOModulesList**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | DAO modules retrieved successfully |  -  |
+**404** | DAO not found |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
 # **getPODById**
 > POD getPODById()
 
@@ -902,6 +1129,65 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
 
+# **initializeDAOCreation**
+> InitDAOResponse initializeDAOCreation(inputInitDAO)
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+import type { DaosApiInitializeDAOCreationRequest } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request: DaosApiInitializeDAOCreationRequest = {
+  
+  inputInitDAO: {
+    pubkey: "pubkey_example",
+    transaction: "transaction_example",
+  },
+};
+
+const data = await apiInstance.initializeDAOCreation(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **inputInitDAO** | **InputInitDAO**|  |
+
+
+### Return type
+
+**InitDAOResponse**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**422** | Unprocessable Entity |  -  |
+**201** | DAO initialization successful |  -  |
+**400** | Bad Request - Invalid data |  -  |
+**401** | Unauthorized - Invalid or missing token |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
 # **linkDiscordChannelToPOD**
 > DiscordChannelResponse linkDiscordChannelToPOD(linkDiscordChannel)
 
@@ -1026,6 +1312,68 @@ No authorization required
 **400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | User or DAO not found |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
+# **removeDAOModule**
+> DAOModuleResponse removeDAOModule(dAOModule)
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+import type { DaosApiRemoveDAOModuleRequest } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request: DaosApiRemoveDAOModuleRequest = {
+  
+  daoId: "dao_id_example",
+  
+  dAOModule: {
+    module: "module_example",
+  },
+};
+
+const data = await apiInstance.removeDAOModule(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **dAOModule** | **DAOModule**|  |
+ **daoId** | [**string**] |  | defaults to undefined
+
+
+### Return type
+
+**DAOModuleResponse**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**422** | Unprocessable Entity |  -  |
+**200** | Module removed successfully |  -  |
+**400** | Bad Request - Invalid module |  -  |
+**401** | Unauthorized - Invalid or missing token |  -  |
+**404** | DAO not found |  -  |
 **0** | Default error response |  -  |
 
 [[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
