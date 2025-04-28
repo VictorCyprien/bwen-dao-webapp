@@ -632,6 +632,46 @@ export class PromiseDaosApi {
     }
 
     /**
+     * Check if user has already initialized DAO creation (useful after disconnections)
+     */
+    public checkDAOInitializationWithHttpInfo(_options?: PromiseConfigurationOptions): Promise<HttpInfo<InitDAOResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.checkDAOInitializationWithHttpInfo(observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Check if user has already initialized DAO creation (useful after disconnections)
+     */
+    public checkDAOInitialization(_options?: PromiseConfigurationOptions): Promise<InitDAOResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.checkDAOInitialization(observableOptions);
+        return result.toPromise();
+    }
+
+    /**
      * Check if the authenticated user owns a DAO
      */
     public checkUserDAOOwnershipWithHttpInfo(_options?: PromiseConfigurationOptions): Promise<HttpInfo<UserDAOOwnershipResponse>> {

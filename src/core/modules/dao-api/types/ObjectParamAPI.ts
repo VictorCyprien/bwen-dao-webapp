@@ -335,6 +335,9 @@ export interface DaosApiAddMemberToPODRequest {
     podId: string
 }
 
+export interface DaosApiCheckDAOInitializationRequest {
+}
+
 export interface DaosApiCheckUserDAOOwnershipRequest {
 }
 
@@ -766,6 +769,22 @@ export class ObjectDaosApi {
      */
     public addMemberToPOD(param: DaosApiAddMemberToPODRequest, options?: ConfigurationOptions): Promise<PODMembershipResponse> {
         return this.api.addMemberToPOD(param.daoId, param.podId,  options).toPromise();
+    }
+
+    /**
+     * Check if user has already initialized DAO creation (useful after disconnections)
+     * @param param the request object
+     */
+    public checkDAOInitializationWithHttpInfo(param: DaosApiCheckDAOInitializationRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<InitDAOResponse>> {
+        return this.api.checkDAOInitializationWithHttpInfo( options).toPromise();
+    }
+
+    /**
+     * Check if user has already initialized DAO creation (useful after disconnections)
+     * @param param the request object
+     */
+    public checkDAOInitialization(param: DaosApiCheckDAOInitializationRequest = {}, options?: ConfigurationOptions): Promise<InitDAOResponse> {
+        return this.api.checkDAOInitialization( options).toPromise();
     }
 
     /**

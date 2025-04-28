@@ -9,6 +9,7 @@ Method | HTTP request | Description
 [**addDAOModule**](DaosApi.md#addDAOModule) | **POST** /daos/{dao_id}/modules/add | Add a module to a DAO
 [**addMemberToDAO**](DaosApi.md#addMemberToDAO) | **POST** /daos/{dao_id}/members | Add a member to a DAO
 [**addMemberToPOD**](DaosApi.md#addMemberToPOD) | **POST** /daos/{dao_id}/pods/{pod_id}/members | Add a member to a POD
+[**checkDAOInitialization**](DaosApi.md#checkDAOInitialization) | **GET** /daos/init | Check if user has already initialized DAO creation (useful after disconnections)
 [**checkUserDAOOwnership**](DaosApi.md#checkUserDAOOwnership) | **GET** /daos/ownership | Check if the authenticated user owns a DAO
 [**createDAO**](DaosApi.md#createDAO) | **POST** /daos/ | Create a new DAO (Step 2) - Complete DAO creation with all required fields
 [**createPOD**](DaosApi.md#createPOD) | **POST** /daos/{dao_id}/pods | Create a new POD
@@ -327,6 +328,54 @@ No authorization required
 **400** | Bad Request - User already in POD |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
 **404** | User, DAO or POD not found |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
+# **checkDAOInitialization**
+> InitDAOResponse checkDAOInitialization()
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request = {};
+
+const data = await apiInstance.checkDAOInitialization(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+This endpoint does not need any parameter.
+
+
+### Return type
+
+**InitDAOResponse**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | DAO initialization data status |  -  |
+**404** | User or initialization data not found |  -  |
+**401** | Unauthorized - Invalid or missing token |  -  |
 **0** | Default error response |  -  |
 
 [[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
