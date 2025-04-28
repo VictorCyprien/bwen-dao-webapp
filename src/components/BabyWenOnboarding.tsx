@@ -280,6 +280,10 @@ const BabyWenOnboarding: React.FC = () => {
   // Check if user is registered (has username)
   const isUserRegistered = userInfo?.username ? true : false;
   
+  // State to track if user already owns a DAO
+  const [isAlreadyDaoOwner, setIsAlreadyDaoOwner] = React.useState<boolean>(false);
+  const [checkingDaoOwnership, setCheckingDaoOwnership] = React.useState<boolean>(false);
+  
   // Blockchain transaction state
   const [blockchainTxInProgress, setBlockchainTxInProgress] = React.useState<boolean>(false);
   const [blockchainTxCompleted, setBlockchainTxCompleted] = React.useState<boolean>(false);
@@ -309,7 +313,7 @@ const BabyWenOnboarding: React.FC = () => {
   };
 
   // Start onboarding after welcome modal is closed
-  const startOnboarding = () => {
+  const startOnboarding = async () => {
     // Check if wallet is connected
     if (!isWalletConnected) {
       // Redirect to connect wallet page or show connection modal
@@ -323,6 +327,23 @@ const BabyWenOnboarding: React.FC = () => {
       setShowRegistrationForm(true);
       return;
     }
+    
+    // Check if the user already owns a DAO
+    setCheckingDaoOwnership(true);
+    try {
+      const isOwner = await daosService.checkUserDaoOwnership();
+      setIsAlreadyDaoOwner(isOwner);
+      
+      if (isOwner) {
+        // User already owns a DAO, cannot create another one
+        console.log("User already owns a DAO");
+        setCheckingDaoOwnership(false);
+        return;
+      }
+    } catch (error) {
+      console.error("Error checking DAO ownership:", error);
+    }
+    setCheckingDaoOwnership(false);
     
     // Store the initial wallet address to detect changes
     if (publicKey) {
@@ -378,6 +399,23 @@ const BabyWenOnboarding: React.FC = () => {
     if (createdDaoId) {
       sessionStorage.setItem('createdDaoId', createdDaoId);
     }
+    
+    // Check if the user already owns a DAO when they are registered and have a wallet connected
+    if (isWalletConnected && isUserRegistered) {
+      const checkDaoOwnership = async () => {
+        setCheckingDaoOwnership(true);
+        try {
+          const isOwner = await daosService.checkUserDaoOwnership();
+          setIsAlreadyDaoOwner(isOwner);
+        } catch (error) {
+          console.error("Error checking DAO ownership:", error);
+        }
+        setCheckingDaoOwnership(false);
+      };
+      
+      checkDaoOwnership();
+    }
+    
     // Animation starts after user proceeds from welcome modal
     
     // Clean up audio on unmount
@@ -386,7 +424,7 @@ const BabyWenOnboarding: React.FC = () => {
         audioManager.stop();
       }
     };
-  }, [audioManager]);
+  }, [audioManager, isWalletConnected, isUserRegistered]);
 
   // Function to determine the input type based on the step
   const determineInputType = (step: OnboardingStep) => {
@@ -1585,6 +1623,28 @@ const BabyWenOnboarding: React.FC = () => {
                       </button>
                     </div>
                   )}
+                  
+                  {/* Show error if user already owns a DAO */}
+                  {isWalletConnected && isUserRegistered && isAlreadyDaoOwner && (
+                    <div className="mt-2 pt-2 border-t border-red-500/20">
+                      <p className="text-red-400 text-sm mb-2">
+                        You already own a DAO. Each user is limited to one DAO.
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Show loading state when checking DAO ownership */}
+                  {checkingDaoOwnership && (
+                    <div className="mt-2 pt-2 border-t border-indigo-500/20">
+                      <div className="flex items-center justify-center">
+                        <svg className="animate-spin h-5 w-5 text-indigo-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p className="text-indigo-300 text-sm">Checking DAO ownership...</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1602,10 +1662,17 @@ const BabyWenOnboarding: React.FC = () => {
               </button>
               <button 
                 onClick={startOnboarding}
-                className={`w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg transition-all shadow-lg hover:shadow-indigo-500/25 font-medium ${!isWalletConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
-                disabled={!isWalletConnected}
+                className={`w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg transition-all shadow-lg hover:shadow-indigo-500/25 font-medium ${!isWalletConnected || checkingDaoOwnership || isAlreadyDaoOwner ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={!isWalletConnected || checkingDaoOwnership || isAlreadyDaoOwner}
               >
-                {isWalletConnected ? 'Start DAO Creation' : 'Connect Wallet to Begin'}
+                {isWalletConnected 
+                  ? checkingDaoOwnership 
+                    ? 'Checking DAO Ownership...' 
+                    : isAlreadyDaoOwner 
+                      ? 'DAO Creation Not Available' 
+                      : 'Start DAO Creation'
+                  : 'Connect Wallet to Begin'
+                }
               </button>
             </div>
           </div>

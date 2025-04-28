@@ -3,7 +3,7 @@
  * Handles all API interactions related to DAOs
  */
 
-import { createConfiguration, DaosApi, DAO, DAOUpdate, DAOMembership, InputCreateDAO } from '../core/modules/dao-api';
+import { createConfiguration, DaosApi, DAO, DAOUpdate, DAOMembership, InputCreateDAO, UserDAOOwnershipResponse } from '../core/modules/dao-api';
 import { ServerConfiguration } from '../core/modules/dao-api/servers';
 import { walletAuthService } from './WalletAuthService';
 import { fileToMinioStorage } from '../utils/fileUtils';
@@ -181,8 +181,6 @@ export class DaosService {
       daoInput.instagram = daoData.instagram?.trim() ? daoData.instagram : undefined;
       daoInput.tiktok = daoData.tiktok?.trim() ? daoData.tiktok : undefined;
       daoInput.website = daoData.website?.trim() ? daoData.website : undefined;
-      daoInput.pubkey = daoData.blockchainAddress;
-      daoInput.transaction = daoData.transactionSignature;
       daoInput.tokenAddress = daoData.tokenAddress;
       
       // Convert File objects to FileStorage objects for Minio
@@ -281,6 +279,23 @@ export class DaosService {
     } catch (error) {
       console.error(`Error removing member from DAO ${daoId}:`, error);
       return null;
+    }
+  }
+
+  /**
+   * Check if the authenticated user owns a DAO
+   * @returns A boolean indicating whether the user owns a DAO
+   */
+  async checkUserDaoOwnership(): Promise<boolean> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return false;
+
+      const response: UserDAOOwnershipResponse = await apiClient.checkUserDAOOwnership();
+      return response?.hasDao || false;
+    } catch (error) {
+      console.error('Error checking if user owns a DAO:', error);
+      return false;
     }
   }
 }
