@@ -3,7 +3,7 @@
  * Handles all API interactions related to DAOs
  */
 
-import { createConfiguration, DaosApi, DAO, DAOUpdate, DAOMembership, InputCreateDAO, UserDAOOwnershipResponse, InputInitDAO } from '../core/modules/dao-api';
+import { createConfiguration, DaosApi, DAO, DAOUpdate, DAOMembership, InputCreateDAO, UserDAOOwnershipResponse, InputInitDAO, DAOModule, DAOModulesList, DAOModuleResponse } from '../core/modules/dao-api';
 import { ServerConfiguration } from '../core/modules/dao-api/servers';
 import { walletAuthService } from './WalletAuthService';
 import { fileToMinioStorage } from '../utils/fileUtils';
@@ -343,6 +343,54 @@ export class DaosService {
     } catch (error) {
       console.error('Error checking DAO initialization:', error);
       return false;
+    }
+  }
+
+  /**
+   * Get all modules enabled for a DAO
+   */
+  async getDAOModules(daoId: string): Promise<DAOModulesList | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      const response = await apiClient.getDAOModules(daoId);
+      return response || null;
+    } catch (error) {
+      console.error(`Error getting modules for DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Add a module to a DAO
+   */
+  async addDAOModule(daoId: string, moduleData: DAOModule): Promise<DAOModuleResponse | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      const response = await apiClient.addDAOModule(daoId, moduleData);
+      return response || null;
+    } catch (error) {
+      console.error(`Error adding module to DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Remove a module from a DAO
+   */
+  async removeDAOModule(daoId: string, moduleData: DAOModule): Promise<DAOModuleResponse | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      const response = await apiClient.removeDAOModule(daoId, moduleData);
+      return response || null;
+    } catch (error) {
+      console.error(`Error removing module from DAO ${daoId}:`, error);
+      return null;
     }
   }
 }
