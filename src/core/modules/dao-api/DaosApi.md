@@ -453,7 +453,6 @@ const request: DaosApiCreateDAORequest = {
     instagram: "instagram_example",
     tiktok: "tiktok_example",
     website: "website_example",
-    treasury: "treasury_example",
     tokenAddress: "tokenAddress_example",
     profile: { data: Buffer.from(fs.readFileSync('/path/to/file', 'utf-8')), name: '/path/to/file' },
   },
