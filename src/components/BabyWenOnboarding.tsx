@@ -1575,9 +1575,9 @@ const BabyWenOnboarding: React.FC = () => {
                   
                   {/* Show error if user already owns a DAO */}
                   {isWalletConnected && isUserRegistered && isAlreadyDaoOwner && (
-                    <div className="mt-2 pt-2 border-t border-red-500/20">
+                    <div>
                       <p className="text-red-400 text-sm mb-2">
-                        You already own a DAO. Each user is limited to one DAO.
+                        This wallet is already linked to a DAO. Please use a different wallet to create a new DAO.
                       </p>
                     </div>
                   )}
