@@ -3,29 +3,23 @@ import {
   CircleDollarSign,
   Vote,
   Users,
-  Activity,
   Loader,
-  RefreshCw,
   LogOut,
   Settings,
   ChevronLeft,
   ChevronRight,
   AlertCircle
 } from 'lucide-react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { treasuryService } from '../services/TreasuryService';
 import { daosService } from '../services/DaosService';
 import { userService } from '../services/UserService';
 import { Treasury, Token, User } from '../core/modules/dao-api';
-import { Pie, Doughnut } from 'react-chartjs-2';
 import { 
   Chart as ChartJS, 
   ArcElement, 
   Tooltip, 
   Legend,
-  ChartData,
-  TooltipItem,
-  ChartOptions,
   PointElement,
   LinearScale,
   CategoryScale,
@@ -106,11 +100,9 @@ const Dashboard = ({ recheckMembership }: DashboardProps = {}) => {
   const [treasury, setTreasury] = useState<Treasury | null>(null);
   const [tokens, setTokens] = useState<Token[]>([]);
   const [proposals, setProposals] = useState<any[]>([]);
-  const [members, setMembers] = useState<User[]>([]);
-  const [memberLocations, setMemberLocations] = useState<{[key: string]: number}>({});
+  const [members] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [proposalsLoading, setProposalsLoading] = useState<boolean>(true);
-  const [membersLoading, setMembersLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -145,94 +137,6 @@ const Dashboard = ({ recheckMembership }: DashboardProps = {}) => {
   const { sendTransaction } = useSolanaTransaction();
   const { userInfo } = useAuth();
   const [showLeaveConfirmation, setShowLeaveConfirmation] = useState<boolean>(false);
-
-  // Chart helper functions
-  const createDonutChartData = (items: Token[]) => {
-    if (!items || items.length === 0) return null;
-    
-    // Sort tokens by value (balance * price) in descending order
-    const sortedTokens = [...items].sort((a, b) => {
-      const valueA = a.balance && a.price ? a.balance * a.price : 0;
-      const valueB = b.balance && b.price ? b.balance * b.price : 0;
-      return valueB - valueA;
-    });
-    
-    // Take top 5 tokens and calculate their values
-    const top5Tokens = sortedTokens.slice(0, 5);
-    const otherTokens = sortedTokens.slice(5);
-    
-    // Calculate total value of "Other" tokens
-    const otherValue = otherTokens.reduce((sum, token) => {
-      return sum + (token.balance && token.price ? token.balance * token.price : 0);
-    }, 0);
-    
-    let labels = top5Tokens.map((token) => token.symbol || 'Unknown');
-    let data = top5Tokens.map((token) => 
-      token.balance && token.price ? token.balance * token.price : 0
-    );
-    
-    // Add "Other" category if there are more than 5 tokens
-    if (otherTokens.length > 0) {
-      labels.push('Other');
-      data.push(otherValue);
-    }
-    
-    const backgroundColor = [
-      '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
-      '#FF9F40' // Color for "Other"
-    ];
-    
-    return {
-      labels,
-      datasets: [
-        {
-          data,
-          backgroundColor: backgroundColor.slice(0, labels.length),
-          borderWidth: 0,
-        },
-      ],
-    };
-  };
-
-  const donutChartOptions: ChartOptions<'pie'> = {
-    responsive: true,
-    maintainAspectRatio: true,
-    plugins: {
-      legend: {
-        display: false
-      },
-      tooltip: {
-        enabled: true,
-        displayColors: false,
-        backgroundColor: 'rgba(17, 17, 17, 0.9)',
-        titleColor: '#fff',
-        bodyColor: '#6B7280',
-        padding: 12,
-        cornerRadius: 8,
-        titleFont: {
-          size: 14,
-          weight: 'bold' as const
-        },
-        bodyFont: {
-          size: 12
-        },
-        callbacks: {
-          title: (context: any) => context[0].label,
-          label: (context: any) => {
-            const item = context.dataset.data[context.dataIndex];
-            return `${item}%`;
-          }
-        }
-      }
-    },
-    elements: {
-      arc: {
-        borderWidth: 0,
-        borderRadius: 0
-      }
-    },
-    rotation: -0.5 * Math.PI
-  };
 
   // Function to fetch treasury data
   const fetchTreasuryData = async (showRefreshIndicator = true) => {
@@ -295,51 +199,6 @@ const Dashboard = ({ recheckMembership }: DashboardProps = {}) => {
     }
   };
 
-  // Function to fetch member data
-  const fetchMemberData = async () => {
-    if (!daoId) return;
-    
-    try {
-      setMembersLoading(true);
-      
-      const membersData = await daosService.getDaoMembers(daoId);
-      setMembers(membersData);
-      
-      const locationCounts: {[key: string]: number} = {
-        'North America': 450,
-        'Europe': 380,
-        'Asia': 320,
-        'South America': 120,
-        'Africa': 52,
-        'Oceania': 20
-      };
-      
-      setMemberLocations(locationCounts);
-      setMembersLoading(false);
-    } catch (err) {
-      console.error('Error fetching member data:', err);
-      setMembersLoading(false);
-    }
-  };
-
-  // Function to update token percentages
-  const updateTokenPercentages = async () => {
-    if (!daoId) return;
-    
-    try {
-      setRefreshing(true);
-      
-      await treasuryService.updateDAOTokenPercentages(daoId);
-      
-      await fetchTreasuryData(false);
-      
-      setRefreshing(false);
-      setLastUpdated(new Date());
-    } catch (err) {
-      console.error('Error updating token percentages:', err);
-      setRefreshing(false);
-    }
-  };
 
   // Check if the current user is a member of the DAO
   const checkDaoMembership = async () => {
@@ -396,7 +255,6 @@ const Dashboard = ({ recheckMembership }: DashboardProps = {}) => {
       if (result) {
         console.log('Successfully joined DAO');
         setUserIsDaoMember(true);
-        fetchMemberData();
         fetchTokenAddress();
       } else {
         console.error('Failed to join DAO');
@@ -494,7 +352,6 @@ const Dashboard = ({ recheckMembership }: DashboardProps = {}) => {
     const loadData = async () => {
       await fetchTreasuryData();
       await fetchProposalsData();
-      await fetchMemberData();
       await fetchCommunityLinks();
       await fetchTokenAddress();
     };
@@ -635,7 +492,6 @@ const Dashboard = ({ recheckMembership }: DashboardProps = {}) => {
               description: proposalDetails.description || "No description available",
               status: proposalDetails.isActive ? "Active" : proposalDetails.hasPassed ? "Passed" : "Rejected",
               creator: proposalDetails.createdByUsername || "Unknown",
-              createdAt: proposalDetails.createdAt ? new Date(proposalDetails.createdAt).toLocaleDateString() : "Unknown date",
               startTime: proposalDetails.startTime ? new Date(proposalDetails.startTime).toLocaleDateString() : "Unknown",
               endTime: proposalDetails.endTime ? new Date(proposalDetails.endTime).toLocaleDateString() : "Unknown",
               votes: {
@@ -736,14 +592,14 @@ const Dashboard = ({ recheckMembership }: DashboardProps = {}) => {
   // Function to handle page changes
   const handlePreviousPage = () => {
     if (currentProposalPage > 1) {
-      setCurrentProposalPage(prev => prev - 1);
+      setCurrentProposalPage((prev: number) => prev - 1);
     }
   };
 
   const handleNextPage = () => {
     const totalPages = Math.ceil(proposals.length / proposalsPerPage);
     if (currentProposalPage < totalPages) {
-      setCurrentProposalPage(prev => prev + 1);
+      setCurrentProposalPage((prev: number) => prev + 1);
     }
   };
 

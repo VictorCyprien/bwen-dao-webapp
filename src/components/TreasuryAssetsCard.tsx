@@ -51,8 +51,8 @@ const TreasuryAssetsCard = ({ tokens, refreshing }: TreasuryAssetsCardProps) => 
     }
     
     const backgroundColor = [
-      '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
-      '#FF9F40' // Color for "Other"
+      '#7C3AED', '#4F46E5', '#2563EB', '#0EA5E9', '#06B6D4',
+      '#FFFFFF' // Color for "Other"
     ];
     
     return {
@@ -70,7 +70,7 @@ const TreasuryAssetsCard = ({ tokens, refreshing }: TreasuryAssetsCardProps) => 
   return (
     <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
       <div className="mb-3">
-        <h2 className="text-xl font-medium text-white">Treasury Assets</h2>
+        <h2 className="font-medium text-white">Treasury Assets</h2>
       </div>
       
       <div className="p-2">
@@ -86,19 +86,21 @@ const TreasuryAssetsCard = ({ tokens, refreshing }: TreasuryAssetsCardProps) => 
           <div className="flex flex-col md:flex-row items-center md:items-start justify-between">
             {/* Chart on the left */}
             <div className="w-full md:w-1/2 md:pr-4 mb-4 md:mb-0">
-              <Doughnut 
-                data={createDonutChartData(tokens) as any} 
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: true,
-                  plugins: {
-                    legend: {
-                      display: false
-                    }
-                  },
-                  cutout: '70%'
-                }} 
-              />
+              <div className="w-40 h-40 mx-auto">
+                <Doughnut 
+                  data={createDonutChartData(tokens) as any} 
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                      legend: {
+                        display: false
+                      }
+                    },
+                    cutout: '70%'
+                  }} 
+                />
+              </div>
             </div>
             
             {/* Labels on the right */}
@@ -119,7 +121,7 @@ const TreasuryAssetsCard = ({ tokens, refreshing }: TreasuryAssetsCardProps) => 
                           <div className="flex items-center">
                             <div 
                               className="h-3 w-3 rounded-sm mr-2" 
-                              style={{ backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'][index % 5] }}
+                              style={{ backgroundColor: ['#7C3AED', '#4F46E5', '#2563EB', '#0EA5E9', '#06B6D4'][index % 5] }}
                             ></div>
                             <span className="text-sm text-gray-300">{token.symbol || 'Unknown'}</span>
                           </div>
@@ -134,7 +136,7 @@ const TreasuryAssetsCard = ({ tokens, refreshing }: TreasuryAssetsCardProps) => 
                     {tokens.length > 5 && (
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
-                          <div className="h-3 w-3 rounded-sm mr-2" style={{ backgroundColor: '#FF9F40' }}></div>
+                          <div className="h-3 w-3 rounded-sm mr-2" style={{ backgroundColor: '#14B8A6' }}></div>
                           <span className="text-sm text-gray-300">Other</span>
                         </div>
                         <span className="text-sm text-gray-300">
