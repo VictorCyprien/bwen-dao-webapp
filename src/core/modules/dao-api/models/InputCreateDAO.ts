@@ -24,7 +24,6 @@ export class InputCreateDAO {
     'instagram'?: string;
     'tiktok'?: string;
     'website'?: string;
-    'treasury'?: string;
     'tokenAddress': string;
     'profile'?: HttpFile;
 
@@ -78,12 +77,6 @@ export class InputCreateDAO {
         {
             "name": "website",
             "baseName": "website",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "treasury",
-            "baseName": "treasury",
             "type": "string",
             "format": ""
         },

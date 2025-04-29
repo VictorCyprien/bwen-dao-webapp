@@ -95,7 +95,6 @@ const CreateDaoForm: React.FC<CreateDaoFormProps> = ({
         name,
         description,
         userId,
-        treasury: treasury || undefined,
         discordServer: discordServer || undefined,
         twitter: twitter || undefined,
         telegram: telegram || undefined,

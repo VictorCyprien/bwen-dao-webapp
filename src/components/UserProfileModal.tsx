@@ -99,8 +99,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({ isOpen, onCl
     }
   };
 
-  console.log(user);
-
   if (!user && isOpen) {
     return (
       <Modal isOpen={isOpen} onClose={onClose} title="User Profile">
