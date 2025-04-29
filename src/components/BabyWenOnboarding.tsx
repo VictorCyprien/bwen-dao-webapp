@@ -764,7 +764,6 @@ const BabyWenOnboarding: React.FC = () => {
       daosService.createDao({
         name: collectedData.name,
         description: collectedData.description,
-        treasury: undefined,
         discordServer: collectedData.discordServer?.trim() || undefined,
         twitter: collectedData.twitter?.trim() || undefined,
         telegram: collectedData.telegram?.trim() || undefined,

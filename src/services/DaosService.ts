@@ -180,7 +180,6 @@ export class DaosService {
     name: string;
     description?: string;
     userId: string;
-    treasury?: string;
     discordServer?: string;
     twitter?: string;
     telegram?: string;
@@ -198,7 +197,6 @@ export class DaosService {
       const daoInput = new InputCreateDAO();
       daoInput.name = daoData.name;
       daoInput.description = daoData.description?.trim() || '';
-      daoInput.treasury = daoData.treasury;
       daoInput.discordServer = daoData.discordServer?.trim() ? daoData.discordServer : undefined;
       daoInput.twitter = daoData.twitter?.trim() ? daoData.twitter : undefined;
       daoInput.telegram = daoData.telegram?.trim() ? daoData.telegram : undefined;
