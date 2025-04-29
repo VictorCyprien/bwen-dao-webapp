@@ -12,7 +12,8 @@ import {
   ArrowLeft,
   ChevronRight,
   ChevronLeft,
-  ChevronDown
+  ChevronDown,
+  Puzzle
 } from 'lucide-react';
 import { ui } from '../styles/theme';
 import { useAuth } from '../context/AuthContext';
@@ -20,6 +21,7 @@ import { DAO } from '../core/modules/dao-api';
 import { daosService } from '../services/DaosService';
 import { useEffectOnce } from '../hooks/useEffectOnce';
 import useMediaQuery from '../hooks/useMediaQuery';
+import { ModuleTypes } from '../types/modules';
 
 interface SidebarProps {
   activeSection: string;
@@ -48,6 +50,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [refreshTimestamp, setRefreshTimestamp] = React.useState<number>(Date.now());
   const [retryCount, setRetryCount] = React.useState<number>(0);
   const maxRetries = 3;
+  const [activeModules, setActiveModules] = React.useState<string[]>([]);
   
   // Track which sections are expanded, initialize from localStorage if available
   const [expandedSections, setExpandedSections] = React.useState<Record<string, boolean>>(() => {
@@ -80,6 +83,26 @@ const Sidebar: React.FC<SidebarProps> = ({
     });
   };
   
+  // Fetch active modules for the current DAO
+  const fetchActiveModules = async () => {
+    if (!daoId) {
+      setActiveModules([]);
+      return;
+    }
+    
+    try {
+      const modulesList = await daosService.getDAOModules(daoId);
+      if (modulesList && modulesList.modules) {
+        setActiveModules(modulesList.modules);
+      } else {
+        setActiveModules([]);
+      }
+    } catch (err) {
+      console.error("Error fetching DAO modules:", err);
+      setActiveModules([]);
+    }
+  };
+  
   // Fetch the DAO data when the daoId changes
   const fetchDaoData = async () => {
     if (!daoId) {
@@ -99,6 +122,9 @@ const Sidebar: React.FC<SidebarProps> = ({
       
       const daoData = await daosService.getDaoById(daoId);
       setDao(daoData);
+      
+      // Fetch active modules after getting DAO data
+      await fetchActiveModules();
     } catch (err) {
       console.error("Error fetching DAO data:", err);
       setError("Failed to load DAO information");
@@ -126,6 +152,21 @@ const Sidebar: React.FC<SidebarProps> = ({
     // Clean up the event listener when the component unmounts
     return () => {
       window.removeEventListener('dao-updated', handleDaoUpdated as EventListener);
+    };
+  }, [daoId]);
+
+  // Listen for module-updated events
+  React.useEffect(() => {
+    const handleModuleUpdated = () => {
+      fetchActiveModules();
+    };
+    
+    // Add event listener
+    window.addEventListener('module-updated', handleModuleUpdated as EventListener);
+    
+    // Clean up the event listener when the component unmounts
+    return () => {
+      window.removeEventListener('module-updated', handleModuleUpdated as EventListener);
     };
   }, [daoId]);
 
@@ -161,10 +202,16 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
+  // Check if a module is active
+  const isModuleActive = (moduleName: string): boolean => {
+    return activeModules.includes(moduleName);
+  };
+
   const navItems: {
     section: string;
     items: { id: string; label: string; icon: React.ReactNode }[];
     isUncollapsable?: boolean;
+    moduleRequired?: string;
   }[] = [
     {
       section: 'main',
@@ -172,7 +219,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         { id: 'dashboard_home', label: 'Home', icon: <Home size={18} /> },
         { id: 'governance', label: 'Governance', icon: <Building2 size={18} /> },
         { id: 'treasury', label: 'Treasury', icon: <Wallet size={18} /> },
-        { id: 'members', label: 'Members', icon: <Users size={18} /> }
+        { id: 'members', label: 'Members', icon: <Users size={18} /> },
+        { id: 'modules', label: 'Modules', icon: <Puzzle size={18} /> }
       ],
       isUncollapsable: true
     },
@@ -180,14 +228,16 @@ const Sidebar: React.FC<SidebarProps> = ({
       section: 'Pods',
       items: [
         { id: 'pods', label: 'Pods', icon: <Layers size={18} /> }
-      ]
+      ],
+      moduleRequired: ModuleTypes.PODS
     },
     {
       section: 'Proof of Love',
       items: [
         { id: 'leaderboard', label: 'Leaderboard', icon: <Trophy size={18} /> },
         { id: 'questboard', label: 'Questboard', icon: <MessageSquareQuote size={18} /> }
-      ]
+      ],
+      moduleRequired: ModuleTypes.PROOF_OF_LOVE
     },
     {
       section: 'Docs',
@@ -259,38 +309,45 @@ const Sidebar: React.FC<SidebarProps> = ({
         
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto">
-          {navItems.map((section) => (
-            <React.Fragment key={section.section}>
-              {!section.isUncollapsable && (
-                <div 
-                  className="px-3 py-2 text-xs text-surface-500 font-normal flex items-center justify-between cursor-pointer group"
-                  onClick={() => toggleSection(section.section)}
-                >
-                  <span>{section.section}</span>
-                  <span className="transform transition-transform duration-200 mr-1">
-                    {expandedSections[section.section] ? 
-                      <ChevronDown size={14} className="text-surface-500 group-hover:text-surface-400"/> : 
-                      <ChevronRight size={14} className="text-surface-500 group-hover:text-surface-400"/>
-                    }
-                  </span>
-                </div>
-              )}
-              <nav className={`transition-all duration-300 overflow-hidden ${
-                section.isUncollapsable || expandedSections[section.section] ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-              }`}>
-                {section.items.map((item) => (
-                  <button 
-                    key={item.id}
-                    onClick={() => handleNavigationClick(item.id)}
-                    className={`flex items-center px-5 py-3 my-1 mx-[5%] w-[90%] text-left rounded-[12px] font-normal ${activeSection === item.id ? 'bg-surface-300' : 'hover:bg-surface-200'}`}
+          {navItems.map((section) => {
+            // Skip sections that require a module that isn't active
+            if (section.moduleRequired && !isModuleActive(section.moduleRequired)) {
+              return null;
+            }
+            
+            return (
+              <React.Fragment key={section.section}>
+                {!section.isUncollapsable && (
+                  <div 
+                    className="px-3 py-2 text-xs text-surface-500 font-normal flex items-center justify-between cursor-pointer group"
+                    onClick={() => toggleSection(section.section)}
                   >
-                    <span className="mr-3">{item.icon}</span>
-                    <span className="font-normal">{item.label}</span>
-                  </button>
-                ))}
-              </nav>
-            </React.Fragment>
-          ))}
+                    <span>{section.section}</span>
+                    <span className="transform transition-transform duration-200 mr-1">
+                      {expandedSections[section.section] ? 
+                        <ChevronDown size={14} className="text-surface-500 group-hover:text-surface-400"/> : 
+                        <ChevronRight size={14} className="text-surface-500 group-hover:text-surface-400"/>
+                      }
+                    </span>
+                  </div>
+                )}
+                <nav className={`transition-all duration-300 overflow-hidden ${
+                  section.isUncollapsable || expandedSections[section.section] ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                }`}>
+                  {section.items.map((item) => (
+                    <button 
+                      key={item.id}
+                      onClick={() => handleNavigationClick(item.id)}
+                      className={`flex items-center px-5 py-3 my-1 mx-[5%] w-[90%] text-left rounded-[12px] font-normal ${activeSection === item.id ? 'bg-surface-300' : 'hover:bg-surface-200'}`}
+                    >
+                      <span className="mr-3">{item.icon}</span>
+                      <span className="font-normal">{item.label}</span>
+                    </button>
+                  ))}
+                </nav>
+              </React.Fragment>
+            );
+          })}
         </div>
         
         {/* DAO Logo */}
