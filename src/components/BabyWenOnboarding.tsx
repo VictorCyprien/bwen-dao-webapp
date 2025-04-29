@@ -20,9 +20,10 @@ import ButtonAction from './BabyWenOnboarding/components/ButtonAction';
 import MultiSelect from './BabyWenOnboarding/components/MultiSelect';
 import DaoReviewDisplay from './BabyWenOnboarding/components/DaoReviewDisplay';
 
+import DaoPaymentPage from './BabyWenOnboarding/steps/0_DaoTransaction';
+
 // Import the DAO introduction steps
 import DaoNameStep from './BabyWenOnboarding/steps/1_Information/1_DaoName';
-import DaoTransactionStep from './BabyWenOnboarding/steps/1_Information/1.1_DaoTransaction.tsx';
 import DaoDescriptionStep from './BabyWenOnboarding/steps/1_Information/2_DaoDescription';
 import DaoLogoStep from './BabyWenOnboarding/steps/1_Information/3_DaoLogo';
 import DaoSocialStep, { getInitialSocialLinks } from './BabyWenOnboarding/steps/1_Information/4_DaoSocial';
@@ -293,7 +294,20 @@ const BabyWenOnboarding: React.FC = () => {
   // Create an object that maps step IDs to step objects
   const steps: Record<StepId, OnboardingStep> = {
     'dao-name': DaoNameStep,
-    'dao-transaction': DaoTransactionStep,
+    'dao-transaction': {
+      id: 'dao-transaction',
+      messages: [
+        {
+          content: `Now let's create your DAO on the blockchain. This is an important first step that needs to be completed before we can set up the rest of your DAO.`
+        }
+      ],
+      onResponse: (response: string) => {
+        // Cette étape est gérée spécialement en dehors du flux standard
+        return {
+          nextStep: 'dao-name'
+        };
+      }
+    },
     'dao-description': DaoDescriptionStep,
     'dao-logo': DaoLogoStep,
     'dao-social': DaoSocialStep,
@@ -335,6 +349,18 @@ const BabyWenOnboarding: React.FC = () => {
       setInitialWalletAddress(publicKey.toString());
     }
     
+    // Check if payment has been completed
+    const hasCompletedPayment = sessionStorage.getItem('blockchainTxSignature');
+    
+    if (!hasCompletedPayment) {
+      // Hide welcome modal and show payment page instead
+      setShowWelcomeModal(false);
+      // Set current step to transaction step
+      setCurrentStep('dao-transaction');
+      return;
+    }
+    
+    // Normal onboarding flow (after payment)
     setShowWelcomeModal(false);
     setShowOnboarding(true);
     
@@ -344,8 +370,7 @@ const BabyWenOnboarding: React.FC = () => {
     setTimeout(() => {
       setShowInputContainer(true);
       
-      // Instead of manually setting up the first step, use our updateCurrentStep function
-      // This ensures consistent behavior for all step transitions
+      // Start with dao-name step now that payment is done
       updateCurrentStep('dao-name');
     }, 1500); // Increased delay to ensure it appears after video/question
   };
@@ -444,6 +469,12 @@ const BabyWenOnboarding: React.FC = () => {
 
   // Implement the updateCurrentStep function to handle all step transitions
   const updateCurrentStep = async (stepId: StepId) => {
+    // Special case for transaction step - it's a standalone page
+    if (stepId === 'dao-transaction') {
+      setCurrentStep(stepId);
+      return;
+    }
+
     // Stop any currently playing sound immediately
     await stopAudio();
     
@@ -1332,11 +1363,13 @@ const BabyWenOnboarding: React.FC = () => {
           </div>
           
           {/* Main Create DAO button */}
-          <ButtonAction
-            label="Complete DAO Setup"
-            onClick={handleButtonAction}
-            variant={currentStepObj?.buttonAction?.variant as ButtonVariant || 'primary'}
-          />
+          <div className="flex justify-center w-full">
+            <ButtonAction
+              label="Create my DAO now!"
+              onClick={handleButtonAction}
+              variant={currentStepObj?.buttonAction?.variant as ButtonVariant || 'primary'}
+            />
+          </div>
           
           {/* Back button */}
           {canGoBack && (
@@ -1650,66 +1683,80 @@ const BabyWenOnboarding: React.FC = () => {
           
           {/* Main content layout */}
           <div className="container mx-auto min-h-screen flex flex-col py-4">
-            {/* Video section - Top */}
-            <div className="flex-none pt-12 flex items-center justify-center mb-0">
-              <div className={`w-[350px] h-[350px] overflow-hidden transition-all duration-1000 ease-out ${showVideoAndQuestion ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-                <video 
-                  autoPlay 
-                  loop 
-                  muted 
-                  playsInline
-                  className="w-full h-full object-cover rounded-3xl"
-                >
-                  <source src="/assets/video_agent.webm" type="video/webm" />
-                </video>
-              </div>
-            </div>
+            {/* Special case for payment page */}
+            {currentStep === 'dao-transaction' ? (
+              <DaoPaymentPage 
+                onComplete={(nextStep: StepId) => {
+                  // Update the history
+                  setStepHistory((prev: StepId[]) => [...prev, nextStep]);
+                  // Use our updateCurrentStep function to go to the next step
+                  updateCurrentStep(nextStep);
+                }} 
+              />
+            ) : (
+              <>
+                {/* Video section - Top */}
+                <div className="flex-none pt-12 flex items-center justify-center mb-0">
+                  <div className={`w-[350px] h-[350px] overflow-hidden transition-all duration-1000 ease-out ${showVideoAndQuestion ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+                    <video 
+                      autoPlay 
+                      loop 
+                      muted 
+                      playsInline
+                      className="w-full h-full object-cover rounded-3xl"
+                    >
+                      <source src="/assets/video_agent.webm" type="video/webm" />
+                    </video>
+                  </div>
+                </div>
 
-            {/* Question and Answer Container */}
-            <div className="flex-grow flex flex-col px-4 pb-12 self-start w-full">
-              {/* Question section with persistent container */}
-              <div className="flex justify-center">
-                <div className="w-full max-w-2xl">
-                  <div className={`bg-gradient-to-r from-indigo-600/10 to-purple-600/10 backdrop-blur-sm border border-indigo-500/20 rounded-2xl p-6 shadow-xl min-h-[80px] relative transition-all duration-1000 ease-out ${showVideoAndQuestion ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
-                    {/* Loading animation with bouncing dots */}
-                    {isTyping && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0a]/30 rounded-2xl backdrop-blur-sm transition-all duration-500">
-                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                          <div className="loader"></div>
+                {/* Question and Answer Container - Only show for non-payment steps */}
+                <div className="flex-grow flex flex-col px-4 pb-12 self-start w-full">
+                  {/* Question section with persistent container */}
+                  <div className="flex justify-center">
+                    <div className="w-full max-w-2xl">
+                      <div className={`bg-gradient-to-r from-indigo-600/10 to-purple-600/10 backdrop-blur-sm border border-indigo-500/20 rounded-2xl p-6 shadow-xl min-h-[80px] relative transition-all duration-1000 ease-out ${showVideoAndQuestion ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+                        {/* Loading animation with bouncing dots */}
+                        {isTyping && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0a]/30 rounded-2xl backdrop-blur-sm transition-all duration-500">
+                            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                              <div className="loader"></div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Message content with fade and scale transition */}
+                        <div className={`transition-all duration-500 ${
+                          isTyping 
+                            ? 'opacity-0 scale-95' 
+                            : 'opacity-100 scale-100'
+                        }`}>
+                          {lastMessage && lastMessage.sender === 'babywen' && (
+                            <div className="text-lg text-white text-center flex flex-col items-center justify-center whitespace-pre-wrap">
+                              {lastMessage.text}
+                            </div>
+                          )}
                         </div>
                       </div>
-                    )}
-                    
-                    {/* Message content with fade and scale transition */}
-                    <div className={`transition-all duration-500 ${
-                      isTyping 
-                        ? 'opacity-0 scale-95' 
-                        : 'opacity-100 scale-100'
-                    }`}>
-                      {lastMessage && lastMessage.sender === 'babywen' && (
-                        <div className="text-lg text-white text-center flex flex-col items-center justify-center whitespace-pre-wrap">
-                          {lastMessage.text}
-                        </div>
-                      )}
+                    </div>
+                  </div>
+
+                  {/* Answer section with scale/fade animation */}
+                  <div className="flex justify-center mt-6 mb-8">
+                    <div className="w-full max-w-2xl">
+                      {/* Dynamic input component with fade and scale transition */}
+                      <div className={`transition-all duration-1000 transform ${
+                        showInput 
+                          ? 'opacity-100 scale-100' 
+                          : 'opacity-0 scale-95 pointer-events-none'
+                      } ${showInputContainer ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'}`}>
+                        {showInput && renderInputComponent()}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Answer section with scale/fade animation */}
-              <div className="flex justify-center mt-6 mb-8">
-                <div className="w-full max-w-2xl">
-                  {/* Dynamic input component with fade and scale transition */}
-                  <div className={`transition-all duration-1000 transform ${
-                    showInput 
-                      ? 'opacity-100 scale-100' 
-                      : 'opacity-0 scale-95 pointer-events-none'
-                  } ${showInputContainer ? 'opacity-100 scale-100' : 'opacity-0 scale-90 pointer-events-none'}`}>
-                    {showInput && renderInputComponent()}
-                  </div>
-                </div>
-              </div>
-            </div>
+              </>
+            )}
           </div>
 
           {/* Wallet change error dialog */}
@@ -1760,6 +1807,34 @@ const BabyWenOnboarding: React.FC = () => {
             </div>
           )}
         </div>
+      )}
+      
+      {/* Payment Page - Show instead of onboarding or welcome when on transaction step */}
+      {currentStep === 'dao-transaction' && !showOnboarding && !showWelcomeModal && (
+        <DaoPaymentPage 
+          onComplete={(nextStep: StepId) => {
+            // No delay - immediately show onboarding when user clicks on the button
+            
+            // Set current step first so the right step shows when onboarding appears
+            setCurrentStep(nextStep);
+            
+            // Reset step history with just the next step
+            setStepHistory([nextStep]);
+            
+            // Show onboarding 
+            setShowOnboarding(true);
+            
+            // Start animation sequence with a slight delay to ensure smooth transition
+            setTimeout(() => setHasAnimatedIn(true), 100);
+            setTimeout(() => setShowVideoAndQuestion(true), 500);
+            setTimeout(() => {
+              setShowInputContainer(true);
+              
+              // The current step is already set, but we need to actually load it with questions
+              updateCurrentStep(nextStep);
+            }, 1000);
+          }} 
+        />
       )}
     </div>
   );
