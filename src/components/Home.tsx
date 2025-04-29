@@ -40,6 +40,7 @@ import { proposalService } from '../services/ProposalService';
 import { SOLANA_RPC_ENDPOINT } from '../config/solana';
 import PopupProposal from './PopupProposal';
 import TokenCard from './TokenCard';
+import TreasuryAssetsCard from './TreasuryAssetsCard';
 
 // Register Chart.js components
 ChartJS.register(
@@ -1053,103 +1054,12 @@ const Dashboard = ({ recheckMembership }: DashboardProps = {}) => {
             {/* Replace the DAO Token card with our TokenCard component */}
             <TokenCard tokenAddress={tokenAddress} />
             
-          
+            {/* Replace the existing Treasury Assets section with the new component */}
+            <TreasuryAssetsCard 
+              tokens={tokens}
+              refreshing={refreshing}
+            />
             
-            {/* Token Distribution */}
-            <div className="bg-[#111]/80 backdrop-blur-sm rounded-xl p-5 shadow-lg border border-gray-800/60">
-              <div className="mb-3">
-                <h2 className="text-xl font-medium text-white">Treasury Assets</h2>
-              </div>
-              
-              <div className="flex flex-col items-center justify-center p-2">
-                {refreshing ? (
-                  <div className="flex items-center justify-center h-40">
-                    <RefreshCw className="animate-spin h-8 w-8 text-gray-400" />
-                  </div>
-                ) : tokens.length === 0 ? (
-                  <div className="text-center text-gray-400 p-10">
-                    No assets detected yet
-                  </div>
-                ) : (
-                  <>
-                    <div className="w-full max-w-xs">
-                      <Doughnut 
-                        data={createDonutChartData(tokens)} 
-                        options={{
-                          responsive: true,
-                          maintainAspectRatio: true,
-                          plugins: {
-                            legend: {
-                              position: 'bottom',
-                              labels: {
-                                color: '#fff',
-                                font: {
-                                  size: 12
-                                }
-                              }
-                            }
-                          },
-                          cutout: '70%'
-                        }} 
-                      />
-                    </div>
-                    <div className="mt-4 w-full">
-                      <div className="grid grid-cols-1 gap-2">
-                        {tokens.length > 0 && (
-                          <>
-                            {/* Sort tokens by value and take top 5 */}
-                            {[...tokens]
-                              .sort((a, b) => {
-                                const valueA = a.balance && a.price ? a.balance * a.price : 0;
-                                const valueB = b.balance && b.price ? b.balance * b.price : 0;
-                                return valueB - valueA;
-                              })
-                              .slice(0, 5)
-                              .map((token, index) => (
-                                <div key={token.tokenId || index} className="flex items-center justify-between">
-                                  <div className="flex items-center">
-                                    <div 
-                                      className="h-3 w-3 rounded-sm mr-2" 
-                                      style={{ backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'][index % 5] }}
-                                    ></div>
-                                    <span className="text-sm text-gray-300">{token.symbol || 'Unknown'}</span>
-                                  </div>
-                                  <span className="text-sm text-gray-300">
-                                    {formatCurrency(token.balance ? token.balance * (token.price || 0) : 0)}
-                                  </span>
-                                </div>
-                              ))
-                            }
-                            
-                            {/* Show "Other" category if more than 5 tokens exist */}
-                            {tokens.length > 5 && (
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center">
-                                  <div className="h-3 w-3 rounded-sm mr-2" style={{ backgroundColor: '#FF9F40' }}></div>
-                                  <span className="text-sm text-gray-300">Other</span>
-                                </div>
-                                <span className="text-sm text-gray-300">
-                                  {formatCurrency(
-                                    [...tokens]
-                                      .sort((a, b) => {
-                                        const valueA = a.balance && a.price ? a.balance * a.price : 0;
-                                        const valueB = b.balance && b.price ? b.balance * b.price : 0;
-                                        return valueB - valueA;
-                                      })
-                                      .slice(5)
-                                      .reduce((sum, token) => sum + (token.balance && token.price ? token.balance * token.price : 0), 0)
-                                  )}
-                                </span>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
           </div>
         </div>
       </div>
