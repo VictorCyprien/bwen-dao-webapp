@@ -1,14 +1,14 @@
 import React from 'react';
 import { getDAOReviewData } from '../steps/4_Review/DaoReviewStep';
+import { GOVERNANCE_MODELS, VotingPowerSystem } from '../../../utils/GovernanceModelHelper';
 
 // Mapping from enum values to human-readable text
 const humanReadableText: Record<string, string> = {
-  // Governance Model
-  'token_vote': 'Token Vote',
-  'multisig': 'Multisig',
-  'reputation': 'Reputation',
-  'quadratic': 'Quadratic Voting',
-  'custom': 'Custom',
+  // Voting Power System
+  [VotingPowerSystem.DEFINED]: 'Reputation-Based',
+  [VotingPowerSystem.TOKEN]: 'Token-Based',
+  [VotingPowerSystem.ONE_ONE]: 'One Member, One Vote',
+  [VotingPowerSystem.QUADRATIC]: 'Quadratic Voting',
   
   // Rights (used for both idea and vote rights)
   'selective': 'Selective Members Only',
@@ -17,11 +17,9 @@ const humanReadableText: Record<string, string> = {
   
   // Survalidation
   'no_survalidation': 'No Survalidation',
-  
-  // Voting Power
-  'token_based': 'Token Based',
-  'one_member_one_vote': '1 Member 1 Vote',
-  'defined_power': 'Defined Power',
+  'member_committee': 'Member Committee',
+  'founding_team': 'Founding Team',
+  'delegated': 'Delegated Members',
   
   // Membership Conditions
   'free': 'Free (1 Token)',
@@ -174,9 +172,8 @@ const DaoReviewDisplay: React.FC = () => {
             </div>
           )}
           {/* If no social links are specified, show a message */}
-          {!daoInfo.socials.twitter && !daoInfo.socials.discord && !daoInfo.socials.website && 
-           !daoInfo.socials.telegram && !daoInfo.socials.instagram && !daoInfo.socials.tiktok && (
-            <div className="text-center text-white/60 italic">No social links specified</div>
+          {!Object.values(daoInfo.socials).some(Boolean) && (
+            <div className="text-gray-400 italic text-sm">No social links specified</div>
           )}
         </div>
       </div>
@@ -186,16 +183,16 @@ const DaoReviewDisplay: React.FC = () => {
         <h4 className="font-medium text-indigo-400 mb-2 border-b border-indigo-500/20 pb-1">Token Information</h4>
         <div className="grid grid-cols-1 gap-2">
           <div className="flex justify-between">
-            <span className="text-white/60">Token Status:</span>
-            <span className="text-white font-medium">
-              {tokenInfo.hasExistingToken ? 'Existing Token' : 'New Token'}
-            </span>
+            <span className="text-white/60">Existing Token:</span>
+            <span className="text-white font-medium">{tokenInfo.hasExistingToken ? 'Yes' : 'No'}</span>
           </div>
           
           {tokenInfo.hasExistingToken ? (
             <div className="flex justify-between">
               <span className="text-white/60">Token Address:</span>
-              <span className="text-white font-medium">{tokenInfo.tokenAddress}</span>
+              <span className="text-white font-medium text-xs sm:text-sm break-all">
+                {tokenInfo.tokenAddress}
+              </span>
             </div>
           ) : (
             <>
@@ -204,7 +201,7 @@ const DaoReviewDisplay: React.FC = () => {
                 <span className="text-white font-medium">{tokenInfo.tokenName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-white/60">Token Symbol:</span>
+                <span className="text-white/60">Token Ticker:</span>
                 <span className="text-white font-medium">{tokenInfo.tokenTicker}</span>
               </div>
             </>
@@ -212,7 +209,7 @@ const DaoReviewDisplay: React.FC = () => {
         </div>
       </div>
       
-      {/* Membership Information */}
+      {/* Membership Rules */}
       <div className="mb-6">
         <h4 className="font-medium text-indigo-400 mb-2 border-b border-indigo-500/20 pb-1">Membership Rules</h4>
         <div className="grid grid-cols-1 gap-2">
@@ -240,38 +237,20 @@ const DaoReviewDisplay: React.FC = () => {
       </div>
       
       {/* Governance Information */}
-      <div>
+      <div className="mb-6">
         <h4 className="font-medium text-indigo-400 mb-2 border-b border-indigo-500/20 pb-1">Governance Structure</h4>
         <div className="grid grid-cols-1 gap-2">
           <div className="flex justify-between">
             <span className="text-white/60">Governance Model:</span>
-            <span className="text-white font-medium">{getReadableText(governanceInfo.governanceModel)}</span>
+            <span className="text-white font-medium">{governanceInfo.governanceModel}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-white/60">Idea Submission:</span>
-            <span className="text-white font-medium">{getReadableText(governanceInfo.ideaRights)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-white/60">Voting Rights:</span>
-            <span className="text-white font-medium">{getReadableText(governanceInfo.voteRights)}</span>
-          </div>
-          
-          {governanceInfo.survalidation === 'true' && (
-            <div className="flex justify-between">
-              <span className="text-white/60">Survalidation:</span>
-              <span className="text-white font-medium">{getReadableText(governanceInfo.survalidationType)}</span>
-            </div>
-          )}
-          
           <div className="flex justify-between">
             <span className="text-white/60">Voting Power:</span>
             <span className="text-white font-medium">{getReadableText(governanceInfo.votingPower)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-white/60">Vote Delegation:</span>
-            <span className="text-white font-medium">
-              {governanceInfo.voteDelegation === 'true' ? 'Allowed' : 'Not Allowed'}
-            </span>
+            <span className="text-white/60">Quorum Percentage:</span>
+            <span className="text-white font-medium">{governanceInfo.quorumPercentage}%</span>
           </div>
         </div>
       </div>

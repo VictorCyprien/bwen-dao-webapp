@@ -1,123 +1,178 @@
 import { OnboardingStep, StepId } from '../../../BabyWenOnboarding';
 import { OptionDetail } from '../../../BabyWenOnboarding/components/MultiChoiceInput';
 import { getRandomMessage } from '../messages';
+import { GOVERNANCE_MODELS, VotingPowerSystem } from '../../../../utils/GovernanceModelHelper';
 
-// Enum for governance model types
-export enum GovernanceModelType {
-  TOKEN_VOTE = 'token_vote',
-  MULTISIG = 'multisig',
-  REPUTATION = 'reputation',
-  QUADRATIC = 'quadratic',
-  CUSTOM = 'custom'
-}
-
-// Mapping from display name to enum value
-const governanceModelMapping: Record<string, GovernanceModelType> = {
-  'Token Vote': GovernanceModelType.TOKEN_VOTE,
-  'Multisig': GovernanceModelType.MULTISIG,
-  'Reputation': GovernanceModelType.REPUTATION,
-  'Quadratic': GovernanceModelType.QUADRATIC,
-  'Custom': GovernanceModelType.CUSTOM
-};
-
-// Detailed information for each governance model
+// Define option details for each governance model
 const governanceDetails: Record<string, OptionDetail> = {
-  'Token Vote': {
-    title: 'Token-based Voting',
-    description: `Token-based voting is the most common governance model where 1 token equals 1 vote.
+  'Enlightened Dictatorship': {
+    title: 'Enlightened Dictatorship',
+    description: `Single leader making decisions.
 
 Key characteristics:
-• Decision power is proportional to token holdings
-• Simple to understand and implement
-• Creates incentives for token acquisition
-• Favors larger token holders
-
-Best for:
-• Traditional DAOs with broad token distribution
-• Projects with active token markets
-• DAOs focused on financial decisions`
-  },
-  'Multisig': {
-    title: 'Multi-signature Governance',
-    description: `Multi-signature (multisig) governance requires multiple trusted parties to approve decisions.
-
-Key characteristics:
-• Decisions require M-of-N signatures to execute
-• High security for treasury management
-• No token required to start
-• Typically used by smaller, trusted groups
+• One leader with complete decision authority
+• Faster decision-making
+• Clear vision and direction
+• No bureaucracy
 
 Best for:
 • Early-stage DAOs
-• DAOs with significant treasury assets
-• Organizations requiring careful controls`
+• Projects with a strong visionary founder
+• Situations requiring quick pivots`
   },
-  'Reputation': {
-    title: 'Reputation-based Governance',
-    description: `Reputation-based systems assign voting power based on contributions and participation.
+  'Assisted Dictatorship': {
+    title: 'Assisted Dictatorship',
+    description: `Leader with advisors.
 
 Key characteristics:
-• Voting power earned through work and participation
-• Non-transferable (unlike tokens)
-• Rewards long-term contribution
-• Can be algorithmically determined
+• Central leader with advisory council
+• Blend of quick decisions with input from advisors
+• Balance of vision and diverse perspectives
+• Clear leadership with accountability
 
 Best for:
-• Work-focused DAOs
-• Communities with contributor focus
-• Projects wanting to avoid plutocracy`
+• Growing projects transitioning from single leadership
+• DAOs with key stakeholders beyond the founder
+• Projects balancing quick decisions with expertise`
   },
-  'Quadratic': {
-    title: 'Quadratic Voting',
-    description: `Quadratic voting makes each additional vote more "expensive" to limit the power of large token holders.
+  'Hybrid Enterprise': {
+    title: 'Hybrid Enterprise',
+    description: `Mixed leadership with token holders.
 
 Key characteristics:
-• Voting cost increases quadratically with voting power
-• Balances influence between large and small holders
-• Helps prevent whale dominance
-• More technically complex to implement
+• Centralized management with token holder input
+• Professional leadership with community oversight
+• Combines traditional and decentralized elements
+• Structured but participatory
 
 Best for:
-• DAOs with uneven token distribution
-• Communities focused on fairness
-• Projects wanting more democratic outcomes`
+• Revenue-generating DAOs
+• Projects with professional operations
+• Organizations transitioning to decentralization`
+  },
+  'Listed Company': {
+    title: 'Listed Company',
+    description: `Traditional company structure.
+
+Key characteristics:
+• Board of directors with elected positions
+• Regular voting cycles for leadership
+• Clear roles and responsibilities
+• Formal governance processes
+
+Best for:
+• Larger, established DAOs
+• Organizations with regulated activities
+• Projects needing traditional legitimacy`
+  },
+  'Social Enterprise': {
+    title: 'Social Enterprise',
+    description: `Mission-driven organization.
+
+Key characteristics:
+• Purpose and impact-focused governance
+• Stakeholder representation (not just token holders)
+• Balance of mission and sustainability
+• Community-driven decisions
+
+Best for:
+• Impact-focused DAOs
+• Non-profit or social good initiatives
+• Communities with diverse stakeholder groups`
+  },
+  'Association': {
+    title: 'Association',
+    description: `Member-based organization.
+
+Key characteristics:
+• Equal voting rights for all members
+• Democratic, one-member-one-vote system
+• High participation and inclusivity
+• Shared ownership and responsibility
+
+Best for:
+• Community-focused DAOs
+• Cooperative ventures
+• Projects valuing equal representation`
+  },
+  'Semi-decentralized Organization': {
+    title: 'Semi-decentralized Organization',
+    description: `Partial decentralization.
+
+Key characteristics:
+• Working groups with delegated authority
+• Progressive decentralization approach
+• Balance of efficiency and participation
+• Specialized teams with autonomy
+
+Best for:
+• Complex DAOs with multiple workstreams
+• Organizations scaling decentralization
+• Projects requiring specialized expertise`
+  },
+  'Decentralized Pure': {
+    title: 'Decentralized Pure',
+    description: `Fully decentralized governance.
+
+Key characteristics:
+• Maximum decentralization and community control
+• Token-based voting without central authority
+• Autonomous decision-making processes
+• True collective ownership
+
+Best for:
+• Mature DAOs with active communities
+• Projects with strong decentralization philosophy
+• Organizations with robust on-chain capabilities`
   }
-  // Custom option has no detailed info
 };
+
+// Create options array with descriptions for each model
+const governanceOptions = GOVERNANCE_MODELS.map(model => 
+  `${model.name} - ${model.description}`
+);
 
 const GovernanceModelStep: OnboardingStep = {
   id: 'dao-governance-model',
   messages: [
     {
       content: getRandomMessage('dao-governance-model'),
-      options: [
-        "Token Vote - Traditional token-weighted voting where 1 token equals 1 vote",
-        "Multisig - A council of trusted members makes decisions by multiple signatures",
-        "Reputation - Voting power based on reputation and contribution history",
-        "Quadratic - Voting power scales with square root of tokens to balance influence",
-        "Custom - I want to design my own governance model"
-      ]
+      options: governanceOptions
     }
   ],
   // Pass the option details to the MultiChoiceInput component
   optionDetails: governanceDetails,
   onResponse: (response: string) => {
-    // Extract the governance model type from the response
-    const governanceDisplay = response.split(' - ')[0];
-    const governanceType = governanceModelMapping[governanceDisplay];
+    // Extract the governance model name from the response
+    const governanceModelName = response.split(' - ')[0];
     
-    // Store the enum value in sessionStorage
-    sessionStorage.setItem('governanceModel', governanceType);
+    // Find the corresponding model in our GOVERNANCE_MODELS array
+    const selectedModel = GOVERNANCE_MODELS.find(model => model.name === governanceModelName);
     
-    // Determine the next step
-    let nextStep: StepId = 'dao-token-existence'; // Templates go straight to token/membership
-    
-    if (governanceDisplay === "Custom") {
-      nextStep = 'dao-idea-rights'; // Custom option goes to the idea rights step
+    if (selectedModel) {
+      // Store the model ID in sessionStorage
+      sessionStorage.setItem('governanceModelId', selectedModel.id.toString());
+      sessionStorage.setItem('governanceModelName', selectedModel.name);
+      
+      // Set default values for governance that were previously set in separate steps
+      // Default voting power system based on governance model
+      const votingPower = (selectedModel.id <= 4) 
+        ? VotingPowerSystem.TOKEN  // More traditional models use token voting
+        : (selectedModel.id === 6 || selectedModel.id === 7) 
+          ? VotingPowerSystem.ONE_ONE  // Association & Semi-decentralized use one-member-one-vote
+          : (selectedModel.id === 8) 
+            ? VotingPowerSystem.QUADRATIC  // Decentralized Pure uses quadratic voting
+            : VotingPowerSystem.DEFINED;  // Social Enterprise uses reputation
+            
+      sessionStorage.setItem('votingPower', votingPower);
+      
+      // Set default quorum percentage
+      sessionStorage.setItem('quorumPercentage', '51');
     }
     
+    // Skip the removed governance steps and go straight to token existence
     return {
-      nextStep
+      nextStep: 'dao-token-existence' as StepId
     };
   }
 };
