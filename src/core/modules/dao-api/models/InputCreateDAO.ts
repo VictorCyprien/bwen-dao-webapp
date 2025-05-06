@@ -25,6 +25,18 @@ export class InputCreateDAO {
     'tiktok'?: string;
     'website'?: string;
     'tokenAddress': string;
+    /**
+    * Governance model (1-8): 1-Enlightened Dictatorship, 2-Assisted Dictatorship, 3-Hybrid Enterprise, 4-Listed Company, 5-Social Enterprise, 6-Association, 7-Semi-decentralized Organization, 8-Decentralized Pure
+    */
+    'governanceModel'?: number;
+    /**
+    * Voting power system: Defined, Token, OneOne, Quadratic
+    */
+    'votingPowerSystem'?: InputCreateDAOVotingPowerSystemEnum;
+    /**
+    * Quorum percentage required for proposals (1-100)
+    */
+    'quorumPercentage'?: number;
     'profile'?: HttpFile;
 
     static readonly discriminator: string | undefined = undefined;
@@ -87,6 +99,24 @@ export class InputCreateDAO {
             "format": ""
         },
         {
+            "name": "governanceModel",
+            "baseName": "governance_model",
+            "type": "number",
+            "format": ""
+        },
+        {
+            "name": "votingPowerSystem",
+            "baseName": "voting_power_system",
+            "type": "InputCreateDAOVotingPowerSystemEnum",
+            "format": ""
+        },
+        {
+            "name": "quorumPercentage",
+            "baseName": "quorum_percentage",
+            "type": "number",
+            "format": ""
+        },
+        {
             "name": "profile",
             "baseName": "profile",
             "type": "HttpFile",
@@ -100,3 +130,11 @@ export class InputCreateDAO {
     public constructor() {
     }
 }
+
+export enum InputCreateDAOVotingPowerSystemEnum {
+    Defined = 'Defined',
+    Token = 'Token',
+    OneOne = 'OneOne',
+    Quadratic = 'Quadratic'
+}
+

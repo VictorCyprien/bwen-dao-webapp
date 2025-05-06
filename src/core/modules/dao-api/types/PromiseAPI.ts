@@ -27,12 +27,20 @@ import { DiscordChannelResponse } from '../models/DiscordChannelResponse';
 import { DiscordChannelsResponse } from '../models/DiscordChannelsResponse';
 import { DiscordMessage } from '../models/DiscordMessage';
 import { DiscordMessagesResponse } from '../models/DiscordMessagesResponse';
+import { Governance } from '../models/Governance';
+import { GovernanceModel } from '../models/GovernanceModel';
+import { GovernanceModelsList } from '../models/GovernanceModelsList';
+import { GovernanceResponse } from '../models/GovernanceResponse';
 import { InitDAOResponse } from '../models/InitDAOResponse';
 import { InputCreateDAO } from '../models/InputCreateDAO';
+import { InputCreateGovernance } from '../models/InputCreateGovernance';
 import { InputCreatePOD } from '../models/InputCreatePOD';
 import { InputCreateProposal } from '../models/InputCreateProposal';
+import { InputCreateRole } from '../models/InputCreateRole';
 import { InputCreateUser } from '../models/InputCreateUser';
 import { InputInitDAO } from '../models/InputInitDAO';
+import { InputUpdateGovernance } from '../models/InputUpdateGovernance';
+import { InputUpdateRole } from '../models/InputUpdateRole';
 import { InputUpdateUser } from '../models/InputUpdateUser';
 import { LinkDiscordChannel } from '../models/LinkDiscordChannel';
 import { LoginResponse } from '../models/LoginResponse';
@@ -47,6 +55,8 @@ import { PODSchemaResponse } from '../models/PODSchemaResponse';
 import { PODUpdate } from '../models/PODUpdate';
 import { PaginationMetadata } from '../models/PaginationMetadata';
 import { PagingError } from '../models/PagingError';
+import { Permission } from '../models/Permission';
+import { PermissionListResponse } from '../models/PermissionListResponse';
 import { PodBasic } from '../models/PodBasic';
 import { PodProposalListResponse } from '../models/PodProposalListResponse';
 import { Proposal } from '../models/Proposal';
@@ -54,6 +64,11 @@ import { ProposalSchemaResponse } from '../models/ProposalSchemaResponse';
 import { ProposalUpdate } from '../models/ProposalUpdate';
 import { ProposalVote } from '../models/ProposalVote';
 import { ProposalVoteResponse } from '../models/ProposalVoteResponse';
+import { Role } from '../models/Role';
+import { RoleListResponse } from '../models/RoleListResponse';
+import { RolePermissionAssignment } from '../models/RolePermissionAssignment';
+import { RolePermissionResponse } from '../models/RolePermissionResponse';
+import { RoleResponse } from '../models/RoleResponse';
 import { SocialConnection } from '../models/SocialConnection';
 import { TelegramAuth } from '../models/TelegramAuth';
 import { Token } from '../models/Token';
@@ -67,7 +82,11 @@ import { UserBasic1 } from '../models/UserBasic1';
 import { UserDAOOwnershipResponse } from '../models/UserDAOOwnershipResponse';
 import { UserExistResponse } from '../models/UserExistResponse';
 import { UserInfoError } from '../models/UserInfoError';
+import { UserPermissionCheck } from '../models/UserPermissionCheck';
 import { UserResponse } from '../models/UserResponse';
+import { UserRoleAssignment } from '../models/UserRoleAssignment';
+import { UserRoleCheck } from '../models/UserRoleCheck';
+import { UserRoleResponse } from '../models/UserRoleResponse';
 import { VerifySignature } from '../models/VerifySignature';
 import { ObservableApiKeysApi } from './ObservableAPI';
 
@@ -632,6 +651,98 @@ export class PromiseDaosApi {
     }
 
     /**
+     * Assign a permission to a role in a DAO
+     * @param daoId
+     * @param roleId
+     * @param rolePermissionAssignment
+     */
+    public assignPermissionToRoleWithHttpInfo(daoId: string, roleId: string, rolePermissionAssignment: RolePermissionAssignment, _options?: PromiseConfigurationOptions): Promise<HttpInfo<RolePermissionResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.assignPermissionToRoleWithHttpInfo(daoId, roleId, rolePermissionAssignment, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Assign a permission to a role in a DAO
+     * @param daoId
+     * @param roleId
+     * @param rolePermissionAssignment
+     */
+    public assignPermissionToRole(daoId: string, roleId: string, rolePermissionAssignment: RolePermissionAssignment, _options?: PromiseConfigurationOptions): Promise<RolePermissionResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.assignPermissionToRole(daoId, roleId, rolePermissionAssignment, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Assign a role to a user in a DAO
+     * @param daoId
+     * @param userId
+     * @param userRoleAssignment
+     */
+    public assignRoleToUserWithHttpInfo(daoId: string, userId: string, userRoleAssignment: UserRoleAssignment, _options?: PromiseConfigurationOptions): Promise<HttpInfo<UserRoleResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.assignRoleToUserWithHttpInfo(daoId, userId, userRoleAssignment, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Assign a role to a user in a DAO
+     * @param daoId
+     * @param userId
+     * @param userRoleAssignment
+     */
+    public assignRoleToUser(daoId: string, userId: string, userRoleAssignment: UserRoleAssignment, _options?: PromiseConfigurationOptions): Promise<UserRoleResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.assignRoleToUser(daoId, userId, userRoleAssignment, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
      * Check if user has already initialized DAO creation (useful after disconnections)
      */
     public checkDAOInitializationWithHttpInfo(_options?: PromiseConfigurationOptions): Promise<HttpInfo<InitDAOResponse>> {
@@ -712,6 +823,98 @@ export class PromiseDaosApi {
     }
 
     /**
+     * Check if a user has a specific permission in a DAO
+     * @param daoId
+     * @param userId
+     * @param permissionId
+     */
+    public checkUserPermissionWithHttpInfo(daoId: string, userId: string, permissionId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<UserPermissionCheck>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.checkUserPermissionWithHttpInfo(daoId, userId, permissionId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Check if a user has a specific permission in a DAO
+     * @param daoId
+     * @param userId
+     * @param permissionId
+     */
+    public checkUserPermission(daoId: string, userId: string, permissionId: string, _options?: PromiseConfigurationOptions): Promise<UserPermissionCheck> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.checkUserPermission(daoId, userId, permissionId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Check if a user has a specific role in a DAO
+     * @param daoId
+     * @param userId
+     * @param roleId
+     */
+    public checkUserRoleWithHttpInfo(daoId: string, userId: string, roleId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<UserRoleCheck>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.checkUserRoleWithHttpInfo(daoId, userId, roleId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Check if a user has a specific role in a DAO
+     * @param daoId
+     * @param userId
+     * @param roleId
+     */
+    public checkUserRole(daoId: string, userId: string, roleId: string, _options?: PromiseConfigurationOptions): Promise<UserRoleCheck> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.checkUserRole(daoId, userId, roleId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
      * Create a new DAO (Step 2) - Complete DAO creation with all required fields
      * @param inputCreateDAO
      */
@@ -750,6 +953,50 @@ export class PromiseDaosApi {
 	    }
 	}
         const result = this.api.createDAO(inputCreateDAO, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Create a new role for a DAO
+     * @param daoId
+     * @param inputCreateRole
+     */
+    public createDAORoleWithHttpInfo(daoId: string, inputCreateRole: InputCreateRole, _options?: PromiseConfigurationOptions): Promise<HttpInfo<RoleResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.createDAORoleWithHttpInfo(daoId, inputCreateRole, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Create a new role for a DAO
+     * @param daoId
+     * @param inputCreateRole
+     */
+    public createDAORole(daoId: string, inputCreateRole: InputCreateRole, _options?: PromiseConfigurationOptions): Promise<RoleResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.createDAORole(daoId, inputCreateRole, observableOptions);
         return result.toPromise();
     }
 
@@ -836,6 +1083,50 @@ export class PromiseDaosApi {
 	    }
 	}
         const result = this.api.deleteDAO(daoId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Delete a role from a DAO
+     * @param daoId
+     * @param roleId
+     */
+    public deleteDAORoleWithHttpInfo(daoId: string, roleId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<RoleResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.deleteDAORoleWithHttpInfo(daoId, roleId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Delete a role from a DAO
+     * @param daoId
+     * @param roleId
+     */
+    public deleteDAORole(daoId: string, roleId: string, _options?: PromiseConfigurationOptions): Promise<RoleResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.deleteDAORole(daoId, roleId, observableOptions);
         return result.toPromise();
     }
 
@@ -1098,6 +1389,48 @@ export class PromiseDaosApi {
     }
 
     /**
+     * Get governance model for a DAO
+     * @param daoId
+     */
+    public getDAOGovernanceWithHttpInfo(daoId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<Governance>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getDAOGovernanceWithHttpInfo(daoId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get governance model for a DAO
+     * @param daoId
+     */
+    public getDAOGovernance(daoId: string, _options?: PromiseConfigurationOptions): Promise<Governance> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getDAOGovernance(daoId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
      * Get all modules enabled for a DAO
      * @param daoId
      */
@@ -1136,6 +1469,174 @@ export class PromiseDaosApi {
 	    }
 	}
         const result = this.api.getDAOModules(daoId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get all permissions available for a DAO
+     * @param daoId
+     */
+    public getDAOPermissionsWithHttpInfo(daoId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<PermissionListResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getDAOPermissionsWithHttpInfo(daoId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get all permissions available for a DAO
+     * @param daoId
+     */
+    public getDAOPermissions(daoId: string, _options?: PromiseConfigurationOptions): Promise<PermissionListResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getDAOPermissions(daoId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get a specific role for a DAO
+     * @param daoId
+     * @param roleId
+     */
+    public getDAORoleWithHttpInfo(daoId: string, roleId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<Role>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getDAORoleWithHttpInfo(daoId, roleId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get a specific role for a DAO
+     * @param daoId
+     * @param roleId
+     */
+    public getDAORole(daoId: string, roleId: string, _options?: PromiseConfigurationOptions): Promise<Role> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getDAORole(daoId, roleId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get all roles for a DAO
+     * @param daoId
+     */
+    public getDAORolesWithHttpInfo(daoId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<RoleListResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getDAORolesWithHttpInfo(daoId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get all roles for a DAO
+     * @param daoId
+     */
+    public getDAORoles(daoId: string, _options?: PromiseConfigurationOptions): Promise<RoleListResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getDAORoles(daoId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get all available governance models
+     */
+    public getGovernanceModelsWithHttpInfo(_options?: PromiseConfigurationOptions): Promise<HttpInfo<GovernanceModelsList>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getGovernanceModelsWithHttpInfo(observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get all available governance models
+     */
+    public getGovernanceModels(_options?: PromiseConfigurationOptions): Promise<GovernanceModelsList> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getGovernanceModels(observableOptions);
         return result.toPromise();
     }
 
@@ -1272,6 +1773,138 @@ export class PromiseDaosApi {
     }
 
     /**
+     * Get all permissions for a specific role in a DAO
+     * @param daoId
+     * @param roleId
+     */
+    public getRolePermissionsWithHttpInfo(daoId: string, roleId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<PermissionListResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getRolePermissionsWithHttpInfo(daoId, roleId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get all permissions for a specific role in a DAO
+     * @param daoId
+     * @param roleId
+     */
+    public getRolePermissions(daoId: string, roleId: string, _options?: PromiseConfigurationOptions): Promise<PermissionListResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getRolePermissions(daoId, roleId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get all permissions a user has in a DAO
+     * @param daoId
+     * @param userId
+     */
+    public getUserPermissionsWithHttpInfo(daoId: string, userId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<PermissionListResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getUserPermissionsWithHttpInfo(daoId, userId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get all permissions a user has in a DAO
+     * @param daoId
+     * @param userId
+     */
+    public getUserPermissions(daoId: string, userId: string, _options?: PromiseConfigurationOptions): Promise<PermissionListResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getUserPermissions(daoId, userId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get roles for a specific user in a DAO
+     * @param daoId
+     * @param userId
+     */
+    public getUserRolesWithHttpInfo(daoId: string, userId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<RoleListResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getUserRolesWithHttpInfo(daoId, userId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get roles for a specific user in a DAO
+     * @param daoId
+     * @param userId
+     */
+    public getUserRoles(daoId: string, userId: string, _options?: PromiseConfigurationOptions): Promise<RoleListResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getUserRoles(daoId, userId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
      * Initialize DAO creation (Step 1) - Store pubkey and transaction in Redis
      * @param inputInitDAO
      */
@@ -1310,6 +1943,50 @@ export class PromiseDaosApi {
 	    }
 	}
         const result = this.api.initializeDAOCreation(inputInitDAO, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Initialize governance model for a DAO
+     * @param daoId
+     * @param inputCreateGovernance
+     */
+    public initializeDAOGovernanceWithHttpInfo(daoId: string, inputCreateGovernance: InputCreateGovernance, _options?: PromiseConfigurationOptions): Promise<HttpInfo<GovernanceResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.initializeDAOGovernanceWithHttpInfo(daoId, inputCreateGovernance, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Initialize governance model for a DAO
+     * @param daoId
+     * @param inputCreateGovernance
+     */
+    public initializeDAOGovernance(daoId: string, inputCreateGovernance: InputCreateGovernance, _options?: PromiseConfigurationOptions): Promise<GovernanceResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.initializeDAOGovernance(daoId, inputCreateGovernance, observableOptions);
         return result.toPromise();
     }
 
@@ -1538,6 +2215,98 @@ export class PromiseDaosApi {
     }
 
     /**
+     * Remove a permission from a role in a DAO
+     * @param daoId
+     * @param roleId
+     * @param permissionId
+     */
+    public removePermissionFromRoleWithHttpInfo(daoId: string, roleId: string, permissionId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<RolePermissionResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.removePermissionFromRoleWithHttpInfo(daoId, roleId, permissionId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Remove a permission from a role in a DAO
+     * @param daoId
+     * @param roleId
+     * @param permissionId
+     */
+    public removePermissionFromRole(daoId: string, roleId: string, permissionId: string, _options?: PromiseConfigurationOptions): Promise<RolePermissionResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.removePermissionFromRole(daoId, roleId, permissionId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Remove a role from a user in a DAO
+     * @param daoId
+     * @param userId
+     * @param roleId
+     */
+    public removeRoleFromUserWithHttpInfo(daoId: string, userId: string, roleId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<UserRoleResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.removeRoleFromUserWithHttpInfo(daoId, userId, roleId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Remove a role from a user in a DAO
+     * @param daoId
+     * @param userId
+     * @param roleId
+     */
+    public removeRoleFromUser(daoId: string, userId: string, roleId: string, _options?: PromiseConfigurationOptions): Promise<UserRoleResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.removeRoleFromUser(daoId, userId, roleId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
      * Unlink a Discord channel from a POD
      * @param daoId
      * @param podId
@@ -1624,6 +2393,96 @@ export class PromiseDaosApi {
 	    }
 	}
         const result = this.api.updateDAO(daoId, dAOUpdate, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Update governance model for a DAO
+     * @param daoId
+     * @param inputUpdateGovernance
+     */
+    public updateDAOGovernanceWithHttpInfo(daoId: string, inputUpdateGovernance: InputUpdateGovernance, _options?: PromiseConfigurationOptions): Promise<HttpInfo<GovernanceResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.updateDAOGovernanceWithHttpInfo(daoId, inputUpdateGovernance, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Update governance model for a DAO
+     * @param daoId
+     * @param inputUpdateGovernance
+     */
+    public updateDAOGovernance(daoId: string, inputUpdateGovernance: InputUpdateGovernance, _options?: PromiseConfigurationOptions): Promise<GovernanceResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.updateDAOGovernance(daoId, inputUpdateGovernance, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Update a role for a DAO
+     * @param daoId
+     * @param roleId
+     * @param inputUpdateRole
+     */
+    public updateDAORoleWithHttpInfo(daoId: string, roleId: string, inputUpdateRole: InputUpdateRole, _options?: PromiseConfigurationOptions): Promise<HttpInfo<RoleResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.updateDAORoleWithHttpInfo(daoId, roleId, inputUpdateRole, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Update a role for a DAO
+     * @param daoId
+     * @param roleId
+     * @param inputUpdateRole
+     */
+    public updateDAORole(daoId: string, roleId: string, inputUpdateRole: InputUpdateRole, _options?: PromiseConfigurationOptions): Promise<RoleResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.updateDAORole(daoId, roleId, inputUpdateRole, observableOptions);
         return result.toPromise();
     }
 
