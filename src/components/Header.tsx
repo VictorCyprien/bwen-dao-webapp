@@ -30,6 +30,10 @@ const Header = ({
         return 'Pods';
       case 'members':
         return 'Members';
+      case 'roles':
+        return 'Roles';
+      case 'treasury':
+        return 'Treasury';
       case 'profile':
         return 'My Profile';
       default:
