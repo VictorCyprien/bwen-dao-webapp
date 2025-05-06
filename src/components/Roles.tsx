@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { rolePermissionService } from '../services/RolePermissionService';
 import { daosService } from '../services/DaosService';
 import { useAuth } from '../context/AuthContext';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, X, Trash2 } from 'lucide-react';
 
 interface RoleItem {
   roleId: string;
@@ -55,6 +55,16 @@ const Roles: React.FC = () => {
   const [selectedPermission, setSelectedPermission] = React.useState<string>('');
   const [selectedRoleForUser, setSelectedRoleForUser] = React.useState<string>('');
   const [selectedRoleForPermission, setSelectedRoleForPermission] = React.useState<string>('');
+
+  // Add state for confirmation dialog
+  const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
+  const [permissionToRemove, setPermissionToRemove] = React.useState<string | null>(null);
+
+  // Add loading state for permission removal
+  const [removingPermission, setRemovingPermission] = React.useState(false);
+
+  // Add state for success message
+  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
 
   // Check if current user is admin
   React.useEffect(() => {
@@ -314,6 +324,58 @@ const Roles: React.FC = () => {
     }
   };
 
+  // Handle removing a permission from a role
+  const handleRemovePermissionFromRole = async (permissionId: string) => {
+    if (!daoId || !selectedRole) return;
+    
+    setRemovingPermission(true);
+    
+    try {
+      const response = await rolePermissionService.removePermissionFromRole(
+        daoId,
+        selectedRole.roleId,
+        permissionId
+      );
+      
+      if (response) {
+        // Clear caches to ensure fresh data
+        rolePermissionService.clearCaches();
+        
+        // Refresh role permissions
+        await fetchRolePermissions(selectedRole.roleId);
+        
+        // Show success message
+        setSuccessMessage("Permission removed successfully");
+        
+        // Hide success message after 3 seconds
+        setTimeout(() => {
+          setSuccessMessage(null);
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('Error removing permission from role:', error);
+    } finally {
+      setRemovingPermission(false);
+    }
+  };
+
+  // Update the handleRemovePermissionFromRole function to show the confirmation dialog
+  const handleRemovePermissionClick = (permissionId: string) => {
+    setPermissionToRemove(permissionId);
+    setShowConfirmDialog(true);
+  };
+
+  // Handle the actual permission removal after confirmation
+  const confirmRemovePermission = async () => {
+    if (!permissionToRemove) return;
+    
+    setRemovingPermission(true);
+    await handleRemovePermissionFromRole(permissionToRemove);
+    setShowConfirmDialog(false);
+    setPermissionToRemove(null);
+    setRemovingPermission(false);
+  };
+
   if (!isAdmin) {
     return (
       <div className="flex flex-col items-center justify-center p-8">
@@ -454,6 +516,15 @@ const Roles: React.FC = () => {
             )}
           </div>
           
+          {successMessage && (
+            <div className="mb-4 p-3 bg-green-900/20 border border-green-500/30 rounded-md text-green-400 text-sm flex items-center">
+              <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              {successMessage}
+            </div>
+          )}
+          
           {showAssignPermissionForm && (
             <form onSubmit={handleAssignPermissionToRole} className="mb-6 bg-gray-900/50 p-4 rounded-md">
               <div className="mb-4">
@@ -505,10 +576,24 @@ const Roles: React.FC = () => {
                   key={permission.permissionId}
                   className="p-3 rounded-md bg-gray-700/30 border border-gray-600/30"
                 >
-                  <h3 className="font-medium text-white">{permission.name}</h3>
-                  {permission.description && (
-                    <p className="text-sm text-gray-300 mt-1">{permission.description}</p>
-                  )}
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-medium text-white">{permission.name}</h3>
+                      {permission.description && (
+                        <p className="text-sm text-gray-300 mt-1">{permission.description}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemovePermissionClick(permission.permissionId);
+                      }}
+                      className="ml-2 p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-900/20 rounded-md transition-colors"
+                      title="Remove permission"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
               ))
             )}
@@ -618,6 +703,39 @@ const Roles: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {showConfirmDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
+          <div className="bg-gray-800 rounded-lg shadow-xl border border-gray-700 p-6 max-w-md w-full">
+            <h3 className="text-lg font-medium text-white mb-4">Remove Permission</h3>
+            <p className="text-gray-300 mb-6">
+              Are you sure you want to remove this permission from the role? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowConfirmDialog(false)}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md"
+                disabled={removingPermission}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmRemovePermission}
+                className="px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded-md flex items-center"
+                disabled={removingPermission}
+              >
+                {removingPermission && (
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

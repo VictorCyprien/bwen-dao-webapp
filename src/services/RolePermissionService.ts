@@ -398,6 +398,21 @@ export class RolePermissionService {
   }
 
   /**
+   * Remove a permission from a role in a DAO
+   */
+  async removePermissionFromRole(daoId: string, roleId: string, permissionId: string): Promise<RolePermissionResponse | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      return await apiClient.removePermissionFromRole(daoId, roleId, permissionId);
+    } catch (error) {
+      console.error(`Error removing permission ${permissionId} from role ${roleId} in DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Check if a user has a specific role in a DAO
    */
   async checkUserRole(daoId: string, userId: string, roleId: string): Promise<boolean> {
