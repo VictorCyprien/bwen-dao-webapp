@@ -388,6 +388,7 @@ export class RolePermissionService {
 
       const rolePermissionAssignment = new RolePermissionAssignment();
       rolePermissionAssignment.permissionId = permissionId;
+      rolePermissionAssignment.roleId = roleId;
 
       return await apiClient.assignPermissionToRole(daoId, roleId, rolePermissionAssignment);
     } catch (error) {
