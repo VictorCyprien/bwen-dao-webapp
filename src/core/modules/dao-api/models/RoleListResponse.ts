@@ -17,7 +17,7 @@ import { HttpFile } from '../http/http';
 * List of roles
 */
 export class RoleListResponse {
-    'roles': Array<Role>;
+    'roles'?: Array<Role>;
 
     static readonly discriminator: string | undefined = undefined;
 
