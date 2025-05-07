@@ -335,6 +335,12 @@ export interface DaosApiAddMemberToDAORequest {
      * @memberof DaosApiaddMemberToDAO
      */
     daoId: string
+    /**
+     * 
+     * @type DAOMembership
+     * @memberof DaosApiaddMemberToDAO
+     */
+    dAOMembership?: DAOMembership
 }
 
 export interface DaosApiAddMemberToPODRequest {
@@ -1090,19 +1096,19 @@ export class ObjectDaosApi {
     }
 
     /**
-     * Add a member to a DAO
+     * Add a member to a DAO (self-join or invite another user)
      * @param param the request object
      */
     public addMemberToDAOWithHttpInfo(param: DaosApiAddMemberToDAORequest, options?: ConfigurationOptions): Promise<HttpInfo<DAOMembershipResponse>> {
-        return this.api.addMemberToDAOWithHttpInfo(param.daoId,  options).toPromise();
+        return this.api.addMemberToDAOWithHttpInfo(param.daoId, param.dAOMembership,  options).toPromise();
     }
 
     /**
-     * Add a member to a DAO
+     * Add a member to a DAO (self-join or invite another user)
      * @param param the request object
      */
     public addMemberToDAO(param: DaosApiAddMemberToDAORequest, options?: ConfigurationOptions): Promise<DAOMembershipResponse> {
-        return this.api.addMemberToDAO(param.daoId,  options).toPromise();
+        return this.api.addMemberToDAO(param.daoId, param.dAOMembership,  options).toPromise();
     }
 
     /**
@@ -2452,7 +2458,7 @@ export class ObjectProposalsApi {
     }
 
     /**
-     * Remove vote from a proposal for a DAO
+     * Remove a user\'s vote from a proposal
      * @param param the request object
      */
     public removeVoteFromDAOProposalWithHttpInfo(param: ProposalsApiRemoveVoteFromDAOProposalRequest, options?: ConfigurationOptions): Promise<HttpInfo<ProposalVoteResponse>> {
@@ -2460,7 +2466,7 @@ export class ObjectProposalsApi {
     }
 
     /**
-     * Remove vote from a proposal for a DAO
+     * Remove a user\'s vote from a proposal
      * @param param the request object
      */
     public removeVoteFromDAOProposal(param: ProposalsApiRemoveVoteFromDAOProposalRequest, options?: ConfigurationOptions): Promise<ProposalVoteResponse> {

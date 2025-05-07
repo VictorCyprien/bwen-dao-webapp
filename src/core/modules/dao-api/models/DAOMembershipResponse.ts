@@ -19,6 +19,7 @@ import { HttpFile } from '../http/http';
 export class DAOMembershipResponse {
     'action': string;
     'dao': DAO;
+    'userId'?: string;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -35,6 +36,12 @@ export class DAOMembershipResponse {
             "name": "dao",
             "baseName": "dao",
             "type": "DAO",
+            "format": ""
+        },
+        {
+            "name": "userId",
+            "baseName": "user_id",
+            "type": "string",
             "format": ""
         }    ];
 

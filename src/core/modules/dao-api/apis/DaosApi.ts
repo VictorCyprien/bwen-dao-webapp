@@ -194,16 +194,18 @@ export class DaosApiRequestFactory extends BaseAPIRequestFactory {
     }
 
     /**
-     * Add a member to a DAO
+     * Add a member to a DAO (self-join or invite another user)
      * @param daoId 
+     * @param dAOMembership 
      */
-    public async addMemberToDAO(daoId: string, _options?: Configuration): Promise<RequestContext> {
+    public async addMemberToDAO(daoId: string, dAOMembership?: DAOMembership, _options?: Configuration): Promise<RequestContext> {
         let _config = _options || this.configuration;
 
         // verify required parameter 'daoId' is not null or undefined
         if (daoId === null || daoId === undefined) {
             throw new RequiredError("DaosApi", "addMemberToDAO", "daoId");
         }
+
 
 
         // Path Params
@@ -214,6 +216,17 @@ export class DaosApiRequestFactory extends BaseAPIRequestFactory {
         const requestContext = _config.baseServer.makeRequestContext(localVarPath, HttpMethod.POST);
         requestContext.setHeaderParam("Accept", "application/json, */*;q=0.8")
 
+
+        // Body Params
+        const contentType = ObjectSerializer.getPreferredMediaType([
+            "application/json"
+        ]);
+        requestContext.setHeaderParam("Content-Type", contentType);
+        const serializedBody = ObjectSerializer.stringify(
+            ObjectSerializer.serialize(dAOMembership, "DAOMembership", ""),
+            contentType
+        );
+        requestContext.setBody(serializedBody);
 
         
         const defaultAuth: SecurityAuthentication | undefined = _config?.authMethods?.default
@@ -2258,6 +2271,13 @@ export class DaosApiResponseProcessor {
      */
      public async addMemberToDAOWithHttpInfo(response: ResponseContext): Promise<HttpInfo<DAOMembershipResponse >> {
         const contentType = ObjectSerializer.normalizeMediaType(response.headers["content-type"]);
+        if (isCodeInRange("422", response.httpStatusCode)) {
+            const body: Error = ObjectSerializer.deserialize(
+                ObjectSerializer.parse(await response.body.text(), contentType),
+                "Error", ""
+            ) as Error;
+            throw new ApiException<Error>(response.httpStatusCode, "Unprocessable Entity", body, response.headers);
+        }
         if (isCodeInRange("200", response.httpStatusCode)) {
             const body: DAOMembershipResponse = ObjectSerializer.deserialize(
                 ObjectSerializer.parse(await response.body.text(), contentType),
@@ -2271,6 +2291,13 @@ export class DaosApiResponseProcessor {
                 "PagingError", ""
             ) as PagingError;
             throw new ApiException<PagingError>(response.httpStatusCode, "Bad Request", body, response.headers);
+        }
+        if (isCodeInRange("401", response.httpStatusCode)) {
+            const body: PagingError = ObjectSerializer.deserialize(
+                ObjectSerializer.parse(await response.body.text(), contentType),
+                "PagingError", ""
+            ) as PagingError;
+            throw new ApiException<PagingError>(response.httpStatusCode, "Unauthorized", body, response.headers);
         }
         if (isCodeInRange("404", response.httpStatusCode)) {
             const body: PagingError = ObjectSerializer.deserialize(

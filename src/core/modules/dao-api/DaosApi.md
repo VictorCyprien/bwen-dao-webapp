@@ -7,7 +7,7 @@ Method | HTTP request | Description
 [**accessDAOModule**](DaosApi.md#accessDAOModule) | **GET** /daos/{dao_id}/modules/{module_name} | Access a specific module for a DAO
 [**addAdminToDAO**](DaosApi.md#addAdminToDAO) | **POST** /daos/{dao_id}/admins | Add an admin to a DAO
 [**addDAOModule**](DaosApi.md#addDAOModule) | **POST** /daos/{dao_id}/modules/add | Add a module to a DAO
-[**addMemberToDAO**](DaosApi.md#addMemberToDAO) | **POST** /daos/{dao_id}/members | Add a member to a DAO
+[**addMemberToDAO**](DaosApi.md#addMemberToDAO) | **POST** /daos/{dao_id}/members | Add a member to a DAO (self-join or invite another user)
 [**addMemberToPOD**](DaosApi.md#addMemberToPOD) | **POST** /daos/{dao_id}/pods/{pod_id}/members | Add a member to a POD
 [**assignPermissionToRole**](DaosApi.md#assignPermissionToRole) | **POST** /daos/{dao_id}/roles/{role_id}/permissions | Assign a permission to a role in a DAO
 [**assignRoleToUser**](DaosApi.md#assignRoleToUser) | **POST** /daos/{dao_id}/members/{user_id}/roles | Assign a role to a user in a DAO
@@ -254,6 +254,10 @@ const apiInstance = new DaosApi(configuration);
 const request: DaosApiAddMemberToDAORequest = {
   
   daoId: "dao_id_example",
+  
+  dAOMembership: {
+    userId: "userId_example",
+  },
 };
 
 const data = await apiInstance.addMemberToDAO(request);
@@ -265,6 +269,7 @@ console.log('API called successfully. Returned data:', data);
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
+ **dAOMembership** | **DAOMembership**|  |
  **daoId** | [**string**] |  | defaults to undefined
 
 
@@ -278,15 +283,17 @@ No authorization required
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
+**422** | Unprocessable Entity |  -  |
 **200** | User added to DAO successfully |  -  |
 **400** | Bad Request |  -  |
+**401** | Unauthorized |  -  |
 **404** | User or DAO not found |  -  |
 **0** | Default error response |  -  |
 

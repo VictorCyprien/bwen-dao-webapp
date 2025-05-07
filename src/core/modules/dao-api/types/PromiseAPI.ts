@@ -565,10 +565,11 @@ export class PromiseDaosApi {
     }
 
     /**
-     * Add a member to a DAO
+     * Add a member to a DAO (self-join or invite another user)
      * @param daoId
+     * @param [dAOMembership]
      */
-    public addMemberToDAOWithHttpInfo(daoId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DAOMembershipResponse>> {
+    public addMemberToDAOWithHttpInfo(daoId: string, dAOMembership?: DAOMembership, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DAOMembershipResponse>> {
         let observableOptions: undefined | ConfigurationOptions
         if (_options){
 	    observableOptions = {
@@ -581,15 +582,16 @@ export class PromiseDaosApi {
                 authMethods: _options.authMethods
 	    }
 	}
-        const result = this.api.addMemberToDAOWithHttpInfo(daoId, observableOptions);
+        const result = this.api.addMemberToDAOWithHttpInfo(daoId, dAOMembership, observableOptions);
         return result.toPromise();
     }
 
     /**
-     * Add a member to a DAO
+     * Add a member to a DAO (self-join or invite another user)
      * @param daoId
+     * @param [dAOMembership]
      */
-    public addMemberToDAO(daoId: string, _options?: PromiseConfigurationOptions): Promise<DAOMembershipResponse> {
+    public addMemberToDAO(daoId: string, dAOMembership?: DAOMembership, _options?: PromiseConfigurationOptions): Promise<DAOMembershipResponse> {
         let observableOptions: undefined | ConfigurationOptions
         if (_options){
 	    observableOptions = {
@@ -602,7 +604,7 @@ export class PromiseDaosApi {
                 authMethods: _options.authMethods
 	    }
 	}
-        const result = this.api.addMemberToDAO(daoId, observableOptions);
+        const result = this.api.addMemberToDAO(daoId, dAOMembership, observableOptions);
         return result.toPromise();
     }
 
@@ -3229,7 +3231,7 @@ export class PromiseProposalsApi {
     }
 
     /**
-     * Remove vote from a proposal for a DAO
+     * Remove a user\'s vote from a proposal
      * @param daoId
      * @param proposalId
      */
@@ -3251,7 +3253,7 @@ export class PromiseProposalsApi {
     }
 
     /**
-     * Remove vote from a proposal for a DAO
+     * Remove a user\'s vote from a proposal
      * @param daoId
      * @param proposalId
      */

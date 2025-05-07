@@ -747,10 +747,11 @@ export class ObservableDaosApi {
     }
 
     /**
-     * Add a member to a DAO
+     * Add a member to a DAO (self-join or invite another user)
      * @param daoId
+     * @param [dAOMembership]
      */
-    public addMemberToDAOWithHttpInfo(daoId: string, _options?: ConfigurationOptions): Observable<HttpInfo<DAOMembershipResponse>> {
+    public addMemberToDAOWithHttpInfo(daoId: string, dAOMembership?: DAOMembership, _options?: ConfigurationOptions): Observable<HttpInfo<DAOMembershipResponse>> {
     let _config = this.configuration;
     let allMiddleware: Middleware[] = [];
     if (_options && _options.middleware){
@@ -781,7 +782,7 @@ export class ObservableDaosApi {
 		};
 	}
 
-        const requestContextPromise = this.requestFactory.addMemberToDAO(daoId, _config);
+        const requestContextPromise = this.requestFactory.addMemberToDAO(daoId, dAOMembership, _config);
         // build promise chain
         let middlewarePreObservable = from<RequestContext>(requestContextPromise);
         for (const middleware of allMiddleware) {
@@ -799,11 +800,12 @@ export class ObservableDaosApi {
     }
 
     /**
-     * Add a member to a DAO
+     * Add a member to a DAO (self-join or invite another user)
      * @param daoId
+     * @param [dAOMembership]
      */
-    public addMemberToDAO(daoId: string, _options?: ConfigurationOptions): Observable<DAOMembershipResponse> {
-        return this.addMemberToDAOWithHttpInfo(daoId, _options).pipe(map((apiResponse: HttpInfo<DAOMembershipResponse>) => apiResponse.data));
+    public addMemberToDAO(daoId: string, dAOMembership?: DAOMembership, _options?: ConfigurationOptions): Observable<DAOMembershipResponse> {
+        return this.addMemberToDAOWithHttpInfo(daoId, dAOMembership, _options).pipe(map((apiResponse: HttpInfo<DAOMembershipResponse>) => apiResponse.data));
     }
 
     /**
@@ -4489,7 +4491,7 @@ export class ObservableProposalsApi {
     }
 
     /**
-     * Remove vote from a proposal for a DAO
+     * Remove a user\'s vote from a proposal
      * @param daoId
      * @param proposalId
      */
@@ -4542,7 +4544,7 @@ export class ObservableProposalsApi {
     }
 
     /**
-     * Remove vote from a proposal for a DAO
+     * Remove a user\'s vote from a proposal
      * @param daoId
      * @param proposalId
      */
