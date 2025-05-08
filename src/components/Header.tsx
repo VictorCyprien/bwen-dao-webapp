@@ -34,6 +34,8 @@ const Header = ({
         return 'Roles';
       case 'treasury':
         return 'Treasury';
+      case 'user_management':
+        return 'User Management';
       case 'profile':
         return 'My Profile';
       default:

@@ -14,7 +14,8 @@ import {
   ChevronLeft,
   ChevronDown,
   Puzzle,
-  ShieldCheck
+  ShieldCheck,
+  UserPlus
 } from 'lucide-react';
 import { ui } from '../styles/theme';
 import { useAuth } from '../context/AuthContext';
@@ -221,6 +222,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         { id: 'governance', label: 'Governance', icon: <Building2 size={18} /> },
         { id: 'treasury', label: 'Treasury', icon: <Wallet size={18} /> },
         { id: 'members', label: 'Members', icon: <Users size={18} /> },
+        { id: 'user_management', label: 'User Management', icon: <UserPlus size={18} /> },
         { id: 'roles', label: 'Roles', icon: <ShieldCheck size={18} /> },
         { id: 'modules', label: 'Modules', icon: <Puzzle size={18} /> }
       ],

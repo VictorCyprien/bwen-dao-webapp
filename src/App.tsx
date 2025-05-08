@@ -9,6 +9,7 @@ import Members from './components/Members';
 import Treasury from './components/Treasury';
 import Modules from './components/Modules';
 import Roles from './components/Roles';
+import UserManagement from './components/UserManagement';
 import LandingPage from './components/LandingPage';
 import LandingPageDev from './components/Landingpage_dev';
 import BabyWenOnboarding from './components/BabyWenOnboarding';
@@ -173,6 +174,9 @@ const Dashboard = () => {
           break;
         case 'members':
           setCurrentComponent(<Members />);
+          break;
+        case 'user_management':
+          setCurrentComponent(<UserManagement />);
           break;
         case 'treasury':
           setCurrentComponent(<Treasury />);
