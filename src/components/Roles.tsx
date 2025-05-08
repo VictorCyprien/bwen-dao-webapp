@@ -378,7 +378,7 @@ const Roles: React.FC = () => {
 
   if (!isAdmin) {
     return (
-      <div className="flex flex-col items-center justify-center p-8">
+      <div className="flex flex-col items-center justify-center p-8 h-full min-h-screen">
         <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6 max-w-md w-full">
           <h2 className="text-xl font-semibold text-white mb-4">Access Denied</h2>
           <p className="text-gray-300">

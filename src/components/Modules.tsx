@@ -1,6 +1,8 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { daosService } from '../services/DaosService';
+import { rolePermissionService } from '../services/RolePermissionService';
+import { useAuth } from '../context/AuthContext';
 import { DAOModulesList, DAOModule } from '../core/modules/dao-api';
 import { ModuleTypes } from '../types/modules';
 
@@ -55,9 +57,12 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
 
 const Modules: React.FC = () => {
   const { daoId } = useParams<{ daoId: string }>();
+  const { userInfo } = useAuth();
   const [modules, setModules] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [hasAccess, setHasAccess] = React.useState<boolean>(false);
+  const [pageLoading, setPageLoading] = React.useState<boolean>(true);
 
   // Define available modules with descriptions - only keeping PODS and PROOF_OF_LOVE
   const moduleDetails: Record<string, { name: string; description: string }> = {
@@ -71,9 +76,55 @@ const Modules: React.FC = () => {
     }
   };
 
+  // Check if user has access to the page (owner, admin, or has required permissions)
+  React.useEffect(() => {
+    const checkAccess = async () => {
+      if (!daoId || !userInfo) {
+        setPageLoading(false);
+        return;
+      }
+      
+      try {
+        setPageLoading(true);
+        
+        // Get the DAO to check if user is owner/admin
+        const dao = await daosService.getDaoById(daoId);
+        if (!dao) {
+          setPageLoading(false);
+          return;
+        }
+        
+        const adminIdsList = dao?.admins?.map(admin => admin.userId) || [];
+        const isOwnerOrAdmin = dao.ownerId === userInfo.userId || adminIdsList.includes(userInfo.userId);
+        
+        // If user is owner or admin, they have access
+        if (isOwnerOrAdmin) {
+          setHasAccess(true);
+          setPageLoading(false);
+          return;
+        }
+        
+        // Otherwise, check if user has roles with required permissions
+        const userRolesResponse = await rolePermissionService.getUserRoles(daoId, userInfo.userId);
+        if (!userRolesResponse || !userRolesResponse.roles) {
+          setHasAccess(false);
+          setPageLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking page access:', error);
+        setHasAccess(false);
+      } finally {
+        setPageLoading(false);
+      }
+    };
+    
+    checkAccess();
+  }, [daoId, userInfo]);
+
   React.useEffect(() => {
     async function fetchModules() {
-      if (!daoId) return;
+      if (!daoId || !hasAccess) return;
 
       try {
         setLoading(true);
@@ -97,10 +148,10 @@ const Modules: React.FC = () => {
     }
 
     fetchModules();
-  }, [daoId]);
+  }, [daoId, hasAccess]);
 
   const toggleModule = async (moduleName: string) => {
-    if (!daoId) return;
+    if (!daoId || !hasAccess) return;
 
     try {
       const isCurrentlyEnabled = modules.includes(moduleName);
@@ -150,6 +201,30 @@ const Modules: React.FC = () => {
 
   // Get all available modules
   const allModules = Object.keys(moduleDetails);
+
+  // If page is loading, show loading indicator
+  if (pageLoading) {
+    return (
+      <div className="flex justify-center items-center p-8 h-full min-h-screen">
+        <div className="w-12 h-12 rounded-full border-t-2 border-l-2 border-primary animate-spin"></div>
+      </div>
+    );
+  }
+
+  // If user doesn't have access, show access denied message
+  if (!hasAccess) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 h-full min-h-screen">
+        <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6 max-w-md w-full">
+          <h2 className="text-xl font-semibold text-white mb-4">Access Denied</h2>
+          <p className="text-gray-300">
+            You do not have permission to access the modules management page. 
+            Only DAO owners, admins, or members with appropriate permissions can manage modules.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
