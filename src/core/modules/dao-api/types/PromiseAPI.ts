@@ -9,6 +9,10 @@ import { ConnectionsList } from '../models/ConnectionsList';
 import { CreateDeviceRequest } from '../models/CreateDeviceRequest';
 import { CreateDeviceResponse } from '../models/CreateDeviceResponse';
 import { DAO } from '../models/DAO';
+import { DAOInvitation } from '../models/DAOInvitation';
+import { DAOInvitationAction } from '../models/DAOInvitationAction';
+import { DAOInvitationList } from '../models/DAOInvitationList';
+import { DAOInvitationResponse } from '../models/DAOInvitationResponse';
 import { DAOMembership } from '../models/DAOMembership';
 import { DAOMembershipResponse } from '../models/DAOMembershipResponse';
 import { DAOModule } from '../models/DAOModule';
@@ -82,11 +86,14 @@ import { UserBasic1 } from '../models/UserBasic1';
 import { UserDAOOwnershipResponse } from '../models/UserDAOOwnershipResponse';
 import { UserExistResponse } from '../models/UserExistResponse';
 import { UserInfoError } from '../models/UserInfoError';
+import { UserInvitation } from '../models/UserInvitation';
+import { UserInvitationsResponse } from '../models/UserInvitationsResponse';
 import { UserPermissionCheck } from '../models/UserPermissionCheck';
 import { UserResponse } from '../models/UserResponse';
 import { UserRoleAssignment } from '../models/UserRoleAssignment';
 import { UserRoleCheck } from '../models/UserRoleCheck';
 import { UserRoleResponse } from '../models/UserRoleResponse';
+import { UserSearchResponse } from '../models/UserSearchResponse';
 import { VerifySignature } from '../models/VerifySignature';
 import { ObservableApiKeysApi } from './ObservableAPI';
 
@@ -565,11 +572,10 @@ export class PromiseDaosApi {
     }
 
     /**
-     * Add a member to a DAO (self-join or invite another user)
+     * Add a member to a DAO
      * @param daoId
-     * @param [dAOMembership]
      */
-    public addMemberToDAOWithHttpInfo(daoId: string, dAOMembership?: DAOMembership, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DAOMembershipResponse>> {
+    public addMemberToDAOWithHttpInfo(daoId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DAOMembershipResponse>> {
         let observableOptions: undefined | ConfigurationOptions
         if (_options){
 	    observableOptions = {
@@ -582,16 +588,15 @@ export class PromiseDaosApi {
                 authMethods: _options.authMethods
 	    }
 	}
-        const result = this.api.addMemberToDAOWithHttpInfo(daoId, dAOMembership, observableOptions);
+        const result = this.api.addMemberToDAOWithHttpInfo(daoId, observableOptions);
         return result.toPromise();
     }
 
     /**
-     * Add a member to a DAO (self-join or invite another user)
+     * Add a member to a DAO
      * @param daoId
-     * @param [dAOMembership]
      */
-    public addMemberToDAO(daoId: string, dAOMembership?: DAOMembership, _options?: PromiseConfigurationOptions): Promise<DAOMembershipResponse> {
+    public addMemberToDAO(daoId: string, _options?: PromiseConfigurationOptions): Promise<DAOMembershipResponse> {
         let observableOptions: undefined | ConfigurationOptions
         if (_options){
 	    observableOptions = {
@@ -604,7 +609,7 @@ export class PromiseDaosApi {
                 authMethods: _options.authMethods
 	    }
 	}
-        const result = this.api.addMemberToDAO(daoId, dAOMembership, observableOptions);
+        const result = this.api.addMemberToDAO(daoId, observableOptions);
         return result.toPromise();
     }
 
@@ -741,6 +746,50 @@ export class PromiseDaosApi {
 	    }
 	}
         const result = this.api.assignRoleToUser(daoId, userId, userRoleAssignment, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Cancel/delete a DAO invitation
+     * @param daoId
+     * @param invitationId
+     */
+    public cancelDAOInvitationWithHttpInfo(daoId: string, invitationId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DAOInvitationResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.cancelDAOInvitationWithHttpInfo(daoId, invitationId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Cancel/delete a DAO invitation
+     * @param daoId
+     * @param invitationId
+     */
+    public cancelDAOInvitation(daoId: string, invitationId: string, _options?: PromiseConfigurationOptions): Promise<DAOInvitationResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.cancelDAOInvitation(daoId, invitationId, observableOptions);
         return result.toPromise();
     }
 
@@ -1433,6 +1482,92 @@ export class PromiseDaosApi {
     }
 
     /**
+     * Get details of a specific invitation
+     * @param daoId
+     * @param invitationId
+     */
+    public getDAOInvitationWithHttpInfo(daoId: string, invitationId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DAOInvitationResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getDAOInvitationWithHttpInfo(daoId, invitationId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get details of a specific invitation
+     * @param daoId
+     * @param invitationId
+     */
+    public getDAOInvitation(daoId: string, invitationId: string, _options?: PromiseConfigurationOptions): Promise<DAOInvitationResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getDAOInvitation(daoId, invitationId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get all invitations for a DAO
+     * @param daoId
+     */
+    public getDAOInvitationsWithHttpInfo(daoId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DAOInvitationList>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getDAOInvitationsWithHttpInfo(daoId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get all invitations for a DAO
+     * @param daoId
+     */
+    public getDAOInvitations(daoId: string, _options?: PromiseConfigurationOptions): Promise<DAOInvitationList> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getDAOInvitations(daoId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
      * Get all modules enabled for a DAO
      * @param daoId
      */
@@ -1993,6 +2128,50 @@ export class PromiseDaosApi {
     }
 
     /**
+     * Create an invitation to join a DAO
+     * @param daoId
+     * @param dAOInvitation
+     */
+    public inviteUserToDAOWithHttpInfo(daoId: string, dAOInvitation: DAOInvitation, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DAOInvitationResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.inviteUserToDAOWithHttpInfo(daoId, dAOInvitation, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Create an invitation to join a DAO
+     * @param daoId
+     * @param dAOInvitation
+     */
+    public inviteUserToDAO(daoId: string, dAOInvitation: DAOInvitation, _options?: PromiseConfigurationOptions): Promise<DAOInvitationResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.inviteUserToDAO(daoId, dAOInvitation, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
      * Link a Discord channel to a POD
      * @param daoId
      * @param podId
@@ -2305,6 +2484,52 @@ export class PromiseDaosApi {
 	    }
 	}
         const result = this.api.removeRoleFromUser(daoId, userId, roleId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Respond to a DAO invitation (accept/decline)
+     * @param daoId
+     * @param invitationId
+     * @param dAOInvitationAction
+     */
+    public respondToDAOInvitationWithHttpInfo(daoId: string, invitationId: string, dAOInvitationAction: DAOInvitationAction, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DAOInvitationResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.respondToDAOInvitationWithHttpInfo(daoId, invitationId, dAOInvitationAction, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Respond to a DAO invitation (accept/decline)
+     * @param daoId
+     * @param invitationId
+     * @param dAOInvitationAction
+     */
+    public respondToDAOInvitation(daoId: string, invitationId: string, dAOInvitationAction: DAOInvitationAction, _options?: PromiseConfigurationOptions): Promise<DAOInvitationResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.respondToDAOInvitation(daoId, invitationId, dAOInvitationAction, observableOptions);
         return result.toPromise();
     }
 
@@ -4110,6 +4335,46 @@ export class PromiseUsersApi {
     }
 
     /**
+     * Get all invitations for the authenticated user
+     */
+    public getUserInvitationsWithHttpInfo(_options?: PromiseConfigurationOptions): Promise<HttpInfo<UserInvitationsResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getUserInvitationsWithHttpInfo(observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get all invitations for the authenticated user
+     */
+    public getUserInvitations(_options?: PromiseConfigurationOptions): Promise<UserInvitationsResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getUserInvitations(observableOptions);
+        return result.toPromise();
+    }
+
+    /**
      * Check if user with the wallet address exists
      * @param walletAddress
      */
@@ -4148,6 +4413,48 @@ export class PromiseUsersApi {
 	    }
 	}
         const result = this.api.getUserWithWalletAddress(walletAddress, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Search for users by username to invite to a DAO
+     * @param username Username to search for
+     */
+    public searchUsersWithHttpInfo(username: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<UserSearchResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.searchUsersWithHttpInfo(username, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Search for users by username to invite to a DAO
+     * @param username Username to search for
+     */
+    public searchUsers(username: string, _options?: PromiseConfigurationOptions): Promise<UserSearchResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.searchUsers(username, observableOptions);
         return result.toPromise();
     }
 

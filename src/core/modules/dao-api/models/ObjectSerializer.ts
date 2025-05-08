@@ -5,6 +5,10 @@ export * from '../models/ConnectionsList';
 export * from '../models/CreateDeviceRequest';
 export * from '../models/CreateDeviceResponse';
 export * from '../models/DAO';
+export * from '../models/DAOInvitation';
+export * from '../models/DAOInvitationAction';
+export * from '../models/DAOInvitationList';
+export * from '../models/DAOInvitationResponse';
 export * from '../models/DAOMembership';
 export * from '../models/DAOMembershipResponse';
 export * from '../models/DAOModule';
@@ -78,11 +82,14 @@ export * from '../models/UserBasic1';
 export * from '../models/UserDAOOwnershipResponse';
 export * from '../models/UserExistResponse';
 export * from '../models/UserInfoError';
+export * from '../models/UserInvitation';
+export * from '../models/UserInvitationsResponse';
 export * from '../models/UserPermissionCheck';
 export * from '../models/UserResponse';
 export * from '../models/UserRoleAssignment';
 export * from '../models/UserRoleCheck';
 export * from '../models/UserRoleResponse';
+export * from '../models/UserSearchResponse';
 export * from '../models/VerifySignature';
 
 import { ChallengeRequest } from '../models/ChallengeRequest';
@@ -92,6 +99,10 @@ import { ConnectionsList } from '../models/ConnectionsList';
 import { CreateDeviceRequest } from '../models/CreateDeviceRequest';
 import { CreateDeviceResponse } from '../models/CreateDeviceResponse';
 import { DAO } from '../models/DAO';
+import { DAOInvitation } from '../models/DAOInvitation';
+import { DAOInvitationAction } from '../models/DAOInvitationAction';
+import { DAOInvitationList } from '../models/DAOInvitationList';
+import { DAOInvitationResponse } from '../models/DAOInvitationResponse';
 import { DAOMembership } from '../models/DAOMembership';
 import { DAOMembershipResponse } from '../models/DAOMembershipResponse';
 import { DAOModule } from '../models/DAOModule';
@@ -165,11 +176,14 @@ import { UserBasic1 } from '../models/UserBasic1';
 import { UserDAOOwnershipResponse } from '../models/UserDAOOwnershipResponse';
 import { UserExistResponse } from '../models/UserExistResponse';
 import { UserInfoError } from '../models/UserInfoError';
+import { UserInvitation } from '../models/UserInvitation';
+import { UserInvitationsResponse } from '../models/UserInvitationsResponse';
 import { UserPermissionCheck } from '../models/UserPermissionCheck';
 import { UserResponse } from '../models/UserResponse';
 import { UserRoleAssignment } from '../models/UserRoleAssignment';
 import { UserRoleCheck } from '../models/UserRoleCheck';
 import { UserRoleResponse } from '../models/UserRoleResponse';
+import { UserSearchResponse } from '../models/UserSearchResponse';
 import { VerifySignature } from '../models/VerifySignature';
 
 /* tslint:disable:no-unused-variable */
@@ -208,6 +222,10 @@ let typeMap: {[index: string]: any} = {
     "CreateDeviceRequest": CreateDeviceRequest,
     "CreateDeviceResponse": CreateDeviceResponse,
     "DAO": DAO,
+    "DAOInvitation": DAOInvitation,
+    "DAOInvitationAction": DAOInvitationAction,
+    "DAOInvitationList": DAOInvitationList,
+    "DAOInvitationResponse": DAOInvitationResponse,
     "DAOMembership": DAOMembership,
     "DAOMembershipResponse": DAOMembershipResponse,
     "DAOModule": DAOModule,
@@ -281,11 +299,14 @@ let typeMap: {[index: string]: any} = {
     "UserDAOOwnershipResponse": UserDAOOwnershipResponse,
     "UserExistResponse": UserExistResponse,
     "UserInfoError": UserInfoError,
+    "UserInvitation": UserInvitation,
+    "UserInvitationsResponse": UserInvitationsResponse,
     "UserPermissionCheck": UserPermissionCheck,
     "UserResponse": UserResponse,
     "UserRoleAssignment": UserRoleAssignment,
     "UserRoleCheck": UserRoleCheck,
     "UserRoleResponse": UserRoleResponse,
+    "UserSearchResponse": UserSearchResponse,
     "VerifySignature": VerifySignature,
 }
 
