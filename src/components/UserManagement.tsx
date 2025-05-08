@@ -6,7 +6,9 @@ import Button from './common/Button';
 import { typography, containers, ui, utils } from '../styles/theme';
 import { daosService } from '../services/DaosService';
 import { userService } from '../services/UserService';
-import type { User, DAOInvitationResponse } from '../core/modules/dao-api';
+import { rolePermissionService } from '../services/RolePermissionService';
+import { useAuth } from '../context/AuthContext';
+import type { User, DAOInvitationResponse, Role } from '../core/modules/dao-api';
 
 // Toast notification component
 const Toast = ({ message, type, onClose }: { message: string; type: 'success' | 'error'; onClose: () => void }) => {
@@ -54,6 +56,13 @@ const InvitationModal = ({
     onInvite(days);
   };
 
+  // Safe way to display wallet address
+  const displayWalletAddress = () => {
+    if (!user.walletAddress) return 'No wallet address';
+    const address = user.walletAddress;
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-[#1A1A1A] rounded-xl p-6 max-w-md w-full shadow-2xl border border-gray-700">
@@ -68,7 +77,7 @@ const InvitationModal = ({
             <div>
               <p className={typography.body + " font-bold"}>{user.username}</p>
               <p className={typography.small + " text-gray-400"}>
-                {user.walletAddress?.substring(0, 6)}...{user.walletAddress?.substring(user.walletAddress.length - 4)}
+                {displayWalletAddress()}
               </p>
             </div>
           </div>
@@ -117,12 +126,14 @@ const InvitationModal = ({
 
 const UserManagement = () => {
   const { daoId } = useParams<{ daoId: string }>();
+  const { userInfo } = useAuth();
   const [searchQuery, setSearchQuery] = React.useState<string>('');
   const [searchResults, setSearchResults] = React.useState<User[]>([]);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState<boolean>(false);
   const [daoMembers, setDaoMembers] = React.useState<User[]>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
+  const [pageLoading, setPageLoading] = React.useState<boolean>(true);
   const [searchLoading, setSearchLoading] = React.useState<boolean>(false);
   const [toast, setToast] = React.useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [modalError, setModalError] = React.useState<string | null>(null);
@@ -131,36 +142,93 @@ const UserManagement = () => {
     canInvite: boolean;
     canRemove: boolean;
   }>({ canInvite: false, canRemove: false });
+  const [hasAccess, setHasAccess] = React.useState<boolean>(false);
 
-  // Check user permissions
+  // Safe way to display wallet address
+  const displayWalletAddress = (address?: string) => {
+    if (!address) return 'No wallet address';
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  };
+
+  // Check if user has access to the page (owner, admin, or has required permissions)
   React.useEffect(() => {
-    const checkPermissions = async () => {
-      if (!daoId) return;
+    const checkAccess = async () => {
+      if (!daoId || !userInfo) {
+        setPageLoading(false);
+        return;
+      }
       
       try {
-        // Here you would check if the user has the INVITE_MEMBERS and REMOVE_MEMBERS permissions
-        // This is placeholder logic - replace with actual permission checking
-        const currentUser = await userService.getCurrentUser();
-        if (!currentUser || !currentUser.userId) return;
+        setPageLoading(true);
         
-        // For now, we'll assume all authenticated users have both permissions
-        // In a real implementation, you would check against actual permissions
+        // Get the DAO to check if user is owner/admin
+        const dao = await daosService.getDaoById(daoId);
+        if (!dao) {
+          setPageLoading(false);
+          return;
+        }
+        
+        const adminIdsList = dao?.admins?.map(admin => admin.userId) || [];
+        const isOwnerOrAdmin = dao.ownerId === userInfo.userId || adminIdsList.includes(userInfo.userId);
+        
+        // If user is owner or admin, they have access
+        if (isOwnerOrAdmin) {
+          setHasAccess(true);
+          setPermissions({ canInvite: true, canRemove: true });
+          setPageLoading(false);
+          return;
+        }
+        
+        // Otherwise, check if user has roles with required permissions
+        const userRolesResponse = await rolePermissionService.getUserRoles(daoId, userInfo.userId);
+        if (!userRolesResponse || !userRolesResponse.roles) {
+          setHasAccess(false);
+          setPageLoading(false);
+          return;
+        }
+        
+        // For each role, check if it has the required permissions
+        let hasInvitePermission = false;
+        let hasRemovePermission = false;
+        
+        for (const role of userRolesResponse.roles as Role[]) {
+          const rolePermissions = await rolePermissionService.getRolePermissions(daoId, role.roleId);
+          
+          if (rolePermissions && rolePermissions.permissions) {
+            const permissionNames = rolePermissions.permissions.map(p => p.name);
+            
+            if (permissionNames.includes('INVITE_MEMBERS')) {
+              hasInvitePermission = true;
+            }
+            
+            if (permissionNames.includes('REMOVE_MEMBERS')) {
+              hasRemovePermission = true;
+            }
+          }
+        }
+        
+        // User has access if they have at least one of the permissions
+        const userHasAccess = hasInvitePermission || hasRemovePermission;
+        setHasAccess(userHasAccess);
         setPermissions({
-          canInvite: true,
-          canRemove: true
+          canInvite: hasInvitePermission,
+          canRemove: hasRemovePermission
         });
       } catch (error) {
-        console.error('Error checking permissions:', error);
+        console.error('Error checking page access:', error);
+        setHasAccess(false);
+      } finally {
+        setPageLoading(false);
       }
     };
     
-    checkPermissions();
-  }, [daoId]);
+    checkAccess();
+  }, [daoId, userInfo]);
 
   // Fetch DAO members
   React.useEffect(() => {
     const fetchDaoMembers = async () => {
-      if (!daoId) return;
+      if (!daoId || !hasAccess) return;
       
       try {
         setLoading(true);
@@ -176,7 +244,13 @@ const UserManagement = () => {
     };
     
     fetchDaoMembers();
-  }, [daoId]);
+  }, [daoId, hasAccess]);
+
+  // Filter out the current user from the members list for display
+  const displayMembers = React.useMemo(() => {
+    if (!userInfo || !daoMembers.length) return [];
+    return daoMembers.filter((member: User) => member.userId !== userInfo.userId);
+  }, [daoMembers, userInfo]);
 
   // Handle search
   const handleSearch = async () => {
@@ -304,6 +378,30 @@ const UserManagement = () => {
     }
   }, [searchQuery]);
 
+  // If page is loading, show loading indicator
+  if (pageLoading) {
+    return (
+      <div className="flex justify-center items-center p-8 h-full min-h-screen">
+        <div className="w-12 h-12 border-t-2 border-b-2 border-indigo-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  // If user doesn't have access, show access denied message
+  if (!hasAccess) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 h-full min-h-screen">
+        <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6 max-w-md w-full">
+          <h2 className="text-xl font-semibold text-white mb-4">Access Denied</h2>
+          <p className="text-gray-300">
+            You do not have permission to access the user management page. 
+            Only DAO owners, admins, or members with appropriate permissions can manage users.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 h-full min-h-screen overflow-auto">
       {/* Toast notification */}
@@ -428,7 +526,7 @@ const UserManagement = () => {
                         <span>{user.username}</span>
                       </div>
                       <div className="flex-1 text-gray-400">
-                        {user.walletAddress?.substring(0, 6)}...{user.walletAddress?.substring(user.walletAddress.length - 4)}
+                        {displayWalletAddress(user.walletAddress)}
                       </div>
                       <div className="w-20 text-right">
                         <Button 
@@ -477,7 +575,7 @@ const UserManagement = () => {
                 <div className="w-10 h-10 border-t-2 border-b-2 border-indigo-500 rounded-full animate-spin mx-auto mb-2"></div>
                 <span className="text-gray-400">Loading members...</span>
               </div>
-            ) : daoMembers.length > 0 ? (
+            ) : displayMembers.length > 0 ? (
               <div className="border border-gray-700 rounded-lg overflow-hidden">
                 <div className="px-4 py-2 bg-[#1A1A1A] border-b border-gray-700 flex">
                   <div className="flex-1 font-medium">Username</div>
@@ -485,7 +583,7 @@ const UserManagement = () => {
                   <div className="w-24"></div>
                 </div>
                 <div className="max-h-80 overflow-y-auto">
-                  {daoMembers.map((member: User) => (
+                  {displayMembers.map((member: User) => (
                     <div 
                       key={member.userId} 
                       className="px-4 py-3 border-b border-gray-700 last:border-0 flex items-center"
@@ -499,7 +597,7 @@ const UserManagement = () => {
                         <span>{member.username}</span>
                       </div>
                       <div className="flex-1 text-gray-400">
-                        {member.walletAddress?.substring(0, 6)}...{member.walletAddress?.substring(member.walletAddress.length - 4)}
+                        {displayWalletAddress(member.walletAddress)}
                       </div>
                       <div className="w-24 text-right">
                         <Button 
@@ -516,7 +614,7 @@ const UserManagement = () => {
               </div>
             ) : (
               <div className="text-center py-8 text-gray-400">
-                No members found in this DAO
+                {daoMembers.length > 1 ? "No other members found in this DAO" : "You are the only member in this DAO"}
               </div>
             )}
           </>
