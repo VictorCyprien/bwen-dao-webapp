@@ -10,7 +10,9 @@ import {
   UserResponse, 
   UserExistResponse, 
   User,
-  InputCreateUser
+  InputCreateUser,
+  UserSearchResponse,
+  UserInvitationsResponse
 } from '../core/modules/dao-api';
 import { ServerConfiguration } from '../core/modules/dao-api/servers';
 import { walletAuthService } from './WalletAuthService';
@@ -264,8 +266,43 @@ export class UserService {
   }
 
   /**
-   * Clear the user cache - should be called on logout
+   * Search for users by username
+   * @param username The username to search for
+   * @returns List of users matching the search criteria or null if there was an error
    */
+  async searchUsersByUsername(username: string): Promise<UserSearchResponse | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      const response = await apiClient.searchUsers(username);
+      return response || null;
+    } catch (error) {
+      console.error(`Error searching for users with username ${username}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get all invitations for the authenticated user
+   * @returns List of invitations for the current user or null if there was an error
+   */
+  async getUserInvitations(): Promise<UserInvitationsResponse | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      const response = await apiClient.getUserInvitations();
+      return response || null;
+    } catch (error) {
+      console.error('Error getting user invitations:', error);
+      return null;
+    }
+  }
+
+  /**
+  * Clear the user cache - should be called on logout
+  */
   clearUserCache(): void {
     this.userCache = null;
   }

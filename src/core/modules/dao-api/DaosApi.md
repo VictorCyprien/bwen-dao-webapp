@@ -7,10 +7,11 @@ Method | HTTP request | Description
 [**accessDAOModule**](DaosApi.md#accessDAOModule) | **GET** /daos/{dao_id}/modules/{module_name} | Access a specific module for a DAO
 [**addAdminToDAO**](DaosApi.md#addAdminToDAO) | **POST** /daos/{dao_id}/admins | Add an admin to a DAO
 [**addDAOModule**](DaosApi.md#addDAOModule) | **POST** /daos/{dao_id}/modules/add | Add a module to a DAO
-[**addMemberToDAO**](DaosApi.md#addMemberToDAO) | **POST** /daos/{dao_id}/members | Add a member to a DAO (self-join or invite another user)
+[**addMemberToDAO**](DaosApi.md#addMemberToDAO) | **POST** /daos/{dao_id}/members | Add a member to a DAO
 [**addMemberToPOD**](DaosApi.md#addMemberToPOD) | **POST** /daos/{dao_id}/pods/{pod_id}/members | Add a member to a POD
 [**assignPermissionToRole**](DaosApi.md#assignPermissionToRole) | **POST** /daos/{dao_id}/roles/{role_id}/permissions | Assign a permission to a role in a DAO
 [**assignRoleToUser**](DaosApi.md#assignRoleToUser) | **POST** /daos/{dao_id}/members/{user_id}/roles | Assign a role to a user in a DAO
+[**cancelDAOInvitation**](DaosApi.md#cancelDAOInvitation) | **DELETE** /daos/{dao_id}/invitations/{invitation_id} | Cancel/delete a DAO invitation
 [**checkDAOInitialization**](DaosApi.md#checkDAOInitialization) | **GET** /daos/init | Check if user has already initialized DAO creation (useful after disconnections)
 [**checkUserDAOOwnership**](DaosApi.md#checkUserDAOOwnership) | **GET** /daos/ownership | Check if the authenticated user owns a DAO
 [**checkUserPermission**](DaosApi.md#checkUserPermission) | **GET** /daos/{dao_id}/members/{user_id}/permissions/{permission_id} | Check if a user has a specific permission in a DAO
@@ -27,6 +28,8 @@ Method | HTTP request | Description
 [**getChannelMessages**](DaosApi.md#getChannelMessages) | **GET** /daos/{dao_id}/pods/{pod_id}/discord-channels/{channel_id}/messages | Get messages from a specific Discord channel
 [**getDAOById**](DaosApi.md#getDAOById) | **GET** /daos/{dao_id} | Get a DAO by ID
 [**getDAOGovernance**](DaosApi.md#getDAOGovernance) | **GET** /daos/{dao_id}/governance | Get governance model for a DAO
+[**getDAOInvitation**](DaosApi.md#getDAOInvitation) | **GET** /daos/{dao_id}/invitations/{invitation_id} | Get details of a specific invitation
+[**getDAOInvitations**](DaosApi.md#getDAOInvitations) | **GET** /daos/{dao_id}/invitations | Get all invitations for a DAO
 [**getDAOModules**](DaosApi.md#getDAOModules) | **GET** /daos/{dao_id}/modules | Get all modules enabled for a DAO
 [**getDAOPermissions**](DaosApi.md#getDAOPermissions) | **GET** /daos/{dao_id}/permissions | Get all permissions available for a DAO
 [**getDAORole**](DaosApi.md#getDAORole) | **GET** /daos/{dao_id}/roles/{role_id} | Get a specific role for a DAO
@@ -40,6 +43,7 @@ Method | HTTP request | Description
 [**getUserRoles**](DaosApi.md#getUserRoles) | **GET** /daos/{dao_id}/members/{user_id}/roles | Get roles for a specific user in a DAO
 [**initializeDAOCreation**](DaosApi.md#initializeDAOCreation) | **POST** /daos/init | Initialize DAO creation (Step 1) - Store pubkey and transaction in Redis
 [**initializeDAOGovernance**](DaosApi.md#initializeDAOGovernance) | **POST** /daos/{dao_id}/governance/initialize | Initialize governance model for a DAO
+[**inviteUserToDAO**](DaosApi.md#inviteUserToDAO) | **POST** /daos/{dao_id}/invitations | Create an invitation to join a DAO
 [**linkDiscordChannelToPOD**](DaosApi.md#linkDiscordChannelToPOD) | **POST** /daos/{dao_id}/pods/{pod_id}/discord-channels | Link a Discord channel to a POD
 [**removeAdminFromDAO**](DaosApi.md#removeAdminFromDAO) | **DELETE** /daos/{dao_id}/admins | Remove an admin from a DAO
 [**removeDAOModule**](DaosApi.md#removeDAOModule) | **POST** /daos/{dao_id}/modules/remove | Remove a module from a DAO
@@ -47,6 +51,7 @@ Method | HTTP request | Description
 [**removeMemberFromPOD**](DaosApi.md#removeMemberFromPOD) | **DELETE** /daos/{dao_id}/pods/{pod_id}/members | Remove a member from a POD
 [**removePermissionFromRole**](DaosApi.md#removePermissionFromRole) | **DELETE** /daos/{dao_id}/roles/{role_id}/permissions/{permission_id} | Remove a permission from a role in a DAO
 [**removeRoleFromUser**](DaosApi.md#removeRoleFromUser) | **DELETE** /daos/{dao_id}/members/{user_id}/roles/{role_id} | Remove a role from a user in a DAO
+[**respondToDAOInvitation**](DaosApi.md#respondToDAOInvitation) | **POST** /daos/{dao_id}/invitations/{invitation_id} | Respond to a DAO invitation (accept/decline)
 [**unlinkDiscordChannelFromPOD**](DaosApi.md#unlinkDiscordChannelFromPOD) | **DELETE** /daos/{dao_id}/pods/{pod_id}/discord-channels/{channel_id} | Unlink a Discord channel from a POD
 [**updateDAO**](DaosApi.md#updateDAO) | **PUT** /daos/{dao_id} | Update a DAO
 [**updateDAOGovernance**](DaosApi.md#updateDAOGovernance) | **PUT** /daos/{dao_id}/governance | Update governance model for a DAO
@@ -254,10 +259,6 @@ const apiInstance = new DaosApi(configuration);
 const request: DaosApiAddMemberToDAORequest = {
   
   daoId: "dao_id_example",
-  
-  dAOMembership: {
-    userId: "userId_example",
-  },
 };
 
 const data = await apiInstance.addMemberToDAO(request);
@@ -269,7 +270,6 @@ console.log('API called successfully. Returned data:', data);
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **dAOMembership** | **DAOMembership**|  |
  **daoId** | [**string**] |  | defaults to undefined
 
 
@@ -283,14 +283,13 @@ No authorization required
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
+ - **Content-Type**: Not defined
  - **Accept**: application/json
 
 
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-**422** | Unprocessable Entity |  -  |
 **200** | User added to DAO successfully |  -  |
 **400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
@@ -487,6 +486,65 @@ No authorization required
 **400** | Bad Request - Invalid data |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
 **404** | DAO, user, or role not found |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
+# **cancelDAOInvitation**
+> DAOInvitationResponse cancelDAOInvitation()
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+import type { DaosApiCancelDAOInvitationRequest } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request: DaosApiCancelDAOInvitationRequest = {
+  
+  daoId: "dao_id_example",
+  
+  invitationId: "invitation_id_example",
+};
+
+const data = await apiInstance.cancelDAOInvitation(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **daoId** | [**string**] |  | defaults to undefined
+ **invitationId** | [**string**] |  | defaults to undefined
+
+
+### Return type
+
+**DAOInvitationResponse**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Invitation cancelled successfully |  -  |
+**400** | Bad Request |  -  |
+**401** | Unauthorized |  -  |
+**404** | Invitation, DAO, or user not found |  -  |
 **0** | Default error response |  -  |
 
 [[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
@@ -1409,6 +1467,119 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
 
+# **getDAOInvitation**
+> DAOInvitationResponse getDAOInvitation()
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+import type { DaosApiGetDAOInvitationRequest } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request: DaosApiGetDAOInvitationRequest = {
+  
+  daoId: "dao_id_example",
+  
+  invitationId: "invitation_id_example",
+};
+
+const data = await apiInstance.getDAOInvitation(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **daoId** | [**string**] |  | defaults to undefined
+ **invitationId** | [**string**] |  | defaults to undefined
+
+
+### Return type
+
+**DAOInvitationResponse**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | DAO invitation |  -  |
+**401** | Unauthorized |  -  |
+**404** | Invitation, DAO, or user not found |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
+# **getDAOInvitations**
+> DAOInvitationList getDAOInvitations()
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+import type { DaosApiGetDAOInvitationsRequest } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request: DaosApiGetDAOInvitationsRequest = {
+  
+  daoId: "dao_id_example",
+};
+
+const data = await apiInstance.getDAOInvitations(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **daoId** | [**string**] |  | defaults to undefined
+
+
+### Return type
+
+**DAOInvitationList**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | DAO invitations |  -  |
+**401** | Unauthorized |  -  |
+**404** | DAO not found |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
 # **getDAOModules**
 > DAOModulesList getDAOModules()
 
@@ -2146,6 +2317,69 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
 
+# **inviteUserToDAO**
+> DAOInvitationResponse inviteUserToDAO(dAOInvitation)
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+import type { DaosApiInviteUserToDAORequest } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request: DaosApiInviteUserToDAORequest = {
+  
+  daoId: "dao_id_example",
+  
+  dAOInvitation: {
+    userId: "userId_example",
+    expiresInDays: 1,
+  },
+};
+
+const data = await apiInstance.inviteUserToDAO(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **dAOInvitation** | **DAOInvitation**|  |
+ **daoId** | [**string**] |  | defaults to undefined
+
+
+### Return type
+
+**DAOInvitationResponse**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**422** | Unprocessable Entity |  -  |
+**200** | Invitation created successfully |  -  |
+**400** | Bad Request |  -  |
+**401** | Unauthorized |  -  |
+**404** | User or DAO not found |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
 # **linkDiscordChannelToPOD**
 > DiscordChannelResponse linkDiscordChannelToPOD(linkDiscordChannel)
 
@@ -2583,6 +2817,71 @@ No authorization required
 **400** | Bad Request - Invalid data |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
 **404** | DAO, user, or role not found |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
+# **respondToDAOInvitation**
+> DAOInvitationResponse respondToDAOInvitation(dAOInvitationAction)
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+import type { DaosApiRespondToDAOInvitationRequest } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request: DaosApiRespondToDAOInvitationRequest = {
+  
+  daoId: "dao_id_example",
+  
+  invitationId: "invitation_id_example",
+  
+  dAOInvitationAction: {
+    action: "action_example",
+  },
+};
+
+const data = await apiInstance.respondToDAOInvitation(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **dAOInvitationAction** | **DAOInvitationAction**|  |
+ **daoId** | [**string**] |  | defaults to undefined
+ **invitationId** | [**string**] |  | defaults to undefined
+
+
+### Return type
+
+**DAOInvitationResponse**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**422** | Unprocessable Entity |  -  |
+**200** | Invitation updated successfully |  -  |
+**400** | Bad Request |  -  |
+**401** | Unauthorized |  -  |
+**404** | Invitation, DAO, or user not found |  -  |
 **0** | Default error response |  -  |
 
 [[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)

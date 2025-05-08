@@ -9,6 +9,10 @@ import { ConnectionsList } from '../models/ConnectionsList';
 import { CreateDeviceRequest } from '../models/CreateDeviceRequest';
 import { CreateDeviceResponse } from '../models/CreateDeviceResponse';
 import { DAO } from '../models/DAO';
+import { DAOInvitation } from '../models/DAOInvitation';
+import { DAOInvitationAction } from '../models/DAOInvitationAction';
+import { DAOInvitationList } from '../models/DAOInvitationList';
+import { DAOInvitationResponse } from '../models/DAOInvitationResponse';
 import { DAOMembership } from '../models/DAOMembership';
 import { DAOMembershipResponse } from '../models/DAOMembershipResponse';
 import { DAOModule } from '../models/DAOModule';
@@ -82,11 +86,14 @@ import { UserBasic1 } from '../models/UserBasic1';
 import { UserDAOOwnershipResponse } from '../models/UserDAOOwnershipResponse';
 import { UserExistResponse } from '../models/UserExistResponse';
 import { UserInfoError } from '../models/UserInfoError';
+import { UserInvitation } from '../models/UserInvitation';
+import { UserInvitationsResponse } from '../models/UserInvitationsResponse';
 import { UserPermissionCheck } from '../models/UserPermissionCheck';
 import { UserResponse } from '../models/UserResponse';
 import { UserRoleAssignment } from '../models/UserRoleAssignment';
 import { UserRoleCheck } from '../models/UserRoleCheck';
 import { UserRoleResponse } from '../models/UserRoleResponse';
+import { UserSearchResponse } from '../models/UserSearchResponse';
 import { VerifySignature } from '../models/VerifySignature';
 
 import { ObservableApiKeysApi } from "./ObservableAPI";
@@ -335,12 +342,6 @@ export interface DaosApiAddMemberToDAORequest {
      * @memberof DaosApiaddMemberToDAO
      */
     daoId: string
-    /**
-     * 
-     * @type DAOMembership
-     * @memberof DaosApiaddMemberToDAO
-     */
-    dAOMembership?: DAOMembership
 }
 
 export interface DaosApiAddMemberToPODRequest {
@@ -404,6 +405,23 @@ export interface DaosApiAssignRoleToUserRequest {
      * @memberof DaosApiassignRoleToUser
      */
     userRoleAssignment: UserRoleAssignment
+}
+
+export interface DaosApiCancelDAOInvitationRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApicancelDAOInvitation
+     */
+    daoId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApicancelDAOInvitation
+     */
+    invitationId: string
 }
 
 export interface DaosApiCheckDAOInitializationRequest {
@@ -619,6 +637,33 @@ export interface DaosApiGetDAOGovernanceRequest {
     daoId: string
 }
 
+export interface DaosApiGetDAOInvitationRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApigetDAOInvitation
+     */
+    daoId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApigetDAOInvitation
+     */
+    invitationId: string
+}
+
+export interface DaosApiGetDAOInvitationsRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApigetDAOInvitations
+     */
+    daoId: string
+}
+
 export interface DaosApiGetDAOModulesRequest {
     /**
      * 
@@ -796,6 +841,22 @@ export interface DaosApiInitializeDAOGovernanceRequest {
     inputCreateGovernance: InputCreateGovernance
 }
 
+export interface DaosApiInviteUserToDAORequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiinviteUserToDAO
+     */
+    daoId: string
+    /**
+     * 
+     * @type DAOInvitation
+     * @memberof DaosApiinviteUserToDAO
+     */
+    dAOInvitation: DAOInvitation
+}
+
 export interface DaosApiLinkDiscordChannelToPODRequest {
     /**
      * 
@@ -936,6 +997,29 @@ export interface DaosApiRemoveRoleFromUserRequest {
      * @memberof DaosApiremoveRoleFromUser
      */
     roleId: string
+}
+
+export interface DaosApiRespondToDAOInvitationRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApirespondToDAOInvitation
+     */
+    daoId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApirespondToDAOInvitation
+     */
+    invitationId: string
+    /**
+     * 
+     * @type DAOInvitationAction
+     * @memberof DaosApirespondToDAOInvitation
+     */
+    dAOInvitationAction: DAOInvitationAction
 }
 
 export interface DaosApiUnlinkDiscordChannelFromPODRequest {
@@ -1096,19 +1180,19 @@ export class ObjectDaosApi {
     }
 
     /**
-     * Add a member to a DAO (self-join or invite another user)
+     * Add a member to a DAO
      * @param param the request object
      */
     public addMemberToDAOWithHttpInfo(param: DaosApiAddMemberToDAORequest, options?: ConfigurationOptions): Promise<HttpInfo<DAOMembershipResponse>> {
-        return this.api.addMemberToDAOWithHttpInfo(param.daoId, param.dAOMembership,  options).toPromise();
+        return this.api.addMemberToDAOWithHttpInfo(param.daoId,  options).toPromise();
     }
 
     /**
-     * Add a member to a DAO (self-join or invite another user)
+     * Add a member to a DAO
      * @param param the request object
      */
     public addMemberToDAO(param: DaosApiAddMemberToDAORequest, options?: ConfigurationOptions): Promise<DAOMembershipResponse> {
-        return this.api.addMemberToDAO(param.daoId, param.dAOMembership,  options).toPromise();
+        return this.api.addMemberToDAO(param.daoId,  options).toPromise();
     }
 
     /**
@@ -1157,6 +1241,22 @@ export class ObjectDaosApi {
      */
     public assignRoleToUser(param: DaosApiAssignRoleToUserRequest, options?: ConfigurationOptions): Promise<UserRoleResponse> {
         return this.api.assignRoleToUser(param.daoId, param.userId, param.userRoleAssignment,  options).toPromise();
+    }
+
+    /**
+     * Cancel/delete a DAO invitation
+     * @param param the request object
+     */
+    public cancelDAOInvitationWithHttpInfo(param: DaosApiCancelDAOInvitationRequest, options?: ConfigurationOptions): Promise<HttpInfo<DAOInvitationResponse>> {
+        return this.api.cancelDAOInvitationWithHttpInfo(param.daoId, param.invitationId,  options).toPromise();
+    }
+
+    /**
+     * Cancel/delete a DAO invitation
+     * @param param the request object
+     */
+    public cancelDAOInvitation(param: DaosApiCancelDAOInvitationRequest, options?: ConfigurationOptions): Promise<DAOInvitationResponse> {
+        return this.api.cancelDAOInvitation(param.daoId, param.invitationId,  options).toPromise();
     }
 
     /**
@@ -1416,6 +1516,38 @@ export class ObjectDaosApi {
     }
 
     /**
+     * Get details of a specific invitation
+     * @param param the request object
+     */
+    public getDAOInvitationWithHttpInfo(param: DaosApiGetDAOInvitationRequest, options?: ConfigurationOptions): Promise<HttpInfo<DAOInvitationResponse>> {
+        return this.api.getDAOInvitationWithHttpInfo(param.daoId, param.invitationId,  options).toPromise();
+    }
+
+    /**
+     * Get details of a specific invitation
+     * @param param the request object
+     */
+    public getDAOInvitation(param: DaosApiGetDAOInvitationRequest, options?: ConfigurationOptions): Promise<DAOInvitationResponse> {
+        return this.api.getDAOInvitation(param.daoId, param.invitationId,  options).toPromise();
+    }
+
+    /**
+     * Get all invitations for a DAO
+     * @param param the request object
+     */
+    public getDAOInvitationsWithHttpInfo(param: DaosApiGetDAOInvitationsRequest, options?: ConfigurationOptions): Promise<HttpInfo<DAOInvitationList>> {
+        return this.api.getDAOInvitationsWithHttpInfo(param.daoId,  options).toPromise();
+    }
+
+    /**
+     * Get all invitations for a DAO
+     * @param param the request object
+     */
+    public getDAOInvitations(param: DaosApiGetDAOInvitationsRequest, options?: ConfigurationOptions): Promise<DAOInvitationList> {
+        return this.api.getDAOInvitations(param.daoId,  options).toPromise();
+    }
+
+    /**
      * Get all modules enabled for a DAO
      * @param param the request object
      */
@@ -1624,6 +1756,22 @@ export class ObjectDaosApi {
     }
 
     /**
+     * Create an invitation to join a DAO
+     * @param param the request object
+     */
+    public inviteUserToDAOWithHttpInfo(param: DaosApiInviteUserToDAORequest, options?: ConfigurationOptions): Promise<HttpInfo<DAOInvitationResponse>> {
+        return this.api.inviteUserToDAOWithHttpInfo(param.daoId, param.dAOInvitation,  options).toPromise();
+    }
+
+    /**
+     * Create an invitation to join a DAO
+     * @param param the request object
+     */
+    public inviteUserToDAO(param: DaosApiInviteUserToDAORequest, options?: ConfigurationOptions): Promise<DAOInvitationResponse> {
+        return this.api.inviteUserToDAO(param.daoId, param.dAOInvitation,  options).toPromise();
+    }
+
+    /**
      * Link a Discord channel to a POD
      * @param param the request object
      */
@@ -1733,6 +1881,22 @@ export class ObjectDaosApi {
      */
     public removeRoleFromUser(param: DaosApiRemoveRoleFromUserRequest, options?: ConfigurationOptions): Promise<UserRoleResponse> {
         return this.api.removeRoleFromUser(param.daoId, param.userId, param.roleId,  options).toPromise();
+    }
+
+    /**
+     * Respond to a DAO invitation (accept/decline)
+     * @param param the request object
+     */
+    public respondToDAOInvitationWithHttpInfo(param: DaosApiRespondToDAOInvitationRequest, options?: ConfigurationOptions): Promise<HttpInfo<DAOInvitationResponse>> {
+        return this.api.respondToDAOInvitationWithHttpInfo(param.daoId, param.invitationId, param.dAOInvitationAction,  options).toPromise();
+    }
+
+    /**
+     * Respond to a DAO invitation (accept/decline)
+     * @param param the request object
+     */
+    public respondToDAOInvitation(param: DaosApiRespondToDAOInvitationRequest, options?: ConfigurationOptions): Promise<DAOInvitationResponse> {
+        return this.api.respondToDAOInvitation(param.daoId, param.invitationId, param.dAOInvitationAction,  options).toPromise();
     }
 
     /**
@@ -2860,6 +3024,9 @@ export interface UsersApiCreateUserRequest {
 export interface UsersApiGetAuthUserInfosRequest {
 }
 
+export interface UsersApiGetUserInvitationsRequest {
+}
+
 export interface UsersApiGetUserWithWalletAddressRequest {
     /**
      * 
@@ -2868,6 +3035,16 @@ export interface UsersApiGetUserWithWalletAddressRequest {
      * @memberof UsersApigetUserWithWalletAddress
      */
     walletAddress: string
+}
+
+export interface UsersApiSearchUsersRequest {
+    /**
+     * Username to search for
+     * Defaults to: undefined
+     * @type string
+     * @memberof UsersApisearchUsers
+     */
+    username: string
 }
 
 export interface UsersApiUpdateUserRequest {
@@ -2926,6 +3103,22 @@ export class ObjectUsersApi {
     }
 
     /**
+     * Get all invitations for the authenticated user
+     * @param param the request object
+     */
+    public getUserInvitationsWithHttpInfo(param: UsersApiGetUserInvitationsRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<UserInvitationsResponse>> {
+        return this.api.getUserInvitationsWithHttpInfo( options).toPromise();
+    }
+
+    /**
+     * Get all invitations for the authenticated user
+     * @param param the request object
+     */
+    public getUserInvitations(param: UsersApiGetUserInvitationsRequest = {}, options?: ConfigurationOptions): Promise<UserInvitationsResponse> {
+        return this.api.getUserInvitations( options).toPromise();
+    }
+
+    /**
      * Check if user with the wallet address exists
      * @param param the request object
      */
@@ -2939,6 +3132,22 @@ export class ObjectUsersApi {
      */
     public getUserWithWalletAddress(param: UsersApiGetUserWithWalletAddressRequest, options?: ConfigurationOptions): Promise<UserExistResponse> {
         return this.api.getUserWithWalletAddress(param.walletAddress,  options).toPromise();
+    }
+
+    /**
+     * Search for users by username to invite to a DAO
+     * @param param the request object
+     */
+    public searchUsersWithHttpInfo(param: UsersApiSearchUsersRequest, options?: ConfigurationOptions): Promise<HttpInfo<UserSearchResponse>> {
+        return this.api.searchUsersWithHttpInfo(param.username,  options).toPromise();
+    }
+
+    /**
+     * Search for users by username to invite to a DAO
+     * @param param the request object
+     */
+    public searchUsers(param: UsersApiSearchUsersRequest, options?: ConfigurationOptions): Promise<UserSearchResponse> {
+        return this.api.searchUsers(param.username,  options).toPromise();
     }
 
     /**

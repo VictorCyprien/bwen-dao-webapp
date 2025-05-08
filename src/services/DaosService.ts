@@ -3,7 +3,7 @@
  * Handles all API interactions related to DAOs
  */
 
-import { createConfiguration, DaosApi, DAO, DAOUpdate, DAOMembership, InputCreateDAO, UserDAOOwnershipResponse, InputInitDAO, DAOModule, DAOModulesList, DAOModuleResponse, InputCreateGovernance } from '../core/modules/dao-api';
+import { createConfiguration, DaosApi, DAO, DAOUpdate, DAOMembership, InputCreateDAO, UserDAOOwnershipResponse, InputInitDAO, DAOModule, DAOModulesList, DAOModuleResponse, InputCreateGovernance, DAOInvitation, DAOInvitationResponse, DAOInvitationAction, DAOInvitationList } from '../core/modules/dao-api';
 import { ServerConfiguration } from '../core/modules/dao-api/servers';
 import { walletAuthService } from './WalletAuthService';
 import { fileToMinioStorage } from '../utils/fileUtils';
@@ -440,6 +440,111 @@ export class DaosService {
       return response || null;
     } catch (error) {
       console.error('Error initializing DAO governance:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Invite a user to join a DAO
+   * @param daoId The ID of the DAO
+   * @param userId The ID of the user to invite
+   * @param expiresInDays Optional number of days before the invitation expires
+   * @returns The invitation response or null if there was an error
+   */
+  async inviteUserToDAO(daoId: string, userId: string, expiresInDays?: number): Promise<DAOInvitationResponse | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      const invitation = new DAOInvitation();
+      invitation.userId = userId;
+      if (expiresInDays !== undefined) {
+        invitation.expiresInDays = expiresInDays;
+      }
+
+      const response = await apiClient.inviteUserToDAO(daoId, invitation);
+      return response || null;
+    } catch (error) {
+      console.error(`Error inviting user to DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Respond to a DAO invitation (accept/decline)
+   * @param daoId The ID of the DAO
+   * @param invitationId The ID of the invitation
+   * @param action The action to take ('accept' or 'decline')
+   * @returns The invitation response or null if there was an error
+   */
+  async respondToDAOInvitation(daoId: string, invitationId: string, action: 'accept' | 'decline'): Promise<DAOInvitationResponse | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      const invitationAction = new DAOInvitationAction();
+      invitationAction.action = action;
+
+      const response = await apiClient.respondToDAOInvitation(daoId, invitationId, invitationAction);
+      return response || null;
+    } catch (error) {
+      console.error(`Error responding to invitation ${invitationId} for DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get all invitations for a DAO
+   * @param daoId The ID of the DAO
+   * @returns List of invitations for the DAO or null if there was an error
+   */
+  async getDAOInvitations(daoId: string): Promise<DAOInvitationList | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      const response = await apiClient.getDAOInvitations(daoId);
+      return response || null;
+    } catch (error) {
+      console.error(`Error getting invitations for DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get details of a specific invitation
+   * @param daoId The ID of the DAO
+   * @param invitationId The ID of the invitation
+   * @returns The invitation details or null if there was an error
+   */
+  async getDAOInvitation(daoId: string, invitationId: string): Promise<DAOInvitationResponse | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      const response = await apiClient.getDAOInvitation(daoId, invitationId);
+      return response || null;
+    } catch (error) {
+      console.error(`Error getting invitation ${invitationId} for DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Cancel/delete a DAO invitation
+   * @param daoId The ID of the DAO
+   * @param invitationId The ID of the invitation to cancel
+   * @returns The response or null if there was an error
+   */
+  async cancelDAOInvitation(daoId: string, invitationId: string): Promise<DAOInvitationResponse | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      const response = await apiClient.cancelDAOInvitation(daoId, invitationId);
+      return response || null;
+    } catch (error) {
+      console.error(`Error canceling invitation ${invitationId} for DAO ${daoId}:`, error);
       return null;
     }
   }
