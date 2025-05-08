@@ -10,13 +10,17 @@
  * Do not edit the class manually.
  */
 
+import { Permission } from '../models/Permission';
+import { Role } from '../models/Role';
 import { HttpFile } from '../http/http';
 
 /**
-* Provide a user id to add/remove the user from the DAO. (Only for admins)
+* Assign/Remove permission to/from role response
 */
-export class DAOMembership {
-    'userId'?: string;
+export class RolePermissionResponse {
+    'action': string;
+    'role': Role;
+    'permission': Permission;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -24,14 +28,26 @@ export class DAOMembership {
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "userId",
-            "baseName": "user_id",
+            "name": "action",
+            "baseName": "action",
             "type": "string",
+            "format": ""
+        },
+        {
+            "name": "role",
+            "baseName": "role",
+            "type": "Role",
+            "format": ""
+        },
+        {
+            "name": "permission",
+            "baseName": "permission",
+            "type": "Permission",
             "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return DAOMembership.attributeTypeMap;
+        return RolePermissionResponse.attributeTypeMap;
     }
 
     public constructor() {

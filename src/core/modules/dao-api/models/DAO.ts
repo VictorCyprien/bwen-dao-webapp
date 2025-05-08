@@ -34,6 +34,10 @@ export class DAO {
     'pubkey'?: string;
     'transaction'?: string;
     'tokenAddress'?: string;
+    'governanceModel'?: number;
+    'governanceModelName'?: string;
+    'votingPowerSystem'?: string;
+    'quorumPercentage'?: number;
     'admins'?: Array<UserBasic>;
     'members'?: Array<UserBasic>;
 
@@ -142,6 +146,30 @@ export class DAO {
             "name": "tokenAddress",
             "baseName": "token_address",
             "type": "string",
+            "format": ""
+        },
+        {
+            "name": "governanceModel",
+            "baseName": "governance_model",
+            "type": "number",
+            "format": ""
+        },
+        {
+            "name": "governanceModelName",
+            "baseName": "governance_model_name",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "votingPowerSystem",
+            "baseName": "voting_power_system",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "quorumPercentage",
+            "baseName": "quorum_percentage",
+            "type": "number",
             "format": ""
         },
         {

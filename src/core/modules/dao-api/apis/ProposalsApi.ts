@@ -527,7 +527,7 @@ export class ProposalsApiRequestFactory extends BaseAPIRequestFactory {
     }
 
     /**
-     * Remove vote from a proposal for a DAO
+     * Remove a user\'s vote from a proposal
      * @param daoId 
      * @param proposalId 
      */
@@ -888,7 +888,7 @@ export class ProposalsApiResponseProcessor {
                 ObjectSerializer.parse(await response.body.text(), contentType),
                 "PagingError", ""
             ) as PagingError;
-            throw new ApiException<PagingError>(response.httpStatusCode, "Forbidden - User is not a member of this DAO", body, response.headers);
+            throw new ApiException<PagingError>(response.httpStatusCode, "Forbidden - User is not a member of this DAO or lacks permission", body, response.headers);
         }
         if (isCodeInRange("400", response.httpStatusCode)) {
             const body: PagingError = ObjectSerializer.deserialize(
@@ -959,7 +959,7 @@ export class ProposalsApiResponseProcessor {
                 ObjectSerializer.parse(await response.body.text(), contentType),
                 "PagingError", ""
             ) as PagingError;
-            throw new ApiException<PagingError>(response.httpStatusCode, "Forbidden - User is not a member of this POD", body, response.headers);
+            throw new ApiException<PagingError>(response.httpStatusCode, "Forbidden - User is not a member of this POD or lacks permission", body, response.headers);
         }
         if (isCodeInRange("400", response.httpStatusCode)) {
             const body: PagingError = ObjectSerializer.deserialize(
@@ -1030,7 +1030,7 @@ export class ProposalsApiResponseProcessor {
                 ObjectSerializer.parse(await response.body.text(), contentType),
                 "PagingError", ""
             ) as PagingError;
-            throw new ApiException<PagingError>(response.httpStatusCode, "Forbidden - User is not the creator or an admin", body, response.headers);
+            throw new ApiException<PagingError>(response.httpStatusCode, "Forbidden - User lacks permission to cancel this proposal", body, response.headers);
         }
         if (isCodeInRange("401", response.httpStatusCode)) {
             const body: PagingError = ObjectSerializer.deserialize(
@@ -1094,7 +1094,7 @@ export class ProposalsApiResponseProcessor {
                 ObjectSerializer.parse(await response.body.text(), contentType),
                 "PagingError", ""
             ) as PagingError;
-            throw new ApiException<PagingError>(response.httpStatusCode, "Forbidden - User is not the creator of the proposal", body, response.headers);
+            throw new ApiException<PagingError>(response.httpStatusCode, "Forbidden - User lacks permission to delete this proposal", body, response.headers);
         }
         if (isCodeInRange("401", response.httpStatusCode)) {
             const body: PagingError = ObjectSerializer.deserialize(
@@ -1596,6 +1596,13 @@ export class ProposalsApiResponseProcessor {
             ) as PagingError;
             throw new ApiException<PagingError>(response.httpStatusCode, "Bad Request - Proposal is not active, user has not voted, or proposal does not belong to this POD", body, response.headers);
         }
+        if (isCodeInRange("403", response.httpStatusCode)) {
+            const body: PagingError = ObjectSerializer.deserialize(
+                ObjectSerializer.parse(await response.body.text(), contentType),
+                "PagingError", ""
+            ) as PagingError;
+            throw new ApiException<PagingError>(response.httpStatusCode, "Forbidden - User is not a member of this POD or lacks permission", body, response.headers);
+        }
         if (isCodeInRange("401", response.httpStatusCode)) {
             const body: PagingError = ObjectSerializer.deserialize(
                 ObjectSerializer.parse(await response.body.text(), contentType),
@@ -1665,7 +1672,7 @@ export class ProposalsApiResponseProcessor {
                 ObjectSerializer.parse(await response.body.text(), contentType),
                 "PagingError", ""
             ) as PagingError;
-            throw new ApiException<PagingError>(response.httpStatusCode, "Forbidden - User is not the creator or an admin", body, response.headers);
+            throw new ApiException<PagingError>(response.httpStatusCode, "Forbidden - User lacks permission to update this proposal", body, response.headers);
         }
         if (isCodeInRange("401", response.httpStatusCode)) {
             const body: PagingError = ObjectSerializer.deserialize(
@@ -1736,7 +1743,7 @@ export class ProposalsApiResponseProcessor {
                 ObjectSerializer.parse(await response.body.text(), contentType),
                 "PagingError", ""
             ) as PagingError;
-            throw new ApiException<PagingError>(response.httpStatusCode, "Forbidden - User is not the creator or a POD member", body, response.headers);
+            throw new ApiException<PagingError>(response.httpStatusCode, "Forbidden - User lacks permission to update this proposal", body, response.headers);
         }
         if (isCodeInRange("401", response.httpStatusCode)) {
             const body: PagingError = ObjectSerializer.deserialize(
@@ -1807,7 +1814,7 @@ export class ProposalsApiResponseProcessor {
                 ObjectSerializer.parse(await response.body.text(), contentType),
                 "PagingError", ""
             ) as PagingError;
-            throw new ApiException<PagingError>(response.httpStatusCode, "Forbidden - User is not a member of this DAO", body, response.headers);
+            throw new ApiException<PagingError>(response.httpStatusCode, "Forbidden - User is not a member of this DAO or lacks permission", body, response.headers);
         }
         if (isCodeInRange("401", response.httpStatusCode)) {
             const body: PagingError = ObjectSerializer.deserialize(
@@ -1878,7 +1885,7 @@ export class ProposalsApiResponseProcessor {
                 ObjectSerializer.parse(await response.body.text(), contentType),
                 "PagingError", ""
             ) as PagingError;
-            throw new ApiException<PagingError>(response.httpStatusCode, "Forbidden - User is not a member of this POD", body, response.headers);
+            throw new ApiException<PagingError>(response.httpStatusCode, "Forbidden - User is not a member of this POD or lacks permission", body, response.headers);
         }
         if (isCodeInRange("401", response.httpStatusCode)) {
             const body: PagingError = ObjectSerializer.deserialize(

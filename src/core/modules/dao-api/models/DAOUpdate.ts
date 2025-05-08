@@ -26,6 +26,18 @@ export class DAOUpdate {
     'tiktok'?: string;
     'website'?: string;
     'treasury'?: string;
+    /**
+    * Governance model (1-8): 1-Enlightened Dictatorship, 2-Assisted Dictatorship, 3-Hybrid Enterprise, 4-Listed Company, 5-Social Enterprise, 6-Association, 7-Semi-decentralized Organization, 8-Decentralized Pure
+    */
+    'governanceModel'?: number;
+    /**
+    * Voting power system: Defined, Token, OneOne, Quadratic
+    */
+    'votingPowerSystem'?: DAOUpdateVotingPowerSystemEnum;
+    /**
+    * Quorum percentage required for proposals (1-100)
+    */
+    'quorumPercentage'?: number;
     'profile'?: HttpFile;
 
     static readonly discriminator: string | undefined = undefined;
@@ -94,6 +106,24 @@ export class DAOUpdate {
             "format": ""
         },
         {
+            "name": "governanceModel",
+            "baseName": "governance_model",
+            "type": "number",
+            "format": ""
+        },
+        {
+            "name": "votingPowerSystem",
+            "baseName": "voting_power_system",
+            "type": "DAOUpdateVotingPowerSystemEnum",
+            "format": ""
+        },
+        {
+            "name": "quorumPercentage",
+            "baseName": "quorum_percentage",
+            "type": "number",
+            "format": ""
+        },
+        {
             "name": "profile",
             "baseName": "profile",
             "type": "HttpFile",
@@ -107,3 +137,11 @@ export class DAOUpdate {
     public constructor() {
     }
 }
+
+export enum DAOUpdateVotingPowerSystemEnum {
+    Defined = 'Defined',
+    Token = 'Token',
+    OneOne = 'OneOne',
+    Quadratic = 'Quadratic'
+}
+

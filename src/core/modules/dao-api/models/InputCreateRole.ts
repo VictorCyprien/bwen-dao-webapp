@@ -13,10 +13,11 @@
 import { HttpFile } from '../http/http';
 
 /**
-* Provide a user id to add/remove the user from the DAO. (Only for admins)
+* Input information needed to create a Role
 */
-export class DAOMembership {
-    'userId'?: string;
+export class InputCreateRole {
+    'name': string;
+    'description': string;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -24,14 +25,20 @@ export class DAOMembership {
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "userId",
-            "baseName": "user_id",
+            "name": "name",
+            "baseName": "name",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "description",
+            "baseName": "description",
             "type": "string",
             "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return DAOMembership.attributeTypeMap;
+        return InputCreateRole.attributeTypeMap;
     }
 
     public constructor() {

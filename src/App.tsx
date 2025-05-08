@@ -8,6 +8,7 @@ import Pods from './components/Pods';
 import Members from './components/Members';
 import Treasury from './components/Treasury';
 import Modules from './components/Modules';
+import Roles from './components/Roles';
 import LandingPage from './components/LandingPage';
 import LandingPageDev from './components/Landingpage_dev';
 import BabyWenOnboarding from './components/BabyWenOnboarding';
@@ -178,6 +179,9 @@ const Dashboard = () => {
           break;
         case 'modules':
           setCurrentComponent(<Modules />);
+          break;
+        case 'roles':
+          setCurrentComponent(<Roles />);
           break;
         case 'dashboard_home':
           setCurrentComponent(<Home />);

@@ -30,11 +30,6 @@ import DaoSocialStep, { getInitialSocialLinks } from './BabyWenOnboarding/steps/
 
 // Import the DAO governance steps
 import GovernanceModelStep from './BabyWenOnboarding/steps/2_Governance/1_GovernanceModel';
-import IdeaRightsStep from './BabyWenOnboarding/steps/2_Governance/2_IdeaRights';
-import VoteRightsStep from './BabyWenOnboarding/steps/2_Governance/3_VoteRights';
-import SurvalidationStep from './BabyWenOnboarding/steps/2_Governance/3.1_Survalidation';
-import VotingPowerStep from './BabyWenOnboarding/steps/2_Governance/4_VotingPower';
-import VoteDelegationStep from './BabyWenOnboarding/steps/2_Governance/5_VoteDelegation';
 
 // Import the DAO membership steps
 import TokenExistenceStep from './BabyWenOnboarding/steps/3_Membership/1_TokenExistence';
@@ -49,7 +44,7 @@ import ApplicationApprovalStep from './BabyWenOnboarding/steps/3_Membership/2.2_
 // Import the final review step
 import DaoReviewStep from './BabyWenOnboarding/steps/4_Review/DaoReviewStep';
 import DaoSuccessStep from './BabyWenOnboarding/steps/4_Review/DaoSuccessStep';
-import { InputCreateDAO } from '../core/modules/dao-api';
+import { InputCreateDAO, InputCreateDAOVotingPowerSystemEnum } from '../core/modules/dao-api';
 
 // Initialize services
 const proposalService = new ProposalService();
@@ -57,11 +52,9 @@ const userService = new UserService();
 
 // Types for the onboarding flow
 export type StepId = 'dao-name' | 'dao-transaction' | 'dao-description' | 'dao-logo' | 'dao-social' | 
-                     'dao-governance-model' | 'dao-idea-rights' | 'dao-vote-rights' | 
-                     'dao-survalidation' | 'dao-voting-power' | 'dao-vote-delegation' |
-                     'dao-token-existence' | 'dao-token-address' | 'dao-token-name' | 
-                     'dao-token-ticker' | 'dao-membership-conditions' | 'dao-token-threshold' |
-                     'dao-application-approval' | 'dao-review' | 'dao-success';
+                   'dao-governance-model' | 'dao-token-existence' | 'dao-token-address' | 'dao-token-name' | 
+                   'dao-token-ticker' | 'dao-membership-conditions' | 'dao-token-threshold' |
+                   'dao-application-approval' | 'dao-review' | 'dao-success';
 
 // Button action variants
 export type ButtonVariant = 'primary' | 'secondary' | 'danger';
@@ -287,9 +280,7 @@ const BabyWenOnboarding: React.FC = () => {
   const [checkingDaoOwnership, setCheckingDaoOwnership] = React.useState<boolean>(false);
   
   // Blockchain transaction state
-  const [blockchainTxInProgress, setBlockchainTxInProgress] = React.useState<boolean>(false);
   const [blockchainTxCompleted, setBlockchainTxCompleted] = React.useState<boolean>(false);
-  const [blockchainTxError, setBlockchainTxError] = React.useState<string | null>(null);
   
   // Create an object that maps step IDs to step objects
   const steps: Record<StepId, OnboardingStep> = {
@@ -312,11 +303,6 @@ const BabyWenOnboarding: React.FC = () => {
     'dao-logo': DaoLogoStep,
     'dao-social': DaoSocialStep,
     'dao-governance-model': GovernanceModelStep,
-    'dao-idea-rights': IdeaRightsStep,
-    'dao-vote-rights': VoteRightsStep,
-    'dao-survalidation': SurvalidationStep,
-    'dao-voting-power': VotingPowerStep,
-    'dao-vote-delegation': VoteDelegationStep,
     'dao-token-existence': TokenExistenceStep,
     'dao-token-address': TokenAddressStep,
     'dao-token-name': TokenNameStep,
@@ -571,20 +557,17 @@ const BabyWenOnboarding: React.FC = () => {
         'dao-logo',
         'dao-social',
         
+        // Governance section - only governance model is kept
+        'dao-governance-model',
+        
         // Token & Membership section
         'dao-token-existence',
         'dao-token-address', // Only shown if user has a token
         'dao-token-name',    // Only shown if user needs to create a token
         'dao-token-ticker',  // Only shown if user needs to create a token
         'dao-membership-conditions',
-        
-        // Governance section
-        'dao-governance-model',
-        'dao-idea-rights',
-        'dao-vote-rights',
-        'dao-survalidation',  // Only shown conditionally
-        'dao-voting-power',
-        'dao-vote-delegation',
+        'dao-token-threshold',
+        'dao-application-approval',
         
         // Final review step
         'dao-review'
@@ -699,6 +682,10 @@ const BabyWenOnboarding: React.FC = () => {
         instagram: sessionStorage.getItem('daoInstagram') || undefined,
         // Token address from the token step
         tokenAddress: sessionStorage.getItem('tokenAddress') || '',
+        // Add governance model data
+        governanceModel: parseInt(sessionStorage.getItem('governanceModelId') || '1', 10),
+        votingPowerSystem: (sessionStorage.getItem('votingPower') || 'Token') as InputCreateDAOVotingPowerSystemEnum,
+        quorumPercentage: parseInt(sessionStorage.getItem('quorumPercentage') || '51', 10),
       };
       
       // Add user message indicating button was clicked
@@ -787,6 +774,40 @@ const BabyWenOnboarding: React.FC = () => {
           
           // Store transaction signature in session storage
           sessionStorage.setItem('blockchainTxSignature', (result as any).transactionSignature || '');
+          
+          // Initialize the governance model for the DAO
+          const initializeGovernance = async () => {
+            try {
+              // Get governance model data from session storage
+              const governanceModelId = parseInt(sessionStorage.getItem('governanceModelId') || '1', 10);
+              const votingPowerSystem = sessionStorage.getItem('votingPower') || 'Token';
+              const quorumPercentage = parseInt(sessionStorage.getItem('quorumPercentage') || '51', 10);
+              const daoEntryCondition = sessionStorage.getItem('daoEntryCondition') || 'Token';
+              
+              // Extract thresholds if available
+              let daoEntryThreshold: number | undefined;
+              const daoEntryThresholdStr = sessionStorage.getItem('tokenThreshold');
+              if (daoEntryThresholdStr) {
+                daoEntryThreshold = parseInt(daoEntryThresholdStr, 10);
+              }
+              
+              // Initialize governance model
+              await daosService.initializeDAOGovernance(daoId, {
+                governanceModel: governanceModelId,
+                votingPowerSystem,
+                daoEntryCondition,
+                daoEntryThreshold,
+                quorumPercentage
+              });
+              
+              console.log('Governance model initialized successfully');
+            } catch (error) {
+              console.error('Error initializing governance model:', error);
+            }
+          };
+          
+          // Call the governance initialization function
+          initializeGovernance();
           
           // Show success message and change to success step
           setCurrentStep('dao-success');
@@ -960,7 +981,7 @@ const BabyWenOnboarding: React.FC = () => {
       // Membership information
       'membershipConditions', 'tokenThreshold', 'applicationApproval',
       // Governance information
-      'governanceModel', 'ideaRights', 'voteRights', 'survalidation', 'votingPower', 'voteDelegation',
+      'governanceModelId', 'governanceModelName', 'votingPower', 'quorumPercentage', 'daoEntryCondition',
       // Blockchain transaction information
       'blockchainDaoAddress', 'blockchainTxSignature'
     ];
@@ -1043,12 +1064,12 @@ const BabyWenOnboarding: React.FC = () => {
 
     // Clear specific sessionStorage variables based on which step we're going back from
     if (previousStepId === 'dao-governance-model') {
-      // Remove all governance info variables
-      const governanceKeys = [
-        'governanceModel', 'ideaRights', 'voteRights', 
-        'survalidation', 'votingPower', 'voteDelegation',
-      ];
-      governanceKeys.forEach(key => sessionStorage.removeItem(key));
+      // Remove governance model info variable
+      sessionStorage.removeItem('governanceModelId');
+      sessionStorage.removeItem('governanceModelName');
+      sessionStorage.removeItem('votingPower');
+      sessionStorage.removeItem('quorumPercentage');
+      sessionStorage.removeItem('daoEntryCondition');
     } else if (previousStepId === 'dao-token-existence') {
       // Remove all token info variables
       const tokenKeys = [

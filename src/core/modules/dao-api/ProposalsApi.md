@@ -16,7 +16,7 @@ Method | HTTP request | Description
 [**getProposalVotes**](ProposalsApi.md#getProposalVotes) | **GET** /proposals/dao/{dao_id}/{proposal_id}/vote | Get vote counts for a proposal
 [**getProposalsByDAO**](ProposalsApi.md#getProposalsByDAO) | **GET** /proposals/dao/{dao_id} | Get all proposals for a specific DAO
 [**getProposalsByPOD**](ProposalsApi.md#getProposalsByPOD) | **GET** /proposals/dao/{dao_id}/pod/{pod_id} | Get all proposals for a specific POD
-[**removeVoteFromDAOProposal**](ProposalsApi.md#removeVoteFromDAOProposal) | **DELETE** /proposals/dao/{dao_id}/{proposal_id}/vote | Remove vote from a proposal for a DAO
+[**removeVoteFromDAOProposal**](ProposalsApi.md#removeVoteFromDAOProposal) | **DELETE** /proposals/dao/{dao_id}/{proposal_id}/vote | Remove a user\&#39;s vote from a proposal
 [**removeVoteFromPODProposal**](ProposalsApi.md#removeVoteFromPODProposal) | **DELETE** /proposals/dao/{dao_id}/pod/{pod_id}/{proposal_id}/vote | Remove a vote from a POD proposal
 [**updateDAOProposal**](ProposalsApi.md#updateDAOProposal) | **PUT** /proposals/dao/{dao_id}/{proposal_id} | Update a proposal for a DAO
 [**updatePODProposal**](ProposalsApi.md#updatePODProposal) | **PUT** /proposals/dao/{dao_id}/pod/{pod_id}/{proposal_id} | Update a proposal for a POD
@@ -89,7 +89,7 @@ No authorization required
 |-------------|-------------|------------------|
 **422** | Unprocessable Entity |  -  |
 **201** | Proposal created successfully |  -  |
-**403** | Forbidden - User is not a member of this DAO |  -  |
+**403** | Forbidden - User is not a member of this DAO or lacks permission |  -  |
 **400** | Bad Request - Invalid data |  -  |
 **404** | DAO not found |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
@@ -165,7 +165,7 @@ No authorization required
 |-------------|-------------|------------------|
 **422** | Unprocessable Entity |  -  |
 **201** | Proposal created successfully |  -  |
-**403** | Forbidden - User is not a member of this POD |  -  |
+**403** | Forbidden - User is not a member of this POD or lacks permission |  -  |
 **400** | Bad Request - Invalid data |  -  |
 **404** | POD not found |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
@@ -226,7 +226,7 @@ No authorization required
 |-------------|-------------|------------------|
 **200** | Proposal deleted successfully |  -  |
 **400** | Bad Request - Error deleting proposal or Proposal does not belong to this DAO |  -  |
-**403** | Forbidden - User is not the creator or an admin |  -  |
+**403** | Forbidden - User lacks permission to cancel this proposal |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
 **404** | DAO or Proposal not found |  -  |
 **0** | Default error response |  -  |
@@ -289,7 +289,7 @@ No authorization required
 |-------------|-------------|------------------|
 **200** | Proposal deleted successfully |  -  |
 **400** | Bad Request - Error deleting proposal or Proposal does not belong to this POD |  -  |
-**403** | Forbidden - User is not the creator of the proposal |  -  |
+**403** | Forbidden - User lacks permission to delete this proposal |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
 **404** | POD or Proposal not found |  -  |
 **0** | Default error response |  -  |
@@ -873,6 +873,7 @@ No authorization required
 |-------------|-------------|------------------|
 **200** | Vote removed successfully |  -  |
 **400** | Bad Request - Proposal is not active, user has not voted, or proposal does not belong to this POD |  -  |
+**403** | Forbidden - User is not a member of this POD or lacks permission |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
 **404** | POD or Proposal not found |  -  |
 **0** | Default error response |  -  |
@@ -945,7 +946,7 @@ No authorization required
 **422** | Unprocessable Entity |  -  |
 **200** | Proposal updated successfully |  -  |
 **400** | Bad Request - Invalid data or Proposal does not belong to this DAO |  -  |
-**403** | Forbidden - User is not the creator or an admin |  -  |
+**403** | Forbidden - User lacks permission to update this proposal |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
 **404** | DAO or Proposal not found |  -  |
 **0** | Default error response |  -  |
@@ -1021,7 +1022,7 @@ No authorization required
 **422** | Unprocessable Entity |  -  |
 **200** | Proposal updated successfully |  -  |
 **400** | Bad Request - Invalid data or Proposal does not belong to this POD |  -  |
-**403** | Forbidden - User is not the creator or a POD member |  -  |
+**403** | Forbidden - User lacks permission to update this proposal |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
 **404** | POD or Proposal not found |  -  |
 **0** | Default error response |  -  |
@@ -1089,7 +1090,7 @@ No authorization required
 **422** | Unprocessable Entity |  -  |
 **200** | Vote recorded successfully |  -  |
 **400** | Bad Request - Proposal is not active, user has already voted, or proposal does not belong to this DAO |  -  |
-**403** | Forbidden - User is not a member of this DAO |  -  |
+**403** | Forbidden - User is not a member of this DAO or lacks permission |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
 **404** | DAO or Proposal not found |  -  |
 **0** | Default error response |  -  |
@@ -1160,7 +1161,7 @@ No authorization required
 **422** | Unprocessable Entity |  -  |
 **200** | Vote recorded successfully |  -  |
 **400** | Bad Request - Proposal is not active, user has already voted, or proposal does not belong to this POD |  -  |
-**403** | Forbidden - User is not a member of this POD |  -  |
+**403** | Forbidden - User is not a member of this POD or lacks permission |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
 **404** | POD or Proposal not found |  -  |
 **0** | Default error response |  -  |

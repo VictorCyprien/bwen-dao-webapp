@@ -23,12 +23,20 @@ export * from '../models/DiscordChannelResponse';
 export * from '../models/DiscordChannelsResponse';
 export * from '../models/DiscordMessage';
 export * from '../models/DiscordMessagesResponse';
+export * from '../models/Governance';
+export * from '../models/GovernanceModel';
+export * from '../models/GovernanceModelsList';
+export * from '../models/GovernanceResponse';
 export * from '../models/InitDAOResponse';
 export * from '../models/InputCreateDAO';
+export * from '../models/InputCreateGovernance';
 export * from '../models/InputCreatePOD';
 export * from '../models/InputCreateProposal';
+export * from '../models/InputCreateRole';
 export * from '../models/InputCreateUser';
 export * from '../models/InputInitDAO';
+export * from '../models/InputUpdateGovernance';
+export * from '../models/InputUpdateRole';
 export * from '../models/InputUpdateUser';
 export * from '../models/LinkDiscordChannel';
 export * from '../models/LoginResponse';
@@ -43,6 +51,8 @@ export * from '../models/PODSchemaResponse';
 export * from '../models/PODUpdate';
 export * from '../models/PaginationMetadata';
 export * from '../models/PagingError';
+export * from '../models/Permission';
+export * from '../models/PermissionListResponse';
 export * from '../models/PodBasic';
 export * from '../models/PodProposalListResponse';
 export * from '../models/Proposal';
@@ -50,6 +60,11 @@ export * from '../models/ProposalSchemaResponse';
 export * from '../models/ProposalUpdate';
 export * from '../models/ProposalVote';
 export * from '../models/ProposalVoteResponse';
+export * from '../models/Role';
+export * from '../models/RoleListResponse';
+export * from '../models/RolePermissionAssignment';
+export * from '../models/RolePermissionResponse';
+export * from '../models/RoleResponse';
 export * from '../models/SocialConnection';
 export * from '../models/TelegramAuth';
 export * from '../models/Token';
@@ -63,7 +78,11 @@ export * from '../models/UserBasic1';
 export * from '../models/UserDAOOwnershipResponse';
 export * from '../models/UserExistResponse';
 export * from '../models/UserInfoError';
+export * from '../models/UserPermissionCheck';
 export * from '../models/UserResponse';
+export * from '../models/UserRoleAssignment';
+export * from '../models/UserRoleCheck';
+export * from '../models/UserRoleResponse';
 export * from '../models/VerifySignature';
 
 import { ChallengeRequest } from '../models/ChallengeRequest';
@@ -80,7 +99,7 @@ import { DAOModuleAccessResponse } from '../models/DAOModuleAccessResponse';
 import { DAOModuleResponse } from '../models/DAOModuleResponse';
 import { DAOModulesList } from '../models/DAOModulesList';
 import { DAOSchemaResponse } from '../models/DAOSchemaResponse';
-import { DAOUpdate } from '../models/DAOUpdate';
+import { DAOUpdate           , DAOUpdateVotingPowerSystemEnum     } from '../models/DAOUpdate';
 import { DeleteDeviceResponse } from '../models/DeleteDeviceResponse';
 import { Device } from '../models/Device';
 import { DeviceList } from '../models/DeviceList';
@@ -91,12 +110,20 @@ import { DiscordChannelResponse } from '../models/DiscordChannelResponse';
 import { DiscordChannelsResponse } from '../models/DiscordChannelsResponse';
 import { DiscordMessage } from '../models/DiscordMessage';
 import { DiscordMessagesResponse } from '../models/DiscordMessagesResponse';
+import { Governance   , GovernanceVotingPowerSystemEnum  , GovernanceCouncilEntryConditionEnum   , GovernanceDaoEntryConditionEnum     } from '../models/Governance';
+import { GovernanceModel } from '../models/GovernanceModel';
+import { GovernanceModelsList } from '../models/GovernanceModelsList';
+import { GovernanceResponse } from '../models/GovernanceResponse';
 import { InitDAOResponse } from '../models/InitDAOResponse';
-import { InputCreateDAO } from '../models/InputCreateDAO';
+import { InputCreateDAO          , InputCreateDAOVotingPowerSystemEnum     } from '../models/InputCreateDAO';
+import { InputCreateGovernance , InputCreateGovernanceVotingPowerSystemEnum  , InputCreateGovernanceCouncilEntryConditionEnum   , InputCreateGovernanceDaoEntryConditionEnum     } from '../models/InputCreateGovernance';
 import { InputCreatePOD } from '../models/InputCreatePOD';
 import { InputCreateProposal } from '../models/InputCreateProposal';
+import { InputCreateRole } from '../models/InputCreateRole';
 import { InputCreateUser } from '../models/InputCreateUser';
 import { InputInitDAO } from '../models/InputInitDAO';
+import { InputUpdateGovernance , InputUpdateGovernanceVotingPowerSystemEnum  , InputUpdateGovernanceCouncilEntryConditionEnum   , InputUpdateGovernanceDaoEntryConditionEnum     } from '../models/InputUpdateGovernance';
+import { InputUpdateRole } from '../models/InputUpdateRole';
 import { InputUpdateUser } from '../models/InputUpdateUser';
 import { LinkDiscordChannel } from '../models/LinkDiscordChannel';
 import { LoginResponse } from '../models/LoginResponse';
@@ -111,6 +138,8 @@ import { PODSchemaResponse } from '../models/PODSchemaResponse';
 import { PODUpdate } from '../models/PODUpdate';
 import { PaginationMetadata } from '../models/PaginationMetadata';
 import { PagingError } from '../models/PagingError';
+import { Permission } from '../models/Permission';
+import { PermissionListResponse } from '../models/PermissionListResponse';
 import { PodBasic } from '../models/PodBasic';
 import { PodProposalListResponse } from '../models/PodProposalListResponse';
 import { Proposal } from '../models/Proposal';
@@ -118,6 +147,11 @@ import { ProposalSchemaResponse } from '../models/ProposalSchemaResponse';
 import { ProposalUpdate } from '../models/ProposalUpdate';
 import { ProposalVote, ProposalVoteVoteEnum     } from '../models/ProposalVote';
 import { ProposalVoteResponse , ProposalVoteResponseVoteStatusEnum      } from '../models/ProposalVoteResponse';
+import { Role } from '../models/Role';
+import { RoleListResponse } from '../models/RoleListResponse';
+import { RolePermissionAssignment } from '../models/RolePermissionAssignment';
+import { RolePermissionResponse } from '../models/RolePermissionResponse';
+import { RoleResponse } from '../models/RoleResponse';
 import { SocialConnection } from '../models/SocialConnection';
 import { TelegramAuth } from '../models/TelegramAuth';
 import { Token } from '../models/Token';
@@ -131,7 +165,11 @@ import { UserBasic1 } from '../models/UserBasic1';
 import { UserDAOOwnershipResponse } from '../models/UserDAOOwnershipResponse';
 import { UserExistResponse } from '../models/UserExistResponse';
 import { UserInfoError } from '../models/UserInfoError';
+import { UserPermissionCheck } from '../models/UserPermissionCheck';
 import { UserResponse } from '../models/UserResponse';
+import { UserRoleAssignment } from '../models/UserRoleAssignment';
+import { UserRoleCheck } from '../models/UserRoleCheck';
+import { UserRoleResponse } from '../models/UserRoleResponse';
 import { VerifySignature } from '../models/VerifySignature';
 
 /* tslint:disable:no-unused-variable */
@@ -147,6 +185,17 @@ let primitives = [
                  ];
 
 let enumsMap: Set<string> = new Set<string>([
+    "DAOUpdateVotingPowerSystemEnum",
+    "GovernanceVotingPowerSystemEnum",
+    "GovernanceCouncilEntryConditionEnum",
+    "GovernanceDaoEntryConditionEnum",
+    "InputCreateDAOVotingPowerSystemEnum",
+    "InputCreateGovernanceVotingPowerSystemEnum",
+    "InputCreateGovernanceCouncilEntryConditionEnum",
+    "InputCreateGovernanceDaoEntryConditionEnum",
+    "InputUpdateGovernanceVotingPowerSystemEnum",
+    "InputUpdateGovernanceCouncilEntryConditionEnum",
+    "InputUpdateGovernanceDaoEntryConditionEnum",
     "ProposalVoteVoteEnum",
     "ProposalVoteResponseVoteStatusEnum",
 ]);
@@ -177,12 +226,20 @@ let typeMap: {[index: string]: any} = {
     "DiscordChannelsResponse": DiscordChannelsResponse,
     "DiscordMessage": DiscordMessage,
     "DiscordMessagesResponse": DiscordMessagesResponse,
+    "Governance": Governance,
+    "GovernanceModel": GovernanceModel,
+    "GovernanceModelsList": GovernanceModelsList,
+    "GovernanceResponse": GovernanceResponse,
     "InitDAOResponse": InitDAOResponse,
     "InputCreateDAO": InputCreateDAO,
+    "InputCreateGovernance": InputCreateGovernance,
     "InputCreatePOD": InputCreatePOD,
     "InputCreateProposal": InputCreateProposal,
+    "InputCreateRole": InputCreateRole,
     "InputCreateUser": InputCreateUser,
     "InputInitDAO": InputInitDAO,
+    "InputUpdateGovernance": InputUpdateGovernance,
+    "InputUpdateRole": InputUpdateRole,
     "InputUpdateUser": InputUpdateUser,
     "LinkDiscordChannel": LinkDiscordChannel,
     "LoginResponse": LoginResponse,
@@ -197,6 +254,8 @@ let typeMap: {[index: string]: any} = {
     "PODUpdate": PODUpdate,
     "PaginationMetadata": PaginationMetadata,
     "PagingError": PagingError,
+    "Permission": Permission,
+    "PermissionListResponse": PermissionListResponse,
     "PodBasic": PodBasic,
     "PodProposalListResponse": PodProposalListResponse,
     "Proposal": Proposal,
@@ -204,6 +263,11 @@ let typeMap: {[index: string]: any} = {
     "ProposalUpdate": ProposalUpdate,
     "ProposalVote": ProposalVote,
     "ProposalVoteResponse": ProposalVoteResponse,
+    "Role": Role,
+    "RoleListResponse": RoleListResponse,
+    "RolePermissionAssignment": RolePermissionAssignment,
+    "RolePermissionResponse": RolePermissionResponse,
+    "RoleResponse": RoleResponse,
     "SocialConnection": SocialConnection,
     "TelegramAuth": TelegramAuth,
     "Token": Token,
@@ -217,7 +281,11 @@ let typeMap: {[index: string]: any} = {
     "UserDAOOwnershipResponse": UserDAOOwnershipResponse,
     "UserExistResponse": UserExistResponse,
     "UserInfoError": UserInfoError,
+    "UserPermissionCheck": UserPermissionCheck,
     "UserResponse": UserResponse,
+    "UserRoleAssignment": UserRoleAssignment,
+    "UserRoleCheck": UserRoleCheck,
+    "UserRoleResponse": UserRoleResponse,
     "VerifySignature": VerifySignature,
 }
 

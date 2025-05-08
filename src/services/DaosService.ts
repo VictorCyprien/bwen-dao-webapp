@@ -3,7 +3,7 @@
  * Handles all API interactions related to DAOs
  */
 
-import { createConfiguration, DaosApi, DAO, DAOUpdate, DAOMembership, InputCreateDAO, UserDAOOwnershipResponse, InputInitDAO, DAOModule, DAOModulesList, DAOModuleResponse } from '../core/modules/dao-api';
+import { createConfiguration, DaosApi, DAO, DAOUpdate, DAOMembership, InputCreateDAO, UserDAOOwnershipResponse, InputInitDAO, DAOModule, DAOModulesList, DAOModuleResponse, InputCreateGovernance } from '../core/modules/dao-api';
 import { ServerConfiguration } from '../core/modules/dao-api/servers';
 import { walletAuthService } from './WalletAuthService';
 import { fileToMinioStorage } from '../utils/fileUtils';
@@ -388,6 +388,58 @@ export class DaosService {
       return response || null;
     } catch (error) {
       console.error(`Error removing module from DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Initialize DAO governance model
+   * @param daoId The ID of the DAO
+   * @param governanceData The governance model data
+   * @returns The initialization response or null if there was an error
+   */
+  async initializeDAOGovernance(
+    daoId: string,
+    governanceData: {
+      governanceModel: number;
+      votingPowerSystem: string;
+      councilEntryCondition?: string;
+      councilEntryThreshold?: number;
+      daoEntryCondition: string;
+      daoEntryThreshold?: number;
+      quorumPercentage: number;
+    }
+  ): Promise<any | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      // Create the request payload
+      const inputCreateGovernance = new InputCreateGovernance();
+      inputCreateGovernance.governanceModel = governanceData.governanceModel;
+      inputCreateGovernance.votingPowerSystem = governanceData.votingPowerSystem as any;
+      
+      if (governanceData.councilEntryCondition) {
+        inputCreateGovernance.councilEntryCondition = governanceData.councilEntryCondition as any;
+      }
+      
+      if (governanceData.councilEntryThreshold !== undefined) {
+        inputCreateGovernance.councilEntryThreshold = governanceData.councilEntryThreshold;
+      }
+      
+      inputCreateGovernance.daoEntryCondition = governanceData.daoEntryCondition as any;
+      
+      if (governanceData.daoEntryThreshold !== undefined) {
+        inputCreateGovernance.daoEntryThreshold = governanceData.daoEntryThreshold;
+      }
+      
+      inputCreateGovernance.quorumPercentage = governanceData.quorumPercentage;
+
+      const response = await apiClient.initializeDAOGovernance(daoId, inputCreateGovernance);
+      console.log('DAO governance initialization response:', response);
+      return response || null;
+    } catch (error) {
+      console.error('Error initializing DAO governance:', error);
       return null;
     }
   }

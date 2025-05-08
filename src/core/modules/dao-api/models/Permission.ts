@@ -13,10 +13,13 @@
 import { HttpFile } from '../http/http';
 
 /**
-* Provide a user id to add/remove the user from the DAO. (Only for admins)
+* Permission information
 */
-export class DAOMembership {
-    'userId'?: string;
+export class Permission {
+    'permissionId'?: string;
+    'name': string;
+    'category': string;
+    'description': string;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -24,14 +27,32 @@ export class DAOMembership {
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "userId",
-            "baseName": "user_id",
+            "name": "permissionId",
+            "baseName": "permission_id",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "name",
+            "baseName": "name",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "category",
+            "baseName": "category",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "description",
+            "baseName": "description",
             "type": "string",
             "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return DAOMembership.attributeTypeMap;
+        return Permission.attributeTypeMap;
     }
 
     public constructor() {

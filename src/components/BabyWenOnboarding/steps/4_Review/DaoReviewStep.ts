@@ -1,4 +1,5 @@
 import { OnboardingStep } from '../../../BabyWenOnboarding';
+import { getGovernanceModelById } from '../../../../utils/GovernanceModelHelper';
 
 const DaoReviewStep: OnboardingStep = {
   id: 'dao-review',
@@ -53,14 +54,16 @@ export const getDAOReviewData = () => {
   };
 
   // Governance information
+  const governanceModelId = parseInt(sessionStorage.getItem('governanceModelId') || '1', 10);
+  const governanceModelDetails = getGovernanceModelById(governanceModelId);
+  const quorumPercentage = sessionStorage.getItem('quorumPercentage') || '51';
+  const votingPower = sessionStorage.getItem('votingPower') || 'Token';
+  
   const governanceInfo = {
-    governanceModel: sessionStorage.getItem('governanceModel') || 'Not specified',
-    ideaRights: sessionStorage.getItem('ideaRights') || 'Not specified',
-    voteRights: sessionStorage.getItem('voteRights') || 'Not specified',
-    survalidation: sessionStorage.getItem('survalidation') || 'false',
-    survalidationType: sessionStorage.getItem('survalidationType') || 'Not specified',
-    votingPower: sessionStorage.getItem('votingPower') || 'Not specified',
-    voteDelegation: sessionStorage.getItem('voteDelegation') || 'false'
+    governanceModel: governanceModelDetails?.name || 'Not specified',
+    governanceModelId: governanceModelId,
+    votingPower: votingPower,
+    quorumPercentage: quorumPercentage
   };
 
   return {

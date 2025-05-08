@@ -27,12 +27,20 @@ import { DiscordChannelResponse } from '../models/DiscordChannelResponse';
 import { DiscordChannelsResponse } from '../models/DiscordChannelsResponse';
 import { DiscordMessage } from '../models/DiscordMessage';
 import { DiscordMessagesResponse } from '../models/DiscordMessagesResponse';
+import { Governance } from '../models/Governance';
+import { GovernanceModel } from '../models/GovernanceModel';
+import { GovernanceModelsList } from '../models/GovernanceModelsList';
+import { GovernanceResponse } from '../models/GovernanceResponse';
 import { InitDAOResponse } from '../models/InitDAOResponse';
 import { InputCreateDAO } from '../models/InputCreateDAO';
+import { InputCreateGovernance } from '../models/InputCreateGovernance';
 import { InputCreatePOD } from '../models/InputCreatePOD';
 import { InputCreateProposal } from '../models/InputCreateProposal';
+import { InputCreateRole } from '../models/InputCreateRole';
 import { InputCreateUser } from '../models/InputCreateUser';
 import { InputInitDAO } from '../models/InputInitDAO';
+import { InputUpdateGovernance } from '../models/InputUpdateGovernance';
+import { InputUpdateRole } from '../models/InputUpdateRole';
 import { InputUpdateUser } from '../models/InputUpdateUser';
 import { LinkDiscordChannel } from '../models/LinkDiscordChannel';
 import { LoginResponse } from '../models/LoginResponse';
@@ -47,6 +55,8 @@ import { PODSchemaResponse } from '../models/PODSchemaResponse';
 import { PODUpdate } from '../models/PODUpdate';
 import { PaginationMetadata } from '../models/PaginationMetadata';
 import { PagingError } from '../models/PagingError';
+import { Permission } from '../models/Permission';
+import { PermissionListResponse } from '../models/PermissionListResponse';
 import { PodBasic } from '../models/PodBasic';
 import { PodProposalListResponse } from '../models/PodProposalListResponse';
 import { Proposal } from '../models/Proposal';
@@ -54,6 +64,11 @@ import { ProposalSchemaResponse } from '../models/ProposalSchemaResponse';
 import { ProposalUpdate } from '../models/ProposalUpdate';
 import { ProposalVote } from '../models/ProposalVote';
 import { ProposalVoteResponse } from '../models/ProposalVoteResponse';
+import { Role } from '../models/Role';
+import { RoleListResponse } from '../models/RoleListResponse';
+import { RolePermissionAssignment } from '../models/RolePermissionAssignment';
+import { RolePermissionResponse } from '../models/RolePermissionResponse';
+import { RoleResponse } from '../models/RoleResponse';
 import { SocialConnection } from '../models/SocialConnection';
 import { TelegramAuth } from '../models/TelegramAuth';
 import { Token } from '../models/Token';
@@ -67,7 +82,11 @@ import { UserBasic1 } from '../models/UserBasic1';
 import { UserDAOOwnershipResponse } from '../models/UserDAOOwnershipResponse';
 import { UserExistResponse } from '../models/UserExistResponse';
 import { UserInfoError } from '../models/UserInfoError';
+import { UserPermissionCheck } from '../models/UserPermissionCheck';
 import { UserResponse } from '../models/UserResponse';
+import { UserRoleAssignment } from '../models/UserRoleAssignment';
+import { UserRoleCheck } from '../models/UserRoleCheck';
+import { UserRoleResponse } from '../models/UserRoleResponse';
 import { VerifySignature } from '../models/VerifySignature';
 
 import { ObservableApiKeysApi } from "./ObservableAPI";
@@ -316,6 +335,12 @@ export interface DaosApiAddMemberToDAORequest {
      * @memberof DaosApiaddMemberToDAO
      */
     daoId: string
+    /**
+     * 
+     * @type DAOMembership
+     * @memberof DaosApiaddMemberToDAO
+     */
+    dAOMembership?: DAOMembership
 }
 
 export interface DaosApiAddMemberToPODRequest {
@@ -335,10 +360,104 @@ export interface DaosApiAddMemberToPODRequest {
     podId: string
 }
 
+export interface DaosApiAssignPermissionToRoleRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiassignPermissionToRole
+     */
+    daoId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiassignPermissionToRole
+     */
+    roleId: string
+    /**
+     * 
+     * @type RolePermissionAssignment
+     * @memberof DaosApiassignPermissionToRole
+     */
+    rolePermissionAssignment: RolePermissionAssignment
+}
+
+export interface DaosApiAssignRoleToUserRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiassignRoleToUser
+     */
+    daoId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiassignRoleToUser
+     */
+    userId: string
+    /**
+     * 
+     * @type UserRoleAssignment
+     * @memberof DaosApiassignRoleToUser
+     */
+    userRoleAssignment: UserRoleAssignment
+}
+
 export interface DaosApiCheckDAOInitializationRequest {
 }
 
 export interface DaosApiCheckUserDAOOwnershipRequest {
+}
+
+export interface DaosApiCheckUserPermissionRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApicheckUserPermission
+     */
+    daoId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApicheckUserPermission
+     */
+    userId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApicheckUserPermission
+     */
+    permissionId: string
+}
+
+export interface DaosApiCheckUserRoleRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApicheckUserRole
+     */
+    daoId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApicheckUserRole
+     */
+    userId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApicheckUserRole
+     */
+    roleId: string
 }
 
 export interface DaosApiCreateDAORequest {
@@ -348,6 +467,22 @@ export interface DaosApiCreateDAORequest {
      * @memberof DaosApicreateDAO
      */
     inputCreateDAO: InputCreateDAO
+}
+
+export interface DaosApiCreateDAORoleRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApicreateDAORole
+     */
+    daoId: string
+    /**
+     * 
+     * @type InputCreateRole
+     * @memberof DaosApicreateDAORole
+     */
+    inputCreateRole: InputCreateRole
 }
 
 export interface DaosApiCreatePODRequest {
@@ -374,6 +509,23 @@ export interface DaosApiDeleteDAORequest {
      * @memberof DaosApideleteDAO
      */
     daoId: string
+}
+
+export interface DaosApiDeleteDAORoleRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApideleteDAORole
+     */
+    daoId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApideleteDAORole
+     */
+    roleId: string
 }
 
 export interface DaosApiDeletePODRequest {
@@ -457,6 +609,16 @@ export interface DaosApiGetDAOByIdRequest {
     daoId: string
 }
 
+export interface DaosApiGetDAOGovernanceRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApigetDAOGovernance
+     */
+    daoId: string
+}
+
 export interface DaosApiGetDAOModulesRequest {
     /**
      * 
@@ -465,6 +627,46 @@ export interface DaosApiGetDAOModulesRequest {
      * @memberof DaosApigetDAOModules
      */
     daoId: string
+}
+
+export interface DaosApiGetDAOPermissionsRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApigetDAOPermissions
+     */
+    daoId: string
+}
+
+export interface DaosApiGetDAORoleRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApigetDAORole
+     */
+    daoId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApigetDAORole
+     */
+    roleId: string
+}
+
+export interface DaosApiGetDAORolesRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApigetDAORoles
+     */
+    daoId: string
+}
+
+export interface DaosApiGetGovernanceModelsRequest {
 }
 
 export interface DaosApiGetPODByIdRequest {
@@ -518,6 +720,57 @@ export interface DaosApiGetPODFeedRequest {
     podId: string
 }
 
+export interface DaosApiGetRolePermissionsRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApigetRolePermissions
+     */
+    daoId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApigetRolePermissions
+     */
+    roleId: string
+}
+
+export interface DaosApiGetUserPermissionsRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApigetUserPermissions
+     */
+    daoId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApigetUserPermissions
+     */
+    userId: string
+}
+
+export interface DaosApiGetUserRolesRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApigetUserRoles
+     */
+    daoId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApigetUserRoles
+     */
+    userId: string
+}
+
 export interface DaosApiInitializeDAOCreationRequest {
     /**
      * 
@@ -525,6 +778,22 @@ export interface DaosApiInitializeDAOCreationRequest {
      * @memberof DaosApiinitializeDAOCreation
      */
     inputInitDAO: InputInitDAO
+}
+
+export interface DaosApiInitializeDAOGovernanceRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiinitializeDAOGovernance
+     */
+    daoId: string
+    /**
+     * 
+     * @type InputCreateGovernance
+     * @memberof DaosApiinitializeDAOGovernance
+     */
+    inputCreateGovernance: InputCreateGovernance
 }
 
 export interface DaosApiLinkDiscordChannelToPODRequest {
@@ -621,6 +890,54 @@ export interface DaosApiRemoveMemberFromPODRequest {
     pODMembership: PODMembership
 }
 
+export interface DaosApiRemovePermissionFromRoleRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiremovePermissionFromRole
+     */
+    daoId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiremovePermissionFromRole
+     */
+    roleId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiremovePermissionFromRole
+     */
+    permissionId: string
+}
+
+export interface DaosApiRemoveRoleFromUserRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiremoveRoleFromUser
+     */
+    daoId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiremoveRoleFromUser
+     */
+    userId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiremoveRoleFromUser
+     */
+    roleId: string
+}
+
 export interface DaosApiUnlinkDiscordChannelFromPODRequest {
     /**
      * 
@@ -659,6 +976,45 @@ export interface DaosApiUpdateDAORequest {
      * @memberof DaosApiupdateDAO
      */
     dAOUpdate: DAOUpdate
+}
+
+export interface DaosApiUpdateDAOGovernanceRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiupdateDAOGovernance
+     */
+    daoId: string
+    /**
+     * 
+     * @type InputUpdateGovernance
+     * @memberof DaosApiupdateDAOGovernance
+     */
+    inputUpdateGovernance: InputUpdateGovernance
+}
+
+export interface DaosApiUpdateDAORoleRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiupdateDAORole
+     */
+    daoId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiupdateDAORole
+     */
+    roleId: string
+    /**
+     * 
+     * @type InputUpdateRole
+     * @memberof DaosApiupdateDAORole
+     */
+    inputUpdateRole: InputUpdateRole
 }
 
 export interface DaosApiUpdatePODRequest {
@@ -740,19 +1096,19 @@ export class ObjectDaosApi {
     }
 
     /**
-     * Add a member to a DAO
+     * Add a member to a DAO (self-join or invite another user)
      * @param param the request object
      */
     public addMemberToDAOWithHttpInfo(param: DaosApiAddMemberToDAORequest, options?: ConfigurationOptions): Promise<HttpInfo<DAOMembershipResponse>> {
-        return this.api.addMemberToDAOWithHttpInfo(param.daoId,  options).toPromise();
+        return this.api.addMemberToDAOWithHttpInfo(param.daoId, param.dAOMembership,  options).toPromise();
     }
 
     /**
-     * Add a member to a DAO
+     * Add a member to a DAO (self-join or invite another user)
      * @param param the request object
      */
     public addMemberToDAO(param: DaosApiAddMemberToDAORequest, options?: ConfigurationOptions): Promise<DAOMembershipResponse> {
-        return this.api.addMemberToDAO(param.daoId,  options).toPromise();
+        return this.api.addMemberToDAO(param.daoId, param.dAOMembership,  options).toPromise();
     }
 
     /**
@@ -769,6 +1125,38 @@ export class ObjectDaosApi {
      */
     public addMemberToPOD(param: DaosApiAddMemberToPODRequest, options?: ConfigurationOptions): Promise<PODMembershipResponse> {
         return this.api.addMemberToPOD(param.daoId, param.podId,  options).toPromise();
+    }
+
+    /**
+     * Assign a permission to a role in a DAO
+     * @param param the request object
+     */
+    public assignPermissionToRoleWithHttpInfo(param: DaosApiAssignPermissionToRoleRequest, options?: ConfigurationOptions): Promise<HttpInfo<RolePermissionResponse>> {
+        return this.api.assignPermissionToRoleWithHttpInfo(param.daoId, param.roleId, param.rolePermissionAssignment,  options).toPromise();
+    }
+
+    /**
+     * Assign a permission to a role in a DAO
+     * @param param the request object
+     */
+    public assignPermissionToRole(param: DaosApiAssignPermissionToRoleRequest, options?: ConfigurationOptions): Promise<RolePermissionResponse> {
+        return this.api.assignPermissionToRole(param.daoId, param.roleId, param.rolePermissionAssignment,  options).toPromise();
+    }
+
+    /**
+     * Assign a role to a user in a DAO
+     * @param param the request object
+     */
+    public assignRoleToUserWithHttpInfo(param: DaosApiAssignRoleToUserRequest, options?: ConfigurationOptions): Promise<HttpInfo<UserRoleResponse>> {
+        return this.api.assignRoleToUserWithHttpInfo(param.daoId, param.userId, param.userRoleAssignment,  options).toPromise();
+    }
+
+    /**
+     * Assign a role to a user in a DAO
+     * @param param the request object
+     */
+    public assignRoleToUser(param: DaosApiAssignRoleToUserRequest, options?: ConfigurationOptions): Promise<UserRoleResponse> {
+        return this.api.assignRoleToUser(param.daoId, param.userId, param.userRoleAssignment,  options).toPromise();
     }
 
     /**
@@ -804,6 +1192,38 @@ export class ObjectDaosApi {
     }
 
     /**
+     * Check if a user has a specific permission in a DAO
+     * @param param the request object
+     */
+    public checkUserPermissionWithHttpInfo(param: DaosApiCheckUserPermissionRequest, options?: ConfigurationOptions): Promise<HttpInfo<UserPermissionCheck>> {
+        return this.api.checkUserPermissionWithHttpInfo(param.daoId, param.userId, param.permissionId,  options).toPromise();
+    }
+
+    /**
+     * Check if a user has a specific permission in a DAO
+     * @param param the request object
+     */
+    public checkUserPermission(param: DaosApiCheckUserPermissionRequest, options?: ConfigurationOptions): Promise<UserPermissionCheck> {
+        return this.api.checkUserPermission(param.daoId, param.userId, param.permissionId,  options).toPromise();
+    }
+
+    /**
+     * Check if a user has a specific role in a DAO
+     * @param param the request object
+     */
+    public checkUserRoleWithHttpInfo(param: DaosApiCheckUserRoleRequest, options?: ConfigurationOptions): Promise<HttpInfo<UserRoleCheck>> {
+        return this.api.checkUserRoleWithHttpInfo(param.daoId, param.userId, param.roleId,  options).toPromise();
+    }
+
+    /**
+     * Check if a user has a specific role in a DAO
+     * @param param the request object
+     */
+    public checkUserRole(param: DaosApiCheckUserRoleRequest, options?: ConfigurationOptions): Promise<UserRoleCheck> {
+        return this.api.checkUserRole(param.daoId, param.userId, param.roleId,  options).toPromise();
+    }
+
+    /**
      * Create a new DAO (Step 2) - Complete DAO creation with all required fields
      * @param param the request object
      */
@@ -817,6 +1237,22 @@ export class ObjectDaosApi {
      */
     public createDAO(param: DaosApiCreateDAORequest, options?: ConfigurationOptions): Promise<DAOSchemaResponse> {
         return this.api.createDAO(param.inputCreateDAO,  options).toPromise();
+    }
+
+    /**
+     * Create a new role for a DAO
+     * @param param the request object
+     */
+    public createDAORoleWithHttpInfo(param: DaosApiCreateDAORoleRequest, options?: ConfigurationOptions): Promise<HttpInfo<RoleResponse>> {
+        return this.api.createDAORoleWithHttpInfo(param.daoId, param.inputCreateRole,  options).toPromise();
+    }
+
+    /**
+     * Create a new role for a DAO
+     * @param param the request object
+     */
+    public createDAORole(param: DaosApiCreateDAORoleRequest, options?: ConfigurationOptions): Promise<RoleResponse> {
+        return this.api.createDAORole(param.daoId, param.inputCreateRole,  options).toPromise();
     }
 
     /**
@@ -849,6 +1285,22 @@ export class ObjectDaosApi {
      */
     public deleteDAO(param: DaosApiDeleteDAORequest, options?: ConfigurationOptions): Promise<DAOSchemaResponse> {
         return this.api.deleteDAO(param.daoId,  options).toPromise();
+    }
+
+    /**
+     * Delete a role from a DAO
+     * @param param the request object
+     */
+    public deleteDAORoleWithHttpInfo(param: DaosApiDeleteDAORoleRequest, options?: ConfigurationOptions): Promise<HttpInfo<RoleResponse>> {
+        return this.api.deleteDAORoleWithHttpInfo(param.daoId, param.roleId,  options).toPromise();
+    }
+
+    /**
+     * Delete a role from a DAO
+     * @param param the request object
+     */
+    public deleteDAORole(param: DaosApiDeleteDAORoleRequest, options?: ConfigurationOptions): Promise<RoleResponse> {
+        return this.api.deleteDAORole(param.daoId, param.roleId,  options).toPromise();
     }
 
     /**
@@ -948,6 +1400,22 @@ export class ObjectDaosApi {
     }
 
     /**
+     * Get governance model for a DAO
+     * @param param the request object
+     */
+    public getDAOGovernanceWithHttpInfo(param: DaosApiGetDAOGovernanceRequest, options?: ConfigurationOptions): Promise<HttpInfo<Governance>> {
+        return this.api.getDAOGovernanceWithHttpInfo(param.daoId,  options).toPromise();
+    }
+
+    /**
+     * Get governance model for a DAO
+     * @param param the request object
+     */
+    public getDAOGovernance(param: DaosApiGetDAOGovernanceRequest, options?: ConfigurationOptions): Promise<Governance> {
+        return this.api.getDAOGovernance(param.daoId,  options).toPromise();
+    }
+
+    /**
      * Get all modules enabled for a DAO
      * @param param the request object
      */
@@ -961,6 +1429,70 @@ export class ObjectDaosApi {
      */
     public getDAOModules(param: DaosApiGetDAOModulesRequest, options?: ConfigurationOptions): Promise<DAOModulesList> {
         return this.api.getDAOModules(param.daoId,  options).toPromise();
+    }
+
+    /**
+     * Get all permissions available for a DAO
+     * @param param the request object
+     */
+    public getDAOPermissionsWithHttpInfo(param: DaosApiGetDAOPermissionsRequest, options?: ConfigurationOptions): Promise<HttpInfo<PermissionListResponse>> {
+        return this.api.getDAOPermissionsWithHttpInfo(param.daoId,  options).toPromise();
+    }
+
+    /**
+     * Get all permissions available for a DAO
+     * @param param the request object
+     */
+    public getDAOPermissions(param: DaosApiGetDAOPermissionsRequest, options?: ConfigurationOptions): Promise<PermissionListResponse> {
+        return this.api.getDAOPermissions(param.daoId,  options).toPromise();
+    }
+
+    /**
+     * Get a specific role for a DAO
+     * @param param the request object
+     */
+    public getDAORoleWithHttpInfo(param: DaosApiGetDAORoleRequest, options?: ConfigurationOptions): Promise<HttpInfo<Role>> {
+        return this.api.getDAORoleWithHttpInfo(param.daoId, param.roleId,  options).toPromise();
+    }
+
+    /**
+     * Get a specific role for a DAO
+     * @param param the request object
+     */
+    public getDAORole(param: DaosApiGetDAORoleRequest, options?: ConfigurationOptions): Promise<Role> {
+        return this.api.getDAORole(param.daoId, param.roleId,  options).toPromise();
+    }
+
+    /**
+     * Get all roles for a DAO
+     * @param param the request object
+     */
+    public getDAORolesWithHttpInfo(param: DaosApiGetDAORolesRequest, options?: ConfigurationOptions): Promise<HttpInfo<RoleListResponse>> {
+        return this.api.getDAORolesWithHttpInfo(param.daoId,  options).toPromise();
+    }
+
+    /**
+     * Get all roles for a DAO
+     * @param param the request object
+     */
+    public getDAORoles(param: DaosApiGetDAORolesRequest, options?: ConfigurationOptions): Promise<RoleListResponse> {
+        return this.api.getDAORoles(param.daoId,  options).toPromise();
+    }
+
+    /**
+     * Get all available governance models
+     * @param param the request object
+     */
+    public getGovernanceModelsWithHttpInfo(param: DaosApiGetGovernanceModelsRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<GovernanceModelsList>> {
+        return this.api.getGovernanceModelsWithHttpInfo( options).toPromise();
+    }
+
+    /**
+     * Get all available governance models
+     * @param param the request object
+     */
+    public getGovernanceModels(param: DaosApiGetGovernanceModelsRequest = {}, options?: ConfigurationOptions): Promise<GovernanceModelsList> {
+        return this.api.getGovernanceModels( options).toPromise();
     }
 
     /**
@@ -1012,6 +1544,54 @@ export class ObjectDaosApi {
     }
 
     /**
+     * Get all permissions for a specific role in a DAO
+     * @param param the request object
+     */
+    public getRolePermissionsWithHttpInfo(param: DaosApiGetRolePermissionsRequest, options?: ConfigurationOptions): Promise<HttpInfo<PermissionListResponse>> {
+        return this.api.getRolePermissionsWithHttpInfo(param.daoId, param.roleId,  options).toPromise();
+    }
+
+    /**
+     * Get all permissions for a specific role in a DAO
+     * @param param the request object
+     */
+    public getRolePermissions(param: DaosApiGetRolePermissionsRequest, options?: ConfigurationOptions): Promise<PermissionListResponse> {
+        return this.api.getRolePermissions(param.daoId, param.roleId,  options).toPromise();
+    }
+
+    /**
+     * Get all permissions a user has in a DAO
+     * @param param the request object
+     */
+    public getUserPermissionsWithHttpInfo(param: DaosApiGetUserPermissionsRequest, options?: ConfigurationOptions): Promise<HttpInfo<PermissionListResponse>> {
+        return this.api.getUserPermissionsWithHttpInfo(param.daoId, param.userId,  options).toPromise();
+    }
+
+    /**
+     * Get all permissions a user has in a DAO
+     * @param param the request object
+     */
+    public getUserPermissions(param: DaosApiGetUserPermissionsRequest, options?: ConfigurationOptions): Promise<PermissionListResponse> {
+        return this.api.getUserPermissions(param.daoId, param.userId,  options).toPromise();
+    }
+
+    /**
+     * Get roles for a specific user in a DAO
+     * @param param the request object
+     */
+    public getUserRolesWithHttpInfo(param: DaosApiGetUserRolesRequest, options?: ConfigurationOptions): Promise<HttpInfo<RoleListResponse>> {
+        return this.api.getUserRolesWithHttpInfo(param.daoId, param.userId,  options).toPromise();
+    }
+
+    /**
+     * Get roles for a specific user in a DAO
+     * @param param the request object
+     */
+    public getUserRoles(param: DaosApiGetUserRolesRequest, options?: ConfigurationOptions): Promise<RoleListResponse> {
+        return this.api.getUserRoles(param.daoId, param.userId,  options).toPromise();
+    }
+
+    /**
      * Initialize DAO creation (Step 1) - Store pubkey and transaction in Redis
      * @param param the request object
      */
@@ -1025,6 +1605,22 @@ export class ObjectDaosApi {
      */
     public initializeDAOCreation(param: DaosApiInitializeDAOCreationRequest, options?: ConfigurationOptions): Promise<InitDAOResponse> {
         return this.api.initializeDAOCreation(param.inputInitDAO,  options).toPromise();
+    }
+
+    /**
+     * Initialize governance model for a DAO
+     * @param param the request object
+     */
+    public initializeDAOGovernanceWithHttpInfo(param: DaosApiInitializeDAOGovernanceRequest, options?: ConfigurationOptions): Promise<HttpInfo<GovernanceResponse>> {
+        return this.api.initializeDAOGovernanceWithHttpInfo(param.daoId, param.inputCreateGovernance,  options).toPromise();
+    }
+
+    /**
+     * Initialize governance model for a DAO
+     * @param param the request object
+     */
+    public initializeDAOGovernance(param: DaosApiInitializeDAOGovernanceRequest, options?: ConfigurationOptions): Promise<GovernanceResponse> {
+        return this.api.initializeDAOGovernance(param.daoId, param.inputCreateGovernance,  options).toPromise();
     }
 
     /**
@@ -1108,6 +1704,38 @@ export class ObjectDaosApi {
     }
 
     /**
+     * Remove a permission from a role in a DAO
+     * @param param the request object
+     */
+    public removePermissionFromRoleWithHttpInfo(param: DaosApiRemovePermissionFromRoleRequest, options?: ConfigurationOptions): Promise<HttpInfo<RolePermissionResponse>> {
+        return this.api.removePermissionFromRoleWithHttpInfo(param.daoId, param.roleId, param.permissionId,  options).toPromise();
+    }
+
+    /**
+     * Remove a permission from a role in a DAO
+     * @param param the request object
+     */
+    public removePermissionFromRole(param: DaosApiRemovePermissionFromRoleRequest, options?: ConfigurationOptions): Promise<RolePermissionResponse> {
+        return this.api.removePermissionFromRole(param.daoId, param.roleId, param.permissionId,  options).toPromise();
+    }
+
+    /**
+     * Remove a role from a user in a DAO
+     * @param param the request object
+     */
+    public removeRoleFromUserWithHttpInfo(param: DaosApiRemoveRoleFromUserRequest, options?: ConfigurationOptions): Promise<HttpInfo<UserRoleResponse>> {
+        return this.api.removeRoleFromUserWithHttpInfo(param.daoId, param.userId, param.roleId,  options).toPromise();
+    }
+
+    /**
+     * Remove a role from a user in a DAO
+     * @param param the request object
+     */
+    public removeRoleFromUser(param: DaosApiRemoveRoleFromUserRequest, options?: ConfigurationOptions): Promise<UserRoleResponse> {
+        return this.api.removeRoleFromUser(param.daoId, param.userId, param.roleId,  options).toPromise();
+    }
+
+    /**
      * Unlink a Discord channel from a POD
      * @param param the request object
      */
@@ -1137,6 +1765,38 @@ export class ObjectDaosApi {
      */
     public updateDAO(param: DaosApiUpdateDAORequest, options?: ConfigurationOptions): Promise<DAOSchemaResponse> {
         return this.api.updateDAO(param.daoId, param.dAOUpdate,  options).toPromise();
+    }
+
+    /**
+     * Update governance model for a DAO
+     * @param param the request object
+     */
+    public updateDAOGovernanceWithHttpInfo(param: DaosApiUpdateDAOGovernanceRequest, options?: ConfigurationOptions): Promise<HttpInfo<GovernanceResponse>> {
+        return this.api.updateDAOGovernanceWithHttpInfo(param.daoId, param.inputUpdateGovernance,  options).toPromise();
+    }
+
+    /**
+     * Update governance model for a DAO
+     * @param param the request object
+     */
+    public updateDAOGovernance(param: DaosApiUpdateDAOGovernanceRequest, options?: ConfigurationOptions): Promise<GovernanceResponse> {
+        return this.api.updateDAOGovernance(param.daoId, param.inputUpdateGovernance,  options).toPromise();
+    }
+
+    /**
+     * Update a role for a DAO
+     * @param param the request object
+     */
+    public updateDAORoleWithHttpInfo(param: DaosApiUpdateDAORoleRequest, options?: ConfigurationOptions): Promise<HttpInfo<RoleResponse>> {
+        return this.api.updateDAORoleWithHttpInfo(param.daoId, param.roleId, param.inputUpdateRole,  options).toPromise();
+    }
+
+    /**
+     * Update a role for a DAO
+     * @param param the request object
+     */
+    public updateDAORole(param: DaosApiUpdateDAORoleRequest, options?: ConfigurationOptions): Promise<RoleResponse> {
+        return this.api.updateDAORole(param.daoId, param.roleId, param.inputUpdateRole,  options).toPromise();
     }
 
     /**
@@ -1798,7 +2458,7 @@ export class ObjectProposalsApi {
     }
 
     /**
-     * Remove vote from a proposal for a DAO
+     * Remove a user\'s vote from a proposal
      * @param param the request object
      */
     public removeVoteFromDAOProposalWithHttpInfo(param: ProposalsApiRemoveVoteFromDAOProposalRequest, options?: ConfigurationOptions): Promise<HttpInfo<ProposalVoteResponse>> {
@@ -1806,7 +2466,7 @@ export class ObjectProposalsApi {
     }
 
     /**
-     * Remove vote from a proposal for a DAO
+     * Remove a user\'s vote from a proposal
      * @param param the request object
      */
     public removeVoteFromDAOProposal(param: ProposalsApiRemoveVoteFromDAOProposalRequest, options?: ConfigurationOptions): Promise<ProposalVoteResponse> {

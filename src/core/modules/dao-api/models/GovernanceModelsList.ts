@@ -10,13 +10,14 @@
  * Do not edit the class manually.
  */
 
+import { GovernanceModel } from '../models/GovernanceModel';
 import { HttpFile } from '../http/http';
 
 /**
-* Provide a user id to add/remove the user from the DAO. (Only for admins)
+* List of available governance models
 */
-export class DAOMembership {
-    'userId'?: string;
+export class GovernanceModelsList {
+    'models': Array<GovernanceModel>;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -24,14 +25,14 @@ export class DAOMembership {
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "userId",
-            "baseName": "user_id",
-            "type": "string",
+            "name": "models",
+            "baseName": "models",
+            "type": "Array<GovernanceModel>",
             "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return DAOMembership.attributeTypeMap;
+        return GovernanceModelsList.attributeTypeMap;
     }
 
     public constructor() {
