@@ -168,15 +168,15 @@ const Roles: React.FC = () => {
       if (!daoId || !userInfo) return;
       
       try {
-        const dao = await daosService.getDaoById(daoId);
-        // Check if user is the owner of the DAO or in the admins list
-        const adminIdsList = dao?.admins?.map(admin => admin.userId) || [];
-        setIsAdmin(
-          dao?.ownerId === userInfo.userId || 
-          adminIdsList.includes(userInfo.userId)
-        );
+        setLoading(true);
+        
+        // Use the new service-level caching method instead of localStorage
+        const isUserAdmin = await rolePermissionService.isUserDAOAdmin(daoId, userInfo.userId);
+        setIsAdmin(isUserAdmin);
       } catch (error) {
         console.error('Error checking admin status:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -243,9 +243,11 @@ const Roles: React.FC = () => {
     }
   };
 
-  // Initial data loading
+  // Initial data loading - only if user is admin
   React.useEffect(() => {
     const loadAllData = async () => {
+      if (!daoId || !isAdmin) return; // Skip if not admin
+      
       setLoading(true);
       setError(null);
       
@@ -264,10 +266,12 @@ const Roles: React.FC = () => {
     };
     
     loadAllData();
-  }, [daoId]);
+  }, [daoId, isAdmin]);
 
   // Handle refreshing all data
   const handleRefreshData = async () => {
+    if (!isAdmin) return; // Skip if not admin
+    
     // Clear all caches to ensure we get fresh data
     rolePermissionService.clearCaches();
     

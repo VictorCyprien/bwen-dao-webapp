@@ -37,6 +37,10 @@ export class RolePermissionService {
   private userRolesCache: Map<string, { data: RoleListResponse; timestamp: number }> = new Map();
   private userPermissionsCache: Map<string, { data: PermissionListResponse; timestamp: number }> = new Map();
   private governanceModelsCache: { data: GovernanceModelsList; timestamp: number } | null = null;
+  // Add new caches for admin status, user access, and module access
+  private daoAdminsCache: Map<string, { adminIds: string[]; ownerId: string; timestamp: number }> = new Map();
+  private userAccessCache: Map<string, { hasAccess: boolean; canInvite: boolean; canRemove: boolean; timestamp: number }> = new Map();
+  private moduleAccessCache: Map<string, { hasAccess: boolean; timestamp: number }> = new Map();
   private readonly CACHE_EXPIRY_MS = 60000; // Cache for 1 minute
 
   constructor(apiEndpoint: string = DEFAULT_API_ENDPOINT) {
@@ -475,6 +479,128 @@ export class RolePermissionService {
   }
 
   /**
+   * Cache admin status for a DAO
+   */
+  async cacheDAOAdmins(daoId: string, adminIds: string[], ownerId: string): Promise<void> {
+    const cacheKey = `admins-${daoId}`;
+    this.daoAdminsCache.set(cacheKey, {
+      adminIds,
+      ownerId,
+      timestamp: Date.now()
+    });
+  }
+
+  /**
+   * Get cached admin status for a DAO
+   */
+  getDAOAdminsFromCache(daoId: string): { adminIds: string[]; ownerId: string } | null {
+    const cacheKey = `admins-${daoId}`;
+    if (this.daoAdminsCache.has(cacheKey)) {
+      const cached = this.daoAdminsCache.get(cacheKey)!;
+      if (Date.now() - cached.timestamp < this.CACHE_EXPIRY_MS) {
+        return {
+          adminIds: cached.adminIds,
+          ownerId: cached.ownerId
+        };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Cache user access status for a DAO
+   */
+  cacheUserAccess(daoId: string, userId: string, hasAccess: boolean, canInvite: boolean, canRemove: boolean): void {
+    const cacheKey = `user-access-${daoId}-${userId}`;
+    this.userAccessCache.set(cacheKey, {
+      hasAccess,
+      canInvite,
+      canRemove,
+      timestamp: Date.now()
+    });
+  }
+
+  /**
+   * Get cached user access status for a DAO
+   */
+  getUserAccessFromCache(daoId: string, userId: string): { hasAccess: boolean; canInvite: boolean; canRemove: boolean } | null {
+    const cacheKey = `user-access-${daoId}-${userId}`;
+    if (this.userAccessCache.has(cacheKey)) {
+      const cached = this.userAccessCache.get(cacheKey)!;
+      if (Date.now() - cached.timestamp < this.CACHE_EXPIRY_MS) {
+        return {
+          hasAccess: cached.hasAccess,
+          canInvite: cached.canInvite,
+          canRemove: cached.canRemove
+        };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Cache module access status for a DAO
+   */
+  cacheModuleAccess(daoId: string, userId: string, hasAccess: boolean): void {
+    const cacheKey = `module-access-${daoId}-${userId}`;
+    this.moduleAccessCache.set(cacheKey, {
+      hasAccess,
+      timestamp: Date.now()
+    });
+  }
+
+  /**
+   * Get cached module access status for a DAO
+   */
+  getModuleAccessFromCache(daoId: string, userId: string): { hasAccess: boolean } | null {
+    const cacheKey = `module-access-${daoId}-${userId}`;
+    if (this.moduleAccessCache.has(cacheKey)) {
+      const cached = this.moduleAccessCache.get(cacheKey)!;
+      if (Date.now() - cached.timestamp < this.CACHE_EXPIRY_MS) {
+        return {
+          hasAccess: cached.hasAccess
+        };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Check if a user is admin of a DAO (using cache if available)
+   */
+  async isUserDAOAdmin(daoId: string, userId: string): Promise<boolean> {
+    // Check cache first
+    const cachedAdmins = this.getDAOAdminsFromCache(daoId);
+    if (cachedAdmins) {
+      return cachedAdmins.ownerId === userId || cachedAdmins.adminIds.includes(userId);
+    }
+    
+    // If not in cache, we need DAO data
+    try {
+      // We need to use daosService directly to avoid circular dependency
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return false;
+      
+      // Get DAO data
+      const dao = await apiClient.getDAOById(daoId);
+      if (!dao) return false;
+      
+      // Extract admin IDs and owner ID
+      const adminIdsList = dao.admins?.map(admin => admin.userId).filter((id): id is string => id !== undefined) || [];
+      const ownerId = dao.ownerId || '';
+      
+      // Cache the result
+      await this.cacheDAOAdmins(daoId, adminIdsList, ownerId);
+      
+      // Return the result
+      return ownerId === userId || adminIdsList.includes(userId);
+    } catch (error) {
+      console.error(`Error checking if user is admin of DAO ${daoId}:`, error);
+      return false;
+    }
+  }
+
+  /**
    * Clear all caches - should be called on logout
    */
   clearCaches(): void {
@@ -484,6 +610,10 @@ export class RolePermissionService {
     this.userRolesCache.clear();
     this.userPermissionsCache.clear();
     this.governanceModelsCache = null;
+    // Clear new caches
+    this.daoAdminsCache.clear();
+    this.userAccessCache.clear();
+    this.moduleAccessCache.clear();
   }
 }
 

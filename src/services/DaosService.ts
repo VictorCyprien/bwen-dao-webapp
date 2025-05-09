@@ -17,6 +17,9 @@ const DEFAULT_API_ENDPOINT = '/api';
 export class DaosService {
   private apiEndpoint: string;
   private daosApi: DaosApi;
+  // Add cache for DAOs with expiration
+  private daosCache: Map<string, { data: DAO; timestamp: number }> = new Map();
+  private readonly CACHE_EXPIRY_MS = 60000; // Cache for 1 minute
 
   constructor(apiEndpoint: string = DEFAULT_API_ENDPOINT) {
     this.apiEndpoint = apiEndpoint;
@@ -94,7 +97,27 @@ export class DaosService {
    */
   async getDaoById(daoId: string): Promise<DAO | null> {
     try {
+      // Check cache first
+      const cacheKey = `dao-${daoId}`;
+      if (this.daosCache.has(cacheKey)) {
+        const cached = this.daosCache.get(cacheKey)!;
+        if (Date.now() - cached.timestamp < this.CACHE_EXPIRY_MS) {
+          console.log('Returning cached DAO data');
+          return cached.data;
+        }
+      }
+
+      // Not in cache or expired, fetch from API
       const response = await this.daosApi.getDAOById(daoId);
+      
+      // Cache the response if it exists
+      if (response) {
+        this.daosCache.set(cacheKey, {
+          data: response,
+          timestamp: Date.now()
+        });
+      }
+      
       return response || null;
     } catch (error) {
       console.error(`Error getting DAO with ID ${daoId} :`, error);
@@ -261,6 +284,10 @@ export class DaosService {
       }
 
       const response = await apiClient.updateDAO(daoId, daoUpdate);
+      
+      // Clear the DAO cache after update
+      this.clearDaoCache(daoId);
+      
       return response?.dao || null;
     } catch (error) {
       console.error(`Error updating DAO ${daoId}:`, error);
@@ -277,6 +304,10 @@ export class DaosService {
       if (!apiClient) return null;
 
       const response = await apiClient.addMemberToDAO(daoId);
+      
+      // Clear the DAO cache after adding a member
+      this.clearDaoCache(daoId);
+      
       return response.action || null;
     } catch (error) {
       console.error(`Error adding member to DAO ${daoId}:`, error);
@@ -297,6 +328,10 @@ export class DaosService {
       // Note: userWhoMadeRequest is handled by the server
 
       const response = await apiClient.removeMemberFromDAO(daoId, membership);
+      
+      // Clear the DAO cache after removing a member
+      this.clearDaoCache(daoId);
+      
       return response?.dao || null;
     } catch (error) {
       console.error(`Error removing member from DAO ${daoId}:`, error);
@@ -369,6 +404,10 @@ export class DaosService {
       if (!apiClient) return null;
 
       const response = await apiClient.addDAOModule(daoId, moduleData);
+      
+      // Clear the DAO cache after adding a module
+      this.clearDaoCache(daoId);
+      
       return response || null;
     } catch (error) {
       console.error(`Error adding module to DAO ${daoId}:`, error);
@@ -385,6 +424,10 @@ export class DaosService {
       if (!apiClient) return null;
 
       const response = await apiClient.removeDAOModule(daoId, moduleData);
+      
+      // Clear the DAO cache after removing a module
+      this.clearDaoCache(daoId);
+      
       return response || null;
     } catch (error) {
       console.error(`Error removing module from DAO ${daoId}:`, error);
@@ -463,6 +506,10 @@ export class DaosService {
       }
 
       const response = await apiClient.inviteUserToDAO(daoId, invitation);
+      
+      // Clear DAO cache as the pending invitations list might be considered part of DAO state
+      this.clearDaoCache(daoId);
+      
       return response || null;
     } catch (error) {
       console.error(`Error inviting user to DAO ${daoId}:`, error);
@@ -486,6 +533,12 @@ export class DaosService {
       invitationAction.action = action;
 
       const response = await apiClient.respondToDAOInvitation(daoId, invitationId, invitationAction);
+      
+      // Clear DAO cache if invitation is accepted as it will change members
+      if (action === 'accept') {
+        this.clearDaoCache(daoId);
+      }
+      
       return response || null;
     } catch (error) {
       console.error(`Error responding to invitation ${invitationId} for DAO ${daoId}:`, error);
@@ -542,11 +595,35 @@ export class DaosService {
       if (!apiClient) return null;
 
       const response = await apiClient.cancelDAOInvitation(daoId, invitationId);
+      
+      // Clear DAO cache as the pending invitations list might be considered part of DAO state
+      this.clearDaoCache(daoId);
+      
       return response || null;
     } catch (error) {
       console.error(`Error canceling invitation ${invitationId} for DAO ${daoId}:`, error);
       return null;
     }
+  }
+
+  /**
+   * Clear DAO cache
+   */
+  clearDaoCache(daoId?: string): void {
+    if (daoId) {
+      // Clear specific DAO
+      this.daosCache.delete(`dao-${daoId}`);
+    } else {
+      // Clear all DAOs
+      this.daosCache.clear();
+    }
+  }
+
+  /**
+   * Clear all caches - should be called on logout
+   */
+  clearCaches(): void {
+    this.daosCache.clear();
   }
 }
 

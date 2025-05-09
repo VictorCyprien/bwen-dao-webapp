@@ -87,30 +87,111 @@ const Modules: React.FC = () => {
       try {
         setPageLoading(true);
         
-        // Get the DAO to check if user is owner/admin
-        const dao = await daosService.getDaoById(daoId);
-        if (!dao) {
+        // Check if we have cached access data
+        const cachedAccess = rolePermissionService.getModuleAccessFromCache(daoId, userInfo.userId);
+        
+        if (cachedAccess) {
+          // Use cached data
+          setHasAccess(cachedAccess.hasAccess);
+          
+          // Only if user has access, fetch DAO modules
+          if (cachedAccess.hasAccess) {
+            try {
+              setLoading(true);
+              setError(null);
+              
+              // Use the actual module fetching API
+              const modulesList = await daosService.getDAOModules(daoId);
+              if (modulesList) {
+                setModules(modulesList.modules);
+              } else {
+                // Fallback to empty array if no modules returned
+                setModules([]);
+              }
+            } catch (err) {
+              console.error('Error fetching DAO modules:', err);
+              setError('Failed to load modules');
+            } finally {
+              setLoading(false);
+            }
+          }
+          
           setPageLoading(false);
           return;
         }
         
-        const adminIdsList = dao?.admins?.map(admin => admin.userId) || [];
-        const isOwnerOrAdmin = dao.ownerId === userInfo.userId || adminIdsList.includes(userInfo.userId);
+        // Check if user is DAO owner/admin
+        const isOwnerOrAdmin = await rolePermissionService.isUserDAOAdmin(daoId, userInfo.userId);
         
         // If user is owner or admin, they have access
         if (isOwnerOrAdmin) {
           setHasAccess(true);
+          
+          // Cache access data
+          rolePermissionService.cacheModuleAccess(daoId, userInfo.userId, true);
+          
+          // Fetch modules only if user has access
+          try {
+            setLoading(true);
+            setError(null);
+            
+            // Use the actual module fetching API
+            const modulesList = await daosService.getDAOModules(daoId);
+            if (modulesList) {
+              setModules(modulesList.modules);
+            } else {
+              // Fallback to empty array if no modules returned
+              setModules([]);
+            }
+          } catch (err) {
+            console.error('Error fetching DAO modules:', err);
+            setError('Failed to load modules');
+          } finally {
+            setLoading(false);
+          }
+          
           setPageLoading(false);
           return;
         }
         
-        // Otherwise, check if user has roles with required permissions
+        // Otherwise, check if user has any roles (simplified permission check)
         const userRolesResponse = await rolePermissionService.getUserRoles(daoId, userInfo.userId);
-        if (!userRolesResponse || !userRolesResponse.roles) {
+        if (!userRolesResponse || !userRolesResponse.roles || userRolesResponse.roles.length === 0) {
           setHasAccess(false);
+          
+          // Cache the negative response
+          rolePermissionService.cacheModuleAccess(daoId, userInfo.userId, false);
+          
           setPageLoading(false);
           return;
         }
+        
+        // If user has any roles, grant access
+        setHasAccess(true);
+        
+        // Cache access data
+        rolePermissionService.cacheModuleAccess(daoId, userInfo.userId, true);
+        
+        // Fetch modules only if user has access
+        try {
+          setLoading(true);
+          setError(null);
+          
+          // Use the actual module fetching API
+          const modulesList = await daosService.getDAOModules(daoId);
+          if (modulesList) {
+            setModules(modulesList.modules);
+          } else {
+            // Fallback to empty array if no modules returned
+            setModules([]);
+          }
+        } catch (err) {
+          console.error('Error fetching DAO modules:', err);
+          setError('Failed to load modules');
+        } finally {
+          setLoading(false);
+        }
+        
       } catch (error) {
         console.error('Error checking page access:', error);
         setHasAccess(false);
@@ -121,34 +202,6 @@ const Modules: React.FC = () => {
     
     checkAccess();
   }, [daoId, userInfo]);
-
-  React.useEffect(() => {
-    async function fetchModules() {
-      if (!daoId || !hasAccess) return;
-
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Use the actual module fetching API
-        const modulesList = await daosService.getDAOModules(daoId);
-        if (modulesList) {
-          setModules(modulesList.modules);
-        } else {
-          // Fallback to empty array if no modules returned
-          setModules([]);
-        }
-        
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching DAO modules:', err);
-        setError('Failed to load modules');
-        setLoading(false);
-      }
-    }
-
-    fetchModules();
-  }, [daoId, hasAccess]);
 
   const toggleModule = async (moduleName: string) => {
     if (!daoId || !hasAccess) return;

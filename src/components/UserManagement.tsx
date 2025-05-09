@@ -161,20 +161,46 @@ const UserManagement = () => {
       try {
         setPageLoading(true);
         
-        // Get the DAO to check if user is owner/admin
-        const dao = await daosService.getDaoById(daoId);
-        if (!dao) {
+        // Check if we have cached access data
+        const cachedAccess = rolePermissionService.getUserAccessFromCache(daoId, userInfo.userId);
+        
+        if (cachedAccess) {
+          // Use cached data
+          setHasAccess(cachedAccess.hasAccess);
+          setPermissions({
+            canInvite: cachedAccess.canInvite, 
+            canRemove: cachedAccess.canRemove
+          });
+          
+          // Only if user has access, fetch DAO members
+          if (cachedAccess.hasAccess) {
+            const daoData = await daosService.getDaoById(daoId);
+            if (daoData && daoData.members) {
+              setDaoMembers(daoData.members);
+            }
+          }
+          
           setPageLoading(false);
           return;
         }
         
-        const adminIdsList = dao?.admins?.map(admin => admin.userId) || [];
-        const isOwnerOrAdmin = dao.ownerId === userInfo.userId || adminIdsList.includes(userInfo.userId);
+        // Check if user is DAO owner/admin
+        const isOwnerOrAdmin = await rolePermissionService.isUserDAOAdmin(daoId, userInfo.userId);
         
         // If user is owner or admin, they have access
         if (isOwnerOrAdmin) {
           setHasAccess(true);
           setPermissions({ canInvite: true, canRemove: true });
+          
+          // Fetch DAO members only if user has access
+          const dao = await daosService.getDaoById(daoId);
+          if (dao && dao.members) {
+            setDaoMembers(dao.members);
+          }
+          
+          // Cache the access data
+          rolePermissionService.cacheUserAccess(daoId, userInfo.userId, true, true, true);
+          
           setPageLoading(false);
           return;
         }
@@ -183,6 +209,10 @@ const UserManagement = () => {
         const userRolesResponse = await rolePermissionService.getUserRoles(daoId, userInfo.userId);
         if (!userRolesResponse || !userRolesResponse.roles) {
           setHasAccess(false);
+          
+          // Cache the negative response
+          rolePermissionService.cacheUserAccess(daoId, userInfo.userId, false, false, false);
+          
           setPageLoading(false);
           return;
         }
@@ -192,6 +222,8 @@ const UserManagement = () => {
         let hasRemovePermission = false;
         
         for (const role of userRolesResponse.roles as Role[]) {
+          if (!role.roleId) continue; // Skip if roleId is undefined
+          
           const rolePermissions = await rolePermissionService.getRolePermissions(daoId, role.roleId);
           
           if (rolePermissions && rolePermissions.permissions) {
@@ -214,6 +246,18 @@ const UserManagement = () => {
           canInvite: hasInvitePermission,
           canRemove: hasRemovePermission
         });
+        
+        // Cache the access data
+        rolePermissionService.cacheUserAccess(daoId, userInfo.userId, userHasAccess, hasInvitePermission, hasRemovePermission);
+        
+        // Fetch DAO members only if user has access
+        if (userHasAccess) {
+          const daoData = await daosService.getDaoById(daoId);
+          if (daoData && daoData.members) {
+            setDaoMembers(daoData.members);
+          }
+        }
+        
       } catch (error) {
         console.error('Error checking page access:', error);
         setHasAccess(false);
@@ -224,27 +268,6 @@ const UserManagement = () => {
     
     checkAccess();
   }, [daoId, userInfo]);
-
-  // Fetch DAO members
-  React.useEffect(() => {
-    const fetchDaoMembers = async () => {
-      if (!daoId || !hasAccess) return;
-      
-      try {
-        setLoading(true);
-        const daoData = await daosService.getDaoById(daoId);
-        if (daoData && daoData.members) {
-          setDaoMembers(daoData.members);
-        }
-        setLoading(false);
-      } catch (error) {
-        console.error('Error fetching DAO members:', error);
-        setLoading(false);
-      }
-    };
-    
-    fetchDaoMembers();
-  }, [daoId, hasAccess]);
 
   // Filter out the current user from the members list for display
   const displayMembers = React.useMemo(() => {
