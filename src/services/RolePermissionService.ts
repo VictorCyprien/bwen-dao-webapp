@@ -445,6 +445,36 @@ export class RolePermissionService {
   }
 
   /**
+   * Delete a role from a DAO
+   */
+  async deleteRole(daoId: string, roleId: string): Promise<RoleResponse | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      return await apiClient.deleteDAORole(daoId, roleId);
+    } catch (error) {
+      console.error(`Error deleting role ${roleId} from DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Remove a role from a user in a DAO
+   */
+  async removeRoleFromUser(daoId: string, userId: string, roleId: string): Promise<UserRoleResponse | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      return await apiClient.removeRoleFromUser(daoId, userId, roleId);
+    } catch (error) {
+      console.error(`Error removing role ${roleId} from user ${userId} in DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Clear all caches - should be called on logout
    */
   clearCaches(): void {
