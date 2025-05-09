@@ -3,7 +3,87 @@ import { useParams } from 'react-router-dom';
 import { rolePermissionService } from '../services/RolePermissionService';
 import { daosService } from '../services/DaosService';
 import { useAuth } from '../context/AuthContext';
-import { RefreshCw, X, Trash2 } from 'lucide-react';
+import { RefreshCw, X, Trash2, Shield, UserCheck, Plus, AlertCircle, Users, Settings } from 'lucide-react';
+import Card from './common/Card';
+import Button from './common/Button';
+import { typography, containers, ui } from '../styles/theme';
+
+// Toast notification component
+const Toast = ({ message, type, onClose }: { message: string; type: 'success' | 'error'; onClose: () => void }) => {
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className={`fixed bottom-4 right-4 p-4 rounded-md shadow-lg z-50 flex items-center space-x-2 ${
+      type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+    }`}>
+      {type === 'success' ? 
+        <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg> : 
+        <AlertCircle size={18} />
+      }
+      <span>{message}</span>
+      <button onClick={onClose} className="ml-2">
+        <X size={18} />
+      </button>
+    </div>
+  );
+};
+
+// Confirmation dialog component
+const ConfirmDialog = ({ 
+  title, 
+  message, 
+  isOpen, 
+  onConfirm, 
+  onCancel, 
+  isLoading 
+}: { 
+  title: string; 
+  message: string; 
+  isOpen: boolean; 
+  onConfirm: () => void; 
+  onCancel: () => void; 
+  isLoading: boolean 
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
+      <div className="bg-gray-800 rounded-lg shadow-xl border border-gray-700 p-6 max-w-md w-full">
+        <h3 className="text-lg font-medium text-white mb-4">{title}</h3>
+        <p className="text-gray-300 mb-6">{message}</p>
+        <div className="flex justify-end space-x-3">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md"
+            disabled={isLoading}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded-md flex items-center"
+            disabled={isLoading}
+          >
+            {isLoading && (
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            )}
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface RoleItem {
   roleId: string;
@@ -21,6 +101,8 @@ interface UserItem {
   userId: string;
   username: string;
   memberName?: string;
+  profilePicture?: string;
+  walletAddress?: string;
 }
 
 const Roles: React.FC = () => {
@@ -56,15 +138,29 @@ const Roles: React.FC = () => {
   const [selectedRoleForUser, setSelectedRoleForUser] = React.useState<string>('');
   const [selectedRoleForPermission, setSelectedRoleForPermission] = React.useState<string>('');
 
-  // Add state for confirmation dialog
-  const [showConfirmDialog, setShowConfirmDialog] = React.useState(false);
-  const [permissionToRemove, setPermissionToRemove] = React.useState<string | null>(null);
+  // Add state for confirmation dialogs
+  const [confirmDialog, setConfirmDialog] = React.useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    isLoading: boolean;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    isLoading: false
+  });
+  
+  // Add state for toast notifications
+  const [toast, setToast] = React.useState<{
+    message: string;
+    type: 'success' | 'error';
+  } | null>(null);
 
-  // Add loading state for permission removal
-  const [removingPermission, setRemovingPermission] = React.useState(false);
-
-  // Add state for success message
-  const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  // Track which section is currently being viewed
+  const [activeSection, setActiveSection] = React.useState<'roles' | 'permissions' | 'users'>('roles');
 
   // Check if current user is admin
   React.useEffect(() => {
@@ -258,6 +354,12 @@ const Roles: React.FC = () => {
         // Refresh roles list with fresh data from server
         await fetchRoles();
         
+        // Show success message
+        setToast({
+          message: `Role "${newRoleName}" created successfully`,
+          type: 'success'
+        });
+        
         // Reset form
         setNewRoleName('');
         setNewRoleDescription('');
@@ -265,6 +367,10 @@ const Roles: React.FC = () => {
       }
     } catch (error) {
       console.error('Error creating role:', error);
+      setToast({
+        message: `Failed to create role: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        type: 'error'
+      });
     }
   };
 
@@ -287,12 +393,22 @@ const Roles: React.FC = () => {
         // Refresh user roles with fresh data
         await fetchUserRoles(selectedUser.userId);
         
+        // Show success toast
+        setToast({
+          message: `Role assigned to ${selectedUser.username} successfully`,
+          type: 'success'
+        });
+        
         // Reset form
         setSelectedRoleForUser('');
         setShowAssignRoleForm(false);
       }
     } catch (error) {
       console.error('Error assigning role to user:', error);
+      setToast({
+        message: `Failed to assign role: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        type: 'error'
+      });
     }
   };
 
@@ -314,6 +430,12 @@ const Roles: React.FC = () => {
         
         // Refresh role permissions
         await fetchRolePermissions(selectedRole.roleId);
+        
+        // Show success toast
+        setToast({
+          message: "Permission assigned successfully",
+          type: 'success'
+        });
       }
       
       // Reset form
@@ -321,6 +443,10 @@ const Roles: React.FC = () => {
       setShowAssignPermissionForm(false);
     } catch (error) {
       console.error('Error assigning permission to role:', error);
+      setToast({
+        message: `Failed to assign permission: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        type: 'error'
+      });
     }
   };
 
@@ -328,7 +454,10 @@ const Roles: React.FC = () => {
   const handleRemovePermissionFromRole = async (permissionId: string) => {
     if (!daoId || !selectedRole) return;
     
-    setRemovingPermission(true);
+    setConfirmDialog({
+      ...confirmDialog,
+      isLoading: true
+    });
     
     try {
       const response = await rolePermissionService.removePermissionFromRole(
@@ -344,36 +473,158 @@ const Roles: React.FC = () => {
         // Refresh role permissions
         await fetchRolePermissions(selectedRole.roleId);
         
-        // Show success message
-        setSuccessMessage("Permission removed successfully");
-        
-        // Hide success message after 3 seconds
-        setTimeout(() => {
-          setSuccessMessage(null);
-        }, 3000);
+        // Show success toast
+        setToast({
+          message: "Permission removed successfully",
+          type: 'success'
+        });
       }
     } catch (error) {
       console.error('Error removing permission from role:', error);
+      setToast({
+        message: `Failed to remove permission: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        type: 'error'
+      });
     } finally {
-      setRemovingPermission(false);
+      setConfirmDialog({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => {},
+        isLoading: false
+      });
     }
   };
 
-  // Update the handleRemovePermissionFromRole function to show the confirmation dialog
-  const handleRemovePermissionClick = (permissionId: string) => {
-    setPermissionToRemove(permissionId);
-    setShowConfirmDialog(true);
+  // Handle confirmation dialog for permission removal
+  const handleRemovePermissionClick = (permissionId: string, permissionName: string) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Remove Permission',
+      message: `Are you sure you want to remove the "${permissionName}" permission from the "${selectedRole?.name}" role? This action cannot be undone.`,
+      onConfirm: () => handleRemovePermissionFromRole(permissionId),
+      isLoading: false
+    });
   };
 
-  // Handle the actual permission removal after confirmation
-  const confirmRemovePermission = async () => {
-    if (!permissionToRemove) return;
+  // Handle removing a role from a user
+  const handleRemoveRoleFromUser = async (roleId: string, roleName: string) => {
+    if (!daoId || !selectedUser) return;
     
-    setRemovingPermission(true);
-    await handleRemovePermissionFromRole(permissionToRemove);
-    setShowConfirmDialog(false);
-    setPermissionToRemove(null);
-    setRemovingPermission(false);
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Remove Role',
+      message: `Are you sure you want to remove the "${roleName}" role from ${selectedUser.username}? This may affect their permissions.`,
+      onConfirm: async () => {
+        setConfirmDialog({
+          ...confirmDialog,
+          isLoading: true
+        });
+        
+        try {
+          const response = await rolePermissionService.removeRoleFromUser(
+            daoId,
+            selectedUser.userId,
+            roleId
+          );
+          
+          if (response) {
+            // Clear caches to ensure fresh data
+            rolePermissionService.clearCaches();
+            
+            // Refresh user roles
+            await fetchUserRoles(selectedUser.userId);
+            
+            // Show success toast
+            setToast({
+              message: `Role removed from ${selectedUser.username} successfully`,
+              type: 'success'
+            });
+          }
+        } catch (error) {
+          console.error('Error removing role from user:', error);
+          setToast({
+            message: `Failed to remove role: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            type: 'error'
+          });
+        } finally {
+          setConfirmDialog({
+            isOpen: false,
+            title: '',
+            message: '',
+            onConfirm: () => {},
+            isLoading: false
+          });
+        }
+      },
+      isLoading: false
+    });
+  };
+
+  // Handle removing a role
+  const handleRemoveRole = async (roleId: string, roleName: string) => {
+    if (!daoId) return;
+    
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Role',
+      message: `Are you sure you want to delete the "${roleName}" role? This will remove the role from all users who have it.`,
+      onConfirm: async () => {
+        setConfirmDialog({
+          ...confirmDialog,
+          isLoading: true
+        });
+        
+        try {
+          const response = await rolePermissionService.deleteRole(daoId, roleId);
+          
+          if (response) {
+            // Clear caches to ensure fresh data
+            rolePermissionService.clearCaches();
+            
+            // Refresh roles
+            await fetchRoles();
+            
+            // Clear selected role if it was deleted
+            if (selectedRole?.roleId === roleId) {
+              setSelectedRole(null);
+            }
+            
+            // Show success toast
+            setToast({
+              message: `Role "${roleName}" deleted successfully`,
+              type: 'success'
+            });
+          }
+        } catch (error) {
+          console.error('Error deleting role:', error);
+          setToast({
+            message: `Failed to delete role: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            type: 'error'
+          });
+        } finally {
+          setConfirmDialog({
+            isOpen: false,
+            title: '',
+            message: '',
+            onConfirm: () => {},
+            isLoading: false
+          });
+        }
+      },
+      isLoading: false
+    });
+  };
+
+  // Close toast notification
+  const closeToast = () => {
+    setToast(null);
+  };
+
+  // Display wallet address in shortened form
+  const displayWalletAddress = (address?: string) => {
+    if (!address) return 'No wallet address';
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
   };
 
   if (!isAdmin) {
@@ -392,16 +643,35 @@ const Roles: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <div className="w-8 h-8 border-t-2 border-b-2 border-purple-500 rounded-full animate-spin"></div>
+      <div className="flex justify-center items-center p-8 h-full min-h-screen">
+        <div className="w-12 h-12 border-t-2 border-b-2 border-purple-500 rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-white">Roles and Permissions</h1>
+    <div className="p-6 h-full min-h-screen overflow-auto">
+      {/* Toast notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={closeToast}
+        />
+      )}
+      
+      {/* Confirmation dialog */}
+      <ConfirmDialog 
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        isOpen={confirmDialog.isOpen}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog({...confirmDialog, isOpen: false})}
+        isLoading={confirmDialog.isLoading}
+      />
+      
+      <div className={containers.flexBetween + " mb-6"}>
+        <h1 className={typography.h1}>Roles and Permissions</h1>
         <button 
           onClick={handleRefreshData}
           className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md flex items-center"
@@ -418,25 +688,93 @@ const Roles: React.FC = () => {
         </div>
       )}
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Roles Section */}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg shadow p-6 border border-gray-700/50">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-white">Roles</h2>
-            <button 
-              onClick={() => setShowRoleForm(!showRoleForm)}
-              className="px-3 py-1 bg-purple-800 hover:bg-purple-700 text-white rounded-md text-sm"
-              disabled={rolesLoading}
-            >
-              {showRoleForm ? 'Cancel' : 'Add Role'}
-            </button>
+      {/* Dashboard cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div 
+          className={`bg-[#111]/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-800/60 cursor-pointer transition hover:bg-gray-800/50 ${activeSection === 'roles' ? 'ring-2 ring-indigo-500' : ''}`}
+          onClick={() => setActiveSection('roles')}
+        >
+          <div className="flex items-center">
+            <div className="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 mr-4">
+              <Shield size={20} className="text-white" />
+            </div>
+            <div>
+              <div className="text-sm text-gray-400">Total Roles</div>
+              <div className="text-2xl font-bold text-white">{roles.length}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div 
+          className={`bg-[#111]/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-800/60 cursor-pointer transition hover:bg-gray-800/50 ${activeSection === 'permissions' ? 'ring-2 ring-indigo-500' : ''}`}
+          onClick={() => {
+            setActiveSection('permissions');
+            // If no role is selected, select the first one
+            if (!selectedRole && roles.length > 0) {
+              setSelectedRole(roles[0]);
+            }
+          }}
+        >
+          <div className="flex items-center">
+            <div className="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 mr-4">
+              <Settings size={20} className="text-white" />
+            </div>
+            <div>
+              <div className="text-sm text-gray-400">Role Permissions</div>
+              <div className="text-xl font-bold text-white mt-1">
+                {selectedRole ? (
+                  <span>{rolePermissions.length} Permission{rolePermissions.length !== 1 ? 's' : ''}</span>
+                ) : (
+                  <span>Select a role</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div 
+          className={`bg-[#111]/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-gray-800/60 cursor-pointer transition hover:bg-gray-800/50 ${activeSection === 'users' ? 'ring-2 ring-indigo-500' : ''}`}
+          onClick={() => setActiveSection('users')}
+        >
+          <div className="flex items-center">
+            <div className="flex-shrink-0 p-3 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 mr-4">
+              <UserCheck size={20} className="text-white" />
+            </div>
+            <div>
+              <div className="text-sm text-gray-400">User Roles</div>
+              <div className="text-xl font-bold text-white mt-1">
+                {selectedUser ? (
+                  <span>{userRoles.length} Role{userRoles.length !== 1 ? 's' : ''}</span>
+                ) : (
+                  <span>Select a user</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Role Management Section */}
+      {activeSection === 'roles' && (
+        <Card>
+          <div className="flex items-center mb-4">
+            <Shield size={20} className="mr-2 text-indigo-500" />
+            <h2 className={typography.h2}>Role Management</h2>
           </div>
           
-          {rolesError && (
-            <div className="mb-4 p-3 bg-red-900/20 border border-red-500/30 rounded-md text-sm text-white">
-              {rolesError}
-            </div>
-          )}
+          <p className={typography.body + " mb-4"}>
+            Create, edit, and delete roles for your DAO.
+          </p>
+          
+          <div className="mb-4">
+            <Button 
+              onClick={() => setShowRoleForm(!showRoleForm)}
+              className="flex items-center"
+            >
+              <Plus size={16} className="mr-2" />
+              {showRoleForm ? 'Cancel' : 'Create New Role'}
+            </Button>
+          </div>
           
           {showRoleForm && (
             <form onSubmit={handleCreateRole} className="mb-6 bg-gray-900/50 p-4 rounded-md">
@@ -446,7 +784,7 @@ const Roles: React.FC = () => {
                   type="text"
                   value={newRoleName}
                   onChange={(e) => setNewRoleName(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-800 text-white rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className={ui.input}
                   required
                 />
               </div>
@@ -455,286 +793,351 @@ const Roles: React.FC = () => {
                 <textarea
                   value={newRoleDescription}
                   onChange={(e) => setNewRoleDescription(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-800 text-white rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className={ui.input}
                   rows={3}
                 />
               </div>
-              <button
+              <Button
                 type="submit"
-                className="w-full px-4 py-2 bg-purple-700 hover:bg-purple-600 text-white rounded-md"
+                className="w-full"
               >
                 Create Role
-              </button>
+              </Button>
             </form>
           )}
           
-          <div className="overflow-y-auto max-h-96 space-y-2">
-            {rolesLoading ? (
-              <div className="flex justify-center py-6">
-                <div className="w-6 h-6 border-t-2 border-b-2 border-purple-500 rounded-full animate-spin"></div>
-              </div>
-            ) : roles.length === 0 ? (
-              <p className="text-gray-400 text-center py-4">No roles available</p>
-            ) : (
-              roles.map((role: RoleItem) => (
-                <div 
-                  key={role.roleId}
-                  onClick={() => setSelectedRole(role)}
-                  className={`p-3 rounded-md cursor-pointer transition-colors ${
-                    selectedRole?.roleId === role.roleId 
-                      ? 'bg-purple-800/50 border border-purple-500/50' 
-                      : 'bg-gray-700/30 hover:bg-gray-700/50 border border-transparent'
-                  }`}
-                >
-                  <h3 className="font-medium text-white">{role.name}</h3>
-                  {role.description && (
-                    <p className="text-sm text-gray-300 mt-1">{role.description}</p>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-        
-        {/* Permissions Section */}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg shadow p-6 border border-gray-700/50">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-white">
-              {selectedRole ? `${selectedRole.name} Permissions` : 'Permissions'}
-            </h2>
-            {selectedRole && (
-              <button 
-                onClick={() => {
-                  // Auto-set the selected role when opening the form
-                  setSelectedRoleForPermission(selectedRole.roleId);
-                  setShowAssignPermissionForm(!showAssignPermissionForm);
-                }}
-                className="px-3 py-1 bg-purple-800 hover:bg-purple-700 text-white rounded-md text-sm"
-              >
-                {showAssignPermissionForm ? 'Cancel' : 'Assign Permission'}
-              </button>
-            )}
-          </div>
-          
-          {successMessage && (
-            <div className="mb-4 p-3 bg-green-900/20 border border-green-500/30 rounded-md text-green-400 text-sm flex items-center">
-              <svg className="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              {successMessage}
+          {rolesError && (
+            <div className="mb-4 p-3 bg-red-900/20 border border-red-500/30 rounded-md text-sm text-white">
+              {rolesError}
             </div>
           )}
           
-          {showAssignPermissionForm && (
-            <form onSubmit={handleAssignPermissionToRole} className="mb-6 bg-gray-900/50 p-4 rounded-md">
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-300 mb-1">Role</label>
-                <input
-                  type="text"
-                  value={selectedRole?.name || ''}
-                  className="w-full px-3 py-2 bg-gray-800 text-white rounded-md border border-gray-700"
-                  disabled
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-300 mb-1">Permission</label>
-                <select
-                  value={selectedPermission}
-                  onChange={(e) => setSelectedPermission(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-800 text-white rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  required
-                >
-                  <option value="">Select a permission</option>
-                  {permissions.map((permission: PermissionItem) => (
-                    <option key={permission.permissionId} value={permission.permissionId}>
-                      {permission.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <button
-                type="submit"
-                className="w-full px-4 py-2 bg-purple-700 hover:bg-purple-600 text-white rounded-md"
-              >
-                Assign Permission
-              </button>
-            </form>
-          )}
+          <div className="border border-gray-700 rounded-lg overflow-hidden">
+            <div className="px-4 py-2 bg-[#1A1A1A] border-b border-gray-700 grid grid-cols-12">
+              <div className="col-span-4 font-medium">Role Name</div>
+              <div className="col-span-6 font-medium">Description</div>
+              <div className="col-span-2"></div>
+            </div>
+            
+            <div className="max-h-96 overflow-y-auto">
+              {rolesLoading ? (
+                <div className="flex justify-center py-6">
+                  <div className="w-8 h-8 border-t-2 border-b-2 border-purple-500 rounded-full animate-spin"></div>
+                </div>
+              ) : roles.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  No roles available. Create your first role!
+                </div>
+              ) : (
+                roles.map((role: RoleItem) => (
+                  <div 
+                    key={role.roleId} 
+                    className="border-b border-gray-700 last:border-0 grid grid-cols-12 items-center hover:bg-gray-800/30"
+                  >
+                    <div className="col-span-4 p-4 font-medium">{role.name}</div>
+                    <div className="col-span-6 p-4 text-gray-300">
+                      {role.description || <span className="text-gray-500 italic">No description</span>}
+                    </div>
+                    <div className="col-span-2 p-4 flex justify-end">
+                      <Button 
+                        variant="danger" 
+                        size="small"
+                        onClick={() => handleRemoveRole(role.roleId, role.name)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
+      
+      {/* Permissions Management Section */}
+      {activeSection === 'permissions' && (
+        <Card>
+          <div className="flex items-center mb-4">
+            <Settings size={20} className="mr-2 text-blue-500" />
+            <h2 className={typography.h2}>Permissions Management</h2>
+          </div>
           
-          <div className="overflow-y-auto max-h-96 space-y-2">
-            {permissionsLoading ? (
-              <div className="flex justify-center py-6">
-                <div className="w-6 h-6 border-t-2 border-b-2 border-purple-500 rounded-full animate-spin"></div>
-              </div>
-            ) : !selectedRole ? (
-              <p className="text-gray-400 text-center py-4">Select a role to view permissions</p>
-            ) : rolePermissions.length === 0 ? (
-              <p className="text-gray-400 text-center py-4">No permissions assigned to this role</p>
-            ) : (
-              rolePermissions.map((permission: PermissionItem) => (
-                <div 
-                  key={permission.permissionId}
-                  className="p-3 rounded-md bg-gray-700/30 border border-gray-600/30"
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-medium text-white">{permission.name}</h3>
-                      {permission.description && (
-                        <p className="text-sm text-gray-300 mt-1">{permission.description}</p>
+          <p className={typography.body + " mb-4"}>
+            Manage permissions for roles to control what actions users can perform.
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Role selection sidebar */}
+            <div className="bg-[#111]/50 rounded-lg p-4 border border-gray-800/40">
+              <h3 className={typography.h3 + " mb-3"}>Select Role</h3>
+              
+              {rolesLoading ? (
+                <div className="flex justify-center py-4">
+                  <div className="w-6 h-6 border-t-2 border-b-2 border-purple-500 rounded-full animate-spin"></div>
+                </div>
+              ) : roles.length === 0 ? (
+                <p className="text-gray-400">No roles available</p>
+              ) : (
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                  {roles.map((role: RoleItem) => (
+                    <div 
+                      key={role.roleId}
+                      onClick={() => setSelectedRole(role)}
+                      className={`p-3 rounded-md cursor-pointer transition ${
+                        selectedRole?.roleId === role.roleId 
+                          ? 'bg-indigo-900/50 border border-indigo-500/50' 
+                          : 'bg-gray-800/30 hover:bg-gray-700/50 border border-transparent'
+                      }`}
+                    >
+                      <h4 className="font-medium">{role.name}</h4>
+                      {role.description && (
+                        <p className="text-sm text-gray-400 mt-1 truncate">{role.description}</p>
                       )}
                     </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemovePermissionClick(permission.permissionId);
-                      }}
-                      className="ml-2 p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-900/20 rounded-md transition-colors"
-                      title="Remove permission"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-        
-        {/* Members Section */}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg shadow p-6 border border-gray-700/50">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-white">
-              {selectedUser ? `${selectedUser.username}'s Roles` : 'Members'}
-            </h2>
-            {selectedUser && (
-              <button 
-                onClick={() => setShowAssignRoleForm(!showAssignRoleForm)}
-                className="px-3 py-1 bg-purple-800 hover:bg-purple-700 text-white rounded-md text-sm"
-              >
-                {showAssignRoleForm ? 'Cancel' : 'Assign Role'}
-              </button>
-            )}
-          </div>
-          
-          {showAssignRoleForm && (
-            <form onSubmit={handleAssignRoleToUser} className="mb-6 bg-gray-900/50 p-4 rounded-md">
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-300 mb-1">User</label>
-                <input
-                  type="text"
-                  value={selectedUser?.username || ''}
-                  className="w-full px-3 py-2 bg-gray-800 text-white rounded-md border border-gray-700"
-                  disabled
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-300 mb-1">Role</label>
-                <select
-                  value={selectedRoleForUser}
-                  onChange={(e) => setSelectedRoleForUser(e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-800 text-white rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  required
-                >
-                  <option value="">Select a role</option>
-                  {roles.map((role: RoleItem) => (
-                    <option key={role.roleId} value={role.roleId}>
-                      {role.name}
-                    </option>
                   ))}
-                </select>
-              </div>
-              <button
-                type="submit"
-                className="w-full px-4 py-2 bg-purple-700 hover:bg-purple-600 text-white rounded-md"
-              >
-                Assign Role
-              </button>
-            </form>
-          )}
+                </div>
+              )}
+            </div>
+            
+            {/* Permissions list and management */}
+            <div className="md:col-span-2 bg-[#111]/50 rounded-lg p-4 border border-gray-800/40">
+              {!selectedRole ? (
+                <div className="text-center py-10 text-gray-400">
+                  <Settings size={40} className="mx-auto mb-4 opacity-40" />
+                  <p>Select a role to view and manage its permissions</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className={typography.h3}>
+                      <span className="text-indigo-400">{selectedRole.name}</span> Permissions
+                    </h3>
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      onClick={() => setShowAssignPermissionForm(!showAssignPermissionForm)}
+                      disabled={permissions.length === 0}
+                    >
+                      <Plus size={16} className="mr-1" />
+                      {showAssignPermissionForm ? 'Cancel' : 'Add Permission'}
+                    </Button>
+                  </div>
+                  
+                  {showAssignPermissionForm && (
+                    <form onSubmit={handleAssignPermissionToRole} className="mb-6 bg-gray-900/50 p-4 rounded-md">
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Permission</label>
+                        <select
+                          value={selectedPermission}
+                          onChange={(e) => setSelectedPermission(e.target.value)}
+                          className={ui.input}
+                          required
+                        >
+                          <option value="">Select a permission</option>
+                          {permissions
+                            .filter(p => !rolePermissions.some(rp => rp.permissionId === p.permissionId))
+                            .map((permission: PermissionItem) => (
+                              <option key={permission.permissionId} value={permission.permissionId}>
+                                {permission.name}
+                              </option>
+                            ))
+                          }
+                        </select>
+                      </div>
+                      <Button
+                        type="submit"
+                        disabled={!selectedPermission}
+                      >
+                        Assign Permission
+                      </Button>
+                    </form>
+                  )}
+                  
+                  {permissionsLoading ? (
+                    <div className="flex justify-center py-6">
+                      <div className="w-8 h-8 border-t-2 border-b-2 border-purple-500 rounded-full animate-spin"></div>
+                    </div>
+                  ) : rolePermissions.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400 border border-dashed border-gray-700 rounded-lg">
+                      No permissions assigned to this role
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                      {rolePermissions.map((permission: PermissionItem) => (
+                        <div 
+                          key={permission.permissionId}
+                          className="p-3 rounded-md bg-gray-800/50 border border-gray-700/50 flex justify-between items-center"
+                        >
+                          <div>
+                            <h4 className="font-medium">{permission.name}</h4>
+                            {permission.description && (
+                              <p className="text-sm text-gray-400 mt-1">{permission.description}</p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => handleRemovePermissionClick(permission.permissionId, permission.name)}
+                            className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-900/20 rounded-md transition-colors"
+                            title="Remove permission"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
+      
+      {/* User Roles Management Section */}
+      {activeSection === 'users' && (
+        <Card>
+          <div className="flex items-center mb-4">
+            <UserCheck size={20} className="mr-2 text-purple-500" />
+            <h2 className={typography.h2}>User Role Management</h2>
+          </div>
           
-          <div className="overflow-y-auto max-h-96">
-            {usersLoading ? (
-              <div className="flex justify-center py-6">
-                <div className="w-6 h-6 border-t-2 border-b-2 border-purple-500 rounded-full animate-spin"></div>
-              </div>
-            ) : !selectedUser ? (
-              <div className="space-y-2">
-                {users.length === 0 ? (
-                  <p className="text-gray-400 text-center py-4">No members available</p>
-                ) : (
-                  users.map((user: UserItem) => (
+          <p className={typography.body + " mb-4"}>
+            Assign roles to users to grant them specific permissions.
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* User selection sidebar */}
+            <div className="bg-[#111]/50 rounded-lg p-4 border border-gray-800/40">
+              <h3 className={typography.h3 + " mb-3"}>Select User</h3>
+              
+              {usersLoading ? (
+                <div className="flex justify-center py-4">
+                  <div className="w-6 h-6 border-t-2 border-b-2 border-purple-500 rounded-full animate-spin"></div>
+                </div>
+              ) : users.length === 0 ? (
+                <p className="text-gray-400">No users available</p>
+              ) : (
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                  {users.map((user: UserItem) => (
                     <div 
                       key={user.userId}
                       onClick={() => setSelectedUser(user)}
-                      className="p-3 rounded-md cursor-pointer bg-gray-700/30 hover:bg-gray-700/50 border border-transparent"
+                      className={`p-3 rounded-md cursor-pointer transition ${
+                        selectedUser?.userId === user.userId 
+                          ? 'bg-purple-900/50 border border-purple-500/50' 
+                          : 'bg-gray-800/30 hover:bg-gray-700/50 border border-transparent'
+                      }`}
                     >
-                      <h3 className="font-medium text-white">{user.memberName || user.username}</h3>
-                    </div>
-                  ))
-                )}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <button 
-                  onClick={() => setSelectedUser(null)}
-                  className="text-sm text-purple-400 hover:text-purple-300 flex items-center"
-                >
-                  ← Back to members
-                </button>
-                {userRoles.length === 0 ? (
-                  <p className="text-gray-400 text-center py-4">No roles assigned</p>
-                ) : (
-                  <div className="space-y-2">
-                    {userRoles.map((role: RoleItem) => (
-                      <div 
-                        key={role.roleId}
-                        className="p-3 rounded-md bg-gray-700/30 border border-gray-600/30"
-                      >
-                        <h3 className="font-medium text-white">{role.name}</h3>
-                        {role.description && (
-                          <p className="text-sm text-gray-300 mt-1">{role.description}</p>
-                        )}
+                      <div className="flex items-center">
+                        <img 
+                          src={user.profilePicture || `https://avatars.dicebear.com/api/identicon/${user.userId}.svg`} 
+                          alt={user.username} 
+                          className="w-8 h-8 rounded-full mr-2"
+                        />
+                        <div>
+                          <h4 className="font-medium">{user.memberName || user.username}</h4>
+                          {user.walletAddress && (
+                            <p className="text-xs text-gray-400 mt-0.5">{displayWalletAddress(user.walletAddress)}</p>
+                          )}
+                        </div>
                       </div>
-                    ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* User roles list and management */}
+            <div className="md:col-span-2 bg-[#111]/50 rounded-lg p-4 border border-gray-800/40">
+              {!selectedUser ? (
+                <div className="text-center py-10 text-gray-400">
+                  <Users size={40} className="mx-auto mb-4 opacity-40" />
+                  <p>Select a user to view and manage their roles</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className={typography.h3}>
+                      <span className="text-purple-400">{selectedUser.username}</span>'s Roles
+                    </h3>
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      onClick={() => setShowAssignRoleForm(!showAssignRoleForm)}
+                      disabled={roles.length === 0}
+                    >
+                      <Plus size={16} className="mr-1" />
+                      {showAssignRoleForm ? 'Cancel' : 'Assign Role'}
+                    </Button>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {showConfirmDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
-          <div className="bg-gray-800 rounded-lg shadow-xl border border-gray-700 p-6 max-w-md w-full">
-            <h3 className="text-lg font-medium text-white mb-4">Remove Permission</h3>
-            <p className="text-gray-300 mb-6">
-              Are you sure you want to remove this permission from the role? This action cannot be undone.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowConfirmDialog(false)}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md"
-                disabled={removingPermission}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmRemovePermission}
-                className="px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded-md flex items-center"
-                disabled={removingPermission}
-              >
-                {removingPermission && (
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                )}
-                Remove
-              </button>
+                  
+                  {showAssignRoleForm && (
+                    <form onSubmit={handleAssignRoleToUser} className="mb-6 bg-gray-900/50 p-4 rounded-md">
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-300 mb-1">Role</label>
+                        <select
+                          value={selectedRoleForUser}
+                          onChange={(e) => setSelectedRoleForUser(e.target.value)}
+                          className={ui.input}
+                          required
+                        >
+                          <option value="">Select a role</option>
+                          {roles
+                            .filter(r => !userRoles.some(ur => ur.roleId === r.roleId))
+                            .map((role: RoleItem) => (
+                              <option key={role.roleId} value={role.roleId}>
+                                {role.name}
+                              </option>
+                            ))
+                          }
+                        </select>
+                      </div>
+                      <Button
+                        type="submit"
+                        disabled={!selectedRoleForUser}
+                      >
+                        Assign Role
+                      </Button>
+                    </form>
+                  )}
+                  
+                  {usersLoading ? (
+                    <div className="flex justify-center py-6">
+                      <div className="w-8 h-8 border-t-2 border-b-2 border-purple-500 rounded-full animate-spin"></div>
+                    </div>
+                  ) : userRoles.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400 border border-dashed border-gray-700 rounded-lg">
+                      No roles assigned to this user
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                      {userRoles.map((role: RoleItem) => (
+                        <div 
+                          key={role.roleId}
+                          className="p-3 rounded-md bg-gray-800/50 border border-gray-700/50 flex justify-between items-center"
+                        >
+                          <div>
+                            <h4 className="font-medium">{role.name}</h4>
+                            {role.description && (
+                              <p className="text-sm text-gray-400 mt-1">{role.description}</p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => handleRemoveRoleFromUser(role.roleId, role.name)}
+                            className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-900/20 rounded-md transition-colors"
+                            title="Remove role"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );
