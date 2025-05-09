@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Check, AlertCircle, Clock, Calendar, Building } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Button from './common/Button';
 import { typography, ui } from '../styles/theme';
 import { daosService } from '../services/DaosService';
@@ -15,6 +16,7 @@ const InvitationsModal = ({
   isOpen,
   onClose
 }: InvitationsModalProps): React.ReactElement | null => {
+  const navigate = useNavigate();
   const [invitations, setInvitations] = React.useState<UserInvitation[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -74,6 +76,12 @@ const InvitationsModal = ({
       setInvitations((prevInvitations: UserInvitation[]) => 
         prevInvitations.filter((inv: UserInvitation) => inv.invitationId !== invitationId)
       );
+
+      // Redirect to the DAO dashboard if the invitation was accepted
+      if (accept && invitation.daoId) {
+        onClose();
+        navigate(`/daos/${invitation.daoId}`);
+      }
     } catch (err) {
       console.error(`Error ${accept ? 'accepting' : 'declining'} invitation:`, err);
       setError(`Failed to ${accept ? 'accept' : 'decline'} invitation. Please try again.`);
