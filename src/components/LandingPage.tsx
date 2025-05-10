@@ -95,7 +95,7 @@ interface LandingPageProps {
 }
 
 // Filter types
-type FilterType = 'owned' | 'joined' | 'explore';
+type FilterType = 'featured' | 'mydaos' | 'explore';
 
 // Badge types
 type BadgeType = 'featured' | 'active' | 'new';
@@ -193,24 +193,20 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
     if (isAuthenticated && userInfo?.userId) {
       const userId = userInfo.userId;
       
-      // Filter owned DAOs (user is the owner)
-      const userOwnedDaos = allDaos.filter((dao: DAO) => 
-        dao.ownerId === userId
-      );
-      setOwnedDaos(userOwnedDaos);
+      // For "Featured" - just use a subset of DAOs for now (first 5 as placeholder)
+      const featuredDaos = allDaos.slice(0, 5);
+      setOwnedDaos(featuredDaos);
       
-      // Filter joined DAOs (user is a member or admin but not the owner)
-      const userJoinedDaos = allDaos.filter((dao: DAO) => {
-        // Check if user is a member
+      // For "My DAOs" - combine owned, member, and admin DAOs
+      const myDaos = allDaos.filter((dao: DAO) => {
+        const isOwner = dao.ownerId === userId;
         const isMember = safeArraySome(dao.members, member => member?.userId === userId);
-        // Check if user is an admin
         const isAdmin = safeArraySome(dao.admins, admin => admin?.userId === userId);
-        // Include in joined if user is member or admin but not the owner
-        return (isMember || isAdmin) && dao.ownerId !== userId;
+        return isOwner || isMember || isAdmin;
       });
-      setJoinedDaos(userJoinedDaos);
+      setJoinedDaos(myDaos);
       
-      // Remaining DAOs (user is not owner, member, or admin)
+      // For "Explore" - all DAOs that are not in "My DAOs"
       const otherDaos = allDaos.filter((dao: DAO) => {
         const isOwner = dao.ownerId === userId;
         const isMember = safeArraySome(dao.members, member => member?.userId === userId);
@@ -219,14 +215,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
       });
       setExploreDaos(otherDaos);
       
-      return { owned: userOwnedDaos, joined: userJoinedDaos, explore: otherDaos };
+      return { featured: featuredDaos, mydaos: myDaos, explore: otherDaos };
     } else {
-      // If not authenticated, all DAOs go to explore
+      // If not authenticated, featured is still first 5 DAOs, but all go to explore
+      const featuredDaos = allDaos.slice(0, 5);
+      setOwnedDaos(featuredDaos);
       setExploreDaos(allDaos);
-      setOwnedDaos([]);
       setJoinedDaos([]);
       
-      return { owned: [], joined: [], explore: allDaos };
+      return { featured: featuredDaos, mydaos: [], explore: allDaos };
     }
   };
 
@@ -282,12 +279,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
       
       // Set appropriate filter based on which categories have DAOs
       if (activeFilter === 'explore' || 
-          (activeFilter === 'owned' && categories.owned.length === 0) || 
-          (activeFilter === 'joined' && categories.joined.length === 0)) {
-        if (categories.owned.length > 0) {
-          setActiveFilter('owned');
-        } else if (categories.joined.length > 0) {
-          setActiveFilter('joined');
+          (activeFilter === 'featured' && categories.featured.length === 0) || 
+          (activeFilter === 'mydaos' && categories.mydaos.length === 0)) {
+        if (categories.featured.length > 0) {
+          setActiveFilter('featured');
+        } else if (categories.mydaos.length > 0) {
+          setActiveFilter('mydaos');
         } else {
           setActiveFilter('explore');
         }
@@ -304,9 +301,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
   // Get current displayed DAOs based on active filter
   const getCurrentDaos = (): DAO[] => {
     switch (activeFilter) {
-      case 'owned':
+      case 'featured':
         return ownedDaos;
-      case 'joined':
+      case 'mydaos':
         return joinedDaos;
       case 'explore':
       default:
@@ -690,21 +687,21 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
                 {isAuthenticated && (
                   <>
                     <button
-                      onClick={() => setActiveFilter('owned')}
+                      onClick={() => setActiveFilter('featured')}
                       className={`px-4 py-2 rounded-full text-sm transition-all ${
-                        activeFilter === 'owned'
+                        activeFilter === 'featured'
                           ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-amber-600/20'
                           : 'bg-transparent border border-indigo-800/30 hover:border-indigo-500/50 text-gray-300'
                       }`}
                     >
                       <span className="flex items-center">
-                        <Crown size={14} className="mr-1.5" />
-                        My DAOs {ownedDaos.length > 0 && `(${ownedDaos.length})`}
+                        <Sparkles size={14} className="mr-1.5" />
+                        Featured {ownedDaos.length > 0 && `(${ownedDaos.length})`}
                       </span>
                     </button>
                     
                     <button
-                      onClick={() => setActiveFilter('joined')}
+                      onClick={() => setActiveFilter('mydaos')}
                       className={`px-4 py-2 rounded-full text-sm transition-all ${
                         activeFilter === 'joined'
                           ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-lg shadow-teal-600/20'
@@ -712,8 +709,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
                       }`}
                     >
                       <span className="flex items-center">
-                        <UserPlus size={14} className="mr-1.5" />
-                        Joined {joinedDaos.length > 0 && `(${joinedDaos.length})`}
+                        <Users size={14} className="mr-1.5" />
+                        My DAOs {joinedDaos.length > 0 && `(${joinedDaos.length})`}
                       </span>
                     </button>
                   </>
@@ -750,14 +747,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
             {/* Section title based on current filter */}
             <div className="mb-8 text-center">
               <h3 className="text-2xl font-bold mb-2">
-                {activeFilter === 'owned' ? 'DAOs You Own' : 
-                 activeFilter === 'joined' ? 'DAOs You\'ve Joined' : 
+                {activeFilter === 'featured' ? 'Featured DAOs' : 
+                 activeFilter === 'mydaos' ? 'My DAOs' : 
                  'Discover DAOs'}
               </h3>
-              {activeFilter === 'owned' && ownedDaos.length === 0 && !isLoading && (
-                <p className="text-gray-400">You don't own any DAOs yet. Create one to get started!</p>
+              {activeFilter === 'featured' && ownedDaos.length === 0 && !isLoading && (
+                <p className="text-gray-400">No featured DAOs available at the moment.</p>
               )}
-              {activeFilter === 'joined' && joinedDaos.length === 0 && !isLoading && (
+              {activeFilter === 'mydaos' && joinedDaos.length === 0 && !isLoading && (
                 <p className="text-gray-400">You haven't joined any DAOs yet. Explore and join communities that interest you!</p>
               )}
               {activeFilter === 'explore' && exploreDaos.length === 0 && !isLoading && (
