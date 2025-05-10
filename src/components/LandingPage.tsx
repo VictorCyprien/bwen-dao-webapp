@@ -23,9 +23,13 @@ import {
   Search,
   ArrowUpRight,
   Star,
-  Rocket
+  Rocket,
+  Crown,
+  UserPlus,
+  Compass
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import '../styles/aurora.css';
 
 // Add keyframes for logo scrolling
@@ -90,6 +94,9 @@ interface LandingPageProps {
   onEnterDashboard: (daoId?: string) => void;
 }
 
+// Filter types
+type FilterType = 'owned' | 'joined' | 'explore';
+
 // Badge types
 type BadgeType = 'featured' | 'active' | 'new';
 
@@ -144,14 +151,29 @@ const getDAOBadges = (dao: DAO, index: number): BadgeType[] => {
   return badges;
 };
 
+// Safe array check helpers
+const safeArraySome = (arr: any[] | undefined | null, predicate: (item: any) => boolean): boolean => {
+  if (!arr || !Array.isArray(arr)) return false;
+  return arr.some(predicate);
+};
+
+const safeArrayLength = (arr: any[] | undefined | null): number => {
+  if (!arr || !Array.isArray(arr)) return 0;
+  return arr.length;
+};
+
 const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPageProps) => {
-  const { apiStatus, userDisplayInfo } = useApiAndWallet();
+  const { apiStatus, userDisplayInfo, userInfo } = useApiAndWallet();
+  const { isAuthenticated } = useAuth();
   const [isCreateDaoModalOpen, setIsCreateDaoModalOpen] = useState(false);
   const [isMethodSelectionOpen, setIsMethodSelectionOpen] = useState(false);
   const [isBabyWenOnboardingOpen, setIsBabyWenOnboardingOpen] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<'form' | 'babywen' | null>(null);
-  const [activeFilter, setActiveFilter] = useState<string>('featured');
+  const [activeFilter, setActiveFilter] = useState<FilterType>('explore');
   const [daos, setDaos] = useState<DAO[]>([]);
+  const [ownedDaos, setOwnedDaos] = useState<DAO[]>([]);
+  const [joinedDaos, setJoinedDaos] = useState<DAO[]>([]);
+  const [exploreDaos, setExploreDaos] = useState<DAO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAllDAOs, setShowAllDAOs] = useState(false);
@@ -165,6 +187,48 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
   const [isDaoProfileModalOpen, setIsDaoProfileModalOpen] = useState(false);
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Function to categorize DAOs based on user info
+  const categorizeDaos = (allDaos: DAO[]) => {
+    if (isAuthenticated && userInfo?.userId) {
+      const userId = userInfo.userId;
+      
+      // Filter owned DAOs (user is the owner)
+      const userOwnedDaos = allDaos.filter((dao: DAO) => 
+        dao.ownerId === userId
+      );
+      setOwnedDaos(userOwnedDaos);
+      
+      // Filter joined DAOs (user is a member or admin but not the owner)
+      const userJoinedDaos = allDaos.filter((dao: DAO) => {
+        // Check if user is a member
+        const isMember = safeArraySome(dao.members, member => member?.userId === userId);
+        // Check if user is an admin
+        const isAdmin = safeArraySome(dao.admins, admin => admin?.userId === userId);
+        // Include in joined if user is member or admin but not the owner
+        return (isMember || isAdmin) && dao.ownerId !== userId;
+      });
+      setJoinedDaos(userJoinedDaos);
+      
+      // Remaining DAOs (user is not owner, member, or admin)
+      const otherDaos = allDaos.filter((dao: DAO) => {
+        const isOwner = dao.ownerId === userId;
+        const isMember = safeArraySome(dao.members, member => member?.userId === userId);
+        const isAdmin = safeArraySome(dao.admins, admin => admin?.userId === userId);
+        return !isOwner && !isMember && !isAdmin;
+      });
+      setExploreDaos(otherDaos);
+      
+      return { owned: userOwnedDaos, joined: userJoinedDaos, explore: otherDaos };
+    } else {
+      // If not authenticated, all DAOs go to explore
+      setExploreDaos(allDaos);
+      setOwnedDaos([]);
+      setJoinedDaos([]);
+      
+      return { owned: [], joined: [], explore: allDaos };
+    }
+  };
 
   // Check for Telegram auth parameters
   useEffect(() => {
@@ -189,7 +253,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
     return () => clearTimeout(timer);
   }, []);
 
-  // Fetch DAOs from the API
+  // Fetch DAOs from the API and categorize them
   useEffectOnce(() => {
     const fetchDAOs = async () => {
       try {
@@ -197,6 +261,9 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
         setError(null);
         const fetchedDaos = await daosService.getAllDaos();
         setDaos(fetchedDaos);
+        
+        // Categorize DAOs
+        categorizeDaos(fetchedDaos);
       } catch (err) {
         console.error("Error fetching DAOs:", err);
         setError("Failed to load DAOs. Please try again later.");
@@ -208,28 +275,54 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
     fetchDAOs();
   });
   
+  // Re-categorize DAOs when authentication state changes
+  useEffect(() => {
+    if (daos.length > 0) {
+      const categories = categorizeDaos(daos);
+      
+      // Set appropriate filter based on which categories have DAOs
+      if (activeFilter === 'explore' || 
+          (activeFilter === 'owned' && categories.owned.length === 0) || 
+          (activeFilter === 'joined' && categories.joined.length === 0)) {
+        if (categories.owned.length > 0) {
+          setActiveFilter('owned');
+        } else if (categories.joined.length > 0) {
+          setActiveFilter('joined');
+        } else {
+          setActiveFilter('explore');
+        }
+      }
+    }
+  }, [isAuthenticated, userInfo, daos]);
+
   const handleCreateDaoSuccess = (daoId: string) => {
     setTimeout(() => {
       onEnterDashboard(daoId);
     }, 1000);
   };
 
-  // Filter DAOs based on active filter and search query
-  const filteredDaos = daos.filter((dao: DAO) => {
-    // First apply the filter
-    let passesFilter = true;
-    if (activeFilter === 'active') passesFilter = Boolean(dao.isActive);
-    if (activeFilter === 'new') {
-      passesFilter = Boolean(dao.daoId && parseInt(dao.daoId) % 3 === 0);
+  // Get current displayed DAOs based on active filter
+  const getCurrentDaos = (): DAO[] => {
+    switch (activeFilter) {
+      case 'owned':
+        return ownedDaos;
+      case 'joined':
+        return joinedDaos;
+      case 'explore':
+      default:
+        return exploreDaos;
     }
-    
-    // Then apply the search
+  };
+
+  // Filter DAOs based on search query
+  const filteredDaos = getCurrentDaos().filter((dao: DAO) => {
+    // Apply the search
     const searchLower = searchQuery.toLowerCase();
     const matchesSearch = !searchQuery || 
       dao.name.toLowerCase().includes(searchLower) || 
       (dao.description && dao.description.toLowerCase().includes(searchLower));
     
-    return passesFilter && matchesSearch;
+    return matchesSearch;
   });
   
   // Group DAOs into pages based on screen size
@@ -582,7 +675,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
           </div>
         </section>
         
-        {/* Featured DAOs section */}
+        {/* DAOs section */}
         <section id="daos-section" className="py-16 sm:py-20 px-4 sm:px-8">
           <div className="container mx-auto">
             <div className="text-center mb-8 sm:mb-12">
@@ -590,53 +683,58 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
               <p className="text-gray-400 max-w-2xl mx-auto text-sm sm:text-base">Discover and join decentralized autonomous organizations that align with your interests and values.</p>
             </div>
             
-            {/* Search bar - updated styling to match cards */}
+            {/* Search bar and filters */}
             <div className="mb-10 flex flex-col items-center gap-4">
-              {/* Filter tabs - moved above search bar */}
+              {/* Filter tabs - updated with new categories */}
               <div className="flex gap-2 flex-wrap justify-center mb-4">
-                <button
-                  onClick={() => setActiveFilter('featured')}
-                  className={`px-3 py-1.5 rounded-full text-sm transition-all ${
-                    activeFilter === 'featured'
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white'
-                      : 'bg-transparent border border-indigo-800/30 hover:border-indigo-500/50 text-gray-300'
-                  }`}
-                >
-                  <span className="flex items-center">
-                    <Sparkles size={14} className="mr-1.5" />
-                    Featured
-                  </span>
-                </button>
+                {isAuthenticated && (
+                  <>
+                    <button
+                      onClick={() => setActiveFilter('owned')}
+                      className={`px-4 py-2 rounded-full text-sm transition-all ${
+                        activeFilter === 'owned'
+                          ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-amber-600/20'
+                          : 'bg-transparent border border-indigo-800/30 hover:border-indigo-500/50 text-gray-300'
+                      }`}
+                    >
+                      <span className="flex items-center">
+                        <Crown size={14} className="mr-1.5" />
+                        My DAOs {ownedDaos.length > 0 && `(${ownedDaos.length})`}
+                      </span>
+                    </button>
+                    
+                    <button
+                      onClick={() => setActiveFilter('joined')}
+                      className={`px-4 py-2 rounded-full text-sm transition-all ${
+                        activeFilter === 'joined'
+                          ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-lg shadow-teal-600/20'
+                          : 'bg-transparent border border-indigo-800/30 hover:border-indigo-500/50 text-gray-300'
+                      }`}
+                    >
+                      <span className="flex items-center">
+                        <UserPlus size={14} className="mr-1.5" />
+                        Joined {joinedDaos.length > 0 && `(${joinedDaos.length})`}
+                      </span>
+                    </button>
+                  </>
+                )}
                 
                 <button
-                  onClick={() => setActiveFilter('active')}
-                  className={`px-3 py-1.5 rounded-full text-sm transition-all ${
-                    activeFilter === 'active'
-                      ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white'
+                  onClick={() => setActiveFilter('explore')}
+                  className={`px-4 py-2 rounded-full text-sm transition-all ${
+                    activeFilter === 'explore'
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/20'
                       : 'bg-transparent border border-indigo-800/30 hover:border-indigo-500/50 text-gray-300'
                   }`}
                 >
                   <span className="flex items-center">
-                    <Users size={14} className="mr-1.5" />
-                    Active
-                  </span>
-                </button>
-                
-                <button
-                  onClick={() => setActiveFilter('new')}
-                  className={`px-3 py-1.5 rounded-full text-sm transition-all ${
-                    activeFilter === 'new'
-                      ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white'
-                      : 'bg-transparent border border-indigo-800/30 hover:border-indigo-500/50 text-gray-300'
-                  }`}
-                >
-                  <span className="flex items-center">
-                    <Clock size={14} className="mr-1.5" />
-                    New
+                    <Compass size={14} className="mr-1.5" />
+                    Explore
                   </span>
                 </button>
               </div>
               
+              {/* Search input */}
               <div className="relative w-full max-w-md">
                 <input
                   type="text"
@@ -647,6 +745,24 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
                 />
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
               </div>
+            </div>
+            
+            {/* Section title based on current filter */}
+            <div className="mb-8 text-center">
+              <h3 className="text-2xl font-bold mb-2">
+                {activeFilter === 'owned' ? 'DAOs You Own' : 
+                 activeFilter === 'joined' ? 'DAOs You\'ve Joined' : 
+                 'Discover DAOs'}
+              </h3>
+              {activeFilter === 'owned' && ownedDaos.length === 0 && !isLoading && (
+                <p className="text-gray-400">You don't own any DAOs yet. Create one to get started!</p>
+              )}
+              {activeFilter === 'joined' && joinedDaos.length === 0 && !isLoading && (
+                <p className="text-gray-400">You haven't joined any DAOs yet. Explore and join communities that interest you!</p>
+              )}
+              {activeFilter === 'explore' && exploreDaos.length === 0 && !isLoading && (
+                <p className="text-gray-400">No new DAOs to explore right now.</p>
+              )}
             </div>
             
             {/* Loading state */}
@@ -672,14 +788,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
               </Card>
             )}
             
-            {/* Empty state */}
+            {/* Empty state for filtered results */}
             {!isLoading && !error && filteredDaos.length === 0 && (
               <Card className="mb-8 max-w-lg mx-auto">
                 <div className="text-center">
                   <p className="text-gray-300 mb-4">No DAOs found matching your criteria.</p>
                   <Button 
                     variant="primary"
-                    onClick={() => setActiveFilter('featured')}
+                    onClick={() => {
+                      setSearchQuery('');
+                      setActiveFilter('explore');
+                    }}
                   >
                     View All DAOs
                   </Button>
@@ -701,18 +820,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
                       {daoPages.map((page: DAO[], pageIndex: number) => (
                         <div 
                           key={`page-${pageIndex}`}
-                          className="dao-scroll-page px-2"
+                          className="dao-scroll-page px-2 flex justify-center w-full"
                         >
                           {/* Responsive Grid - Changes columns based on screen size and items per page */}
                           <div 
-                            className={`grid gap-4 md:gap-6`}
+                            className={`grid gap-4 md:gap-6 max-w-7xl mx-auto`}
                             style={{ 
                               gridTemplateColumns: `repeat(${
                                 // 2 columns on mobile, 4 on tablet, 4 or 6 on desktop depending on items per page
                                 itemsPerPage === 12 ? '6' : 
                                 itemsPerPage === 8 ? '4' : '2'
                               }, 1fr)`, // Equal width columns
-                              gridAutoRows: 'minmax(220px, 1fr)' // Ensure consistent row height
+                              gridAutoRows: 'minmax(220px, 1fr)', // Ensure consistent row height
+                              width: '100%'
                             }}
                           >
                             {page.map((dao: DAO, index: number) => (
@@ -721,10 +841,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
                                 className="group cursor-pointer h-full w-full"
                                 onClick={() => handleDaoCardClick(dao.daoId)}
                               >
-                                <div className="py-8 px-4 rounded-2xl border border-indigo-800/30 bg-transparent backdrop-blur-sm hover:border-indigo-500/50 transition-all flex flex-col justify-between h-full w-full">
-                                  <div className="flex flex-col items-center text-center">
+                                <div className="p-5 rounded-2xl border border-indigo-800/30 bg-[#0f0f0f] backdrop-blur-sm hover:border-indigo-500/50 transition-all flex flex-col h-full w-full">
+                                  <div className="flex flex-col items-center justify-center w-full mb-auto">
                                     {/* Circular logo */}
-                                    <div className="h-16 w-16 rounded-full overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-medium text-xl mb-3">
+                                    <div className="h-20 w-20 rounded-full overflow-hidden bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-medium text-2xl mb-4">
                                       {dao.profilePicture ? (
                                         <img 
                                           src={dao.profilePicture} 
@@ -744,15 +864,46 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
                                     </div>
                                     
                                     {/* Name */}
-                                    <h3 className="text-base font-medium text-white group-hover:text-indigo-400 transition-colors line-clamp-2 mb-2 w-full break-words overflow-wrap-anywhere">
+                                    <h3 className="text-base text-center font-medium text-white group-hover:text-indigo-400 transition-colors line-clamp-2 mb-3 w-full break-words overflow-wrap-anywhere">
                                       {dao.name}
                                     </h3>
                                   </div>
                                   
-                                  {/* Member count */}
-                                  <div className="text-xs text-gray-400 flex items-center justify-center mt-3 w-full">
-                                    <Users size={14} className="mr-1" />
-                                    <span>{dao.members?.length || '0'} Members</span>
+                                  {/* Member count & Status indicator */}
+                                  <div className="flex flex-col items-center mt-auto w-full">
+                                    {/* Ownership badge - only show if appropriate */}
+                                    {userInfo?.userId && dao.ownerId === userInfo.userId && (
+                                      <span className="text-xs bg-amber-600/30 text-amber-300 px-3 py-1 rounded-full flex items-center">
+                                        <Crown size={10} className="mr-1.5" />
+                                        Owner
+                                      </span>
+                                    )}
+                                    
+                                    {/* DAO Card - Member badge - only show if appropriate */}
+                                    {userInfo?.userId && 
+                                      dao.ownerId !== userInfo.userId && 
+                                      safeArraySome(dao.members, member => member?.userId === userInfo.userId) && (
+                                      <span className="text-xs bg-teal-600/30 text-teal-300 px-3 py-1 rounded-full flex items-center">
+                                        <UserPlus size={10} className="mr-1.5" />
+                                        Member
+                                      </span>
+                                    )}
+                                    
+                                    {/* Admin badge - show if user is an admin but not owner */}
+                                    {userInfo?.userId && 
+                                      dao.ownerId !== userInfo.userId && 
+                                      safeArraySome(dao.admins, admin => admin?.userId === userInfo.userId) && (
+                                      <span className="text-xs bg-purple-600/30 text-purple-300 px-3 py-1 rounded-full flex items-center">
+                                        <Shield size={10} className="mr-1.5" />
+                                        Admin
+                                      </span>
+                                    )}
+                                    
+                                    {/* Member count */}
+                                    <div className="text-xs text-gray-400 flex items-center justify-center mt-2">
+                                      <Users size={14} className="mr-1.5" />
+                                      <span>{safeArrayLength(dao.members)} Members</span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
