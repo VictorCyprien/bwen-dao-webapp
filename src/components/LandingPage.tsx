@@ -140,7 +140,7 @@ const getDAOBadges = (dao: DAO, index: number): BadgeType[] => {
     badges.push('active');
   }
   
-  if (index < 5) {
+  if (dao.featured) {
     badges.push('featured');
   }
   
@@ -193,8 +193,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
     if (isAuthenticated && userInfo?.userId) {
       const userId = userInfo.userId;
       
-      // For "Featured" - just use a subset of DAOs for now (first 5 as placeholder)
-      const featuredDaos = allDaos.slice(0, 5);
+      // For "Featured" - use DAOs with featured flag set to true
+      const featuredDaos = allDaos.filter(dao => dao.featured === true);
       setOwnedDaos(featuredDaos);
       
       // For "My DAOs" - combine owned, member, and admin DAOs
@@ -204,6 +204,26 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
         const isAdmin = safeArraySome(dao.admins, admin => admin?.userId === userId);
         return isOwner || isMember || isAdmin;
       });
+      
+      // Sort myDaos by role hierarchy: Owner > Admin > Member
+      myDaos.sort((a: DAO, b: DAO) => {
+        const aIsOwner = a.ownerId === userId;
+        const bIsOwner = b.ownerId === userId;
+        const aIsAdmin = safeArraySome(a.admins, admin => admin?.userId === userId);
+        const bIsAdmin = safeArraySome(b.admins, admin => admin?.userId === userId);
+        
+        // Owner comes first
+        if (aIsOwner && !bIsOwner) return -1;
+        if (!aIsOwner && bIsOwner) return 1;
+        
+        // Then Admin
+        if (aIsAdmin && !bIsAdmin) return -1;
+        if (!aIsAdmin && bIsAdmin) return 1;
+        
+        // Alphabetical within same role
+        return a.name.localeCompare(b.name);
+      });
+      
       setJoinedDaos(myDaos);
       
       // For "Explore" - all DAOs that are not in "My DAOs"
@@ -217,8 +237,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
       
       return { featured: featuredDaos, mydaos: myDaos, explore: otherDaos };
     } else {
-      // If not authenticated, featured is still first 5 DAOs, but all go to explore
-      const featuredDaos = allDaos.slice(0, 5);
+      // If not authenticated, featured is based on featured flag, all go to explore
+      const featuredDaos = allDaos.filter(dao => dao.featured === true);
       setOwnedDaos(featuredDaos);
       setExploreDaos(allDaos);
       setJoinedDaos([]);
@@ -428,9 +448,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
       scrollContainer.removeEventListener('scroll', handleScroll);
     };
   }, [currentPage, daoPages.length]);
-  
-  // Get top 4 DAOs for featured section
-  const featuredDaos = daos.slice(0, 4);
   
   // Navigate to previous/next page
   const navigatePage = (direction: 'prev' | 'next') => {
@@ -703,7 +720,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
                     <button
                       onClick={() => setActiveFilter('mydaos')}
                       className={`px-4 py-2 rounded-full text-sm transition-all ${
-                        activeFilter === 'joined'
+                        activeFilter === 'mydaos'
                           ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-lg shadow-teal-600/20'
                           : 'bg-transparent border border-indigo-800/30 hover:border-indigo-500/50 text-gray-300'
                       }`}
@@ -868,32 +885,31 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
                                   
                                   {/* Member count & Status indicator */}
                                   <div className="flex flex-col items-center mt-auto w-full">
-                                    {/* Ownership badge - only show if appropriate */}
-                                    {userInfo?.userId && dao.ownerId === userInfo.userId && (
-                                      <span className="text-xs bg-amber-600/30 text-amber-300 px-3 py-1 rounded-full flex items-center">
-                                        <Crown size={10} className="mr-1.5" />
-                                        Owner
-                                      </span>
-                                    )}
-                                    
-                                    {/* DAO Card - Member badge - only show if appropriate */}
-                                    {userInfo?.userId && 
-                                      dao.ownerId !== userInfo.userId && 
-                                      safeArraySome(dao.members, member => member?.userId === userInfo.userId) && (
-                                      <span className="text-xs bg-teal-600/30 text-teal-300 px-3 py-1 rounded-full flex items-center">
-                                        <UserPlus size={10} className="mr-1.5" />
-                                        Member
-                                      </span>
-                                    )}
-                                    
-                                    {/* Admin badge - show if user is an admin but not owner */}
-                                    {userInfo?.userId && 
-                                      dao.ownerId !== userInfo.userId && 
-                                      safeArraySome(dao.admins, admin => admin?.userId === userInfo.userId) && (
-                                      <span className="text-xs bg-purple-600/30 text-purple-300 px-3 py-1 rounded-full flex items-center">
-                                        <Shield size={10} className="mr-1.5" />
-                                        Admin
-                                      </span>
+                                    {/* Role badges - show only the highest role (owner > admin > member) */}
+                                    {userInfo?.userId && (
+                                      <>
+                                        {/* Owner badge */}
+                                        {dao.ownerId === userInfo.userId ? (
+                                          <span className="text-xs bg-amber-600/30 text-amber-300 px-3 py-1 rounded-full flex items-center">
+                                            <Crown size={10} className="mr-1.5" />
+                                            Owner
+                                          </span>
+                                        ) : 
+                                        /* Admin badge - only if not owner */
+                                        safeArraySome(dao.admins, admin => admin?.userId === userInfo.userId) ? (
+                                          <span className="text-xs bg-red-600/30 text-red-300 px-3 py-1 rounded-full flex items-center">
+                                            <Shield size={10} className="mr-1.5" />
+                                            Admin
+                                          </span>
+                                        ) : 
+                                        /* Member badge - only if not owner or admin */
+                                        safeArraySome(dao.members, member => member?.userId === userInfo.userId) ? (
+                                          <span className="text-xs bg-blue-600/30 text-blue-300 px-3 py-1 rounded-full flex items-center">
+                                            <UserPlus size={10} className="mr-1.5" />
+                                            Member
+                                          </span>
+                                        ) : null}
+                                      </>
                                     )}
                                     
                                     {/* Member count */}
