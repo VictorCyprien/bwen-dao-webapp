@@ -19,6 +19,7 @@ export class DAOUpdate {
     'name'?: string;
     'description'?: string;
     'isActive'?: boolean;
+    'featured'?: boolean;
     'discordServer'?: string;
     'twitter'?: string;
     'telegram'?: string;
@@ -60,6 +61,12 @@ export class DAOUpdate {
         {
             "name": "isActive",
             "baseName": "is_active",
+            "type": "boolean",
+            "format": ""
+        },
+        {
+            "name": "featured",
+            "baseName": "featured",
             "type": "boolean",
             "format": ""
         },

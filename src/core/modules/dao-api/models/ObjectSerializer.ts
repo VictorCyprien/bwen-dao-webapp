@@ -27,6 +27,8 @@ export * from '../models/DiscordChannelResponse';
 export * from '../models/DiscordChannelsResponse';
 export * from '../models/DiscordMessage';
 export * from '../models/DiscordMessagesResponse';
+export * from '../models/FeaturedResponse';
+export * from '../models/FeaturedToggle';
 export * from '../models/Governance';
 export * from '../models/GovernanceModel';
 export * from '../models/GovernanceModelsList';
@@ -110,7 +112,7 @@ import { DAOModuleAccessResponse } from '../models/DAOModuleAccessResponse';
 import { DAOModuleResponse } from '../models/DAOModuleResponse';
 import { DAOModulesList } from '../models/DAOModulesList';
 import { DAOSchemaResponse } from '../models/DAOSchemaResponse';
-import { DAOUpdate           , DAOUpdateVotingPowerSystemEnum     } from '../models/DAOUpdate';
+import { DAOUpdate            , DAOUpdateVotingPowerSystemEnum     } from '../models/DAOUpdate';
 import { DeleteDeviceResponse } from '../models/DeleteDeviceResponse';
 import { Device } from '../models/Device';
 import { DeviceList } from '../models/DeviceList';
@@ -121,6 +123,8 @@ import { DiscordChannelResponse } from '../models/DiscordChannelResponse';
 import { DiscordChannelsResponse } from '../models/DiscordChannelsResponse';
 import { DiscordMessage } from '../models/DiscordMessage';
 import { DiscordMessagesResponse } from '../models/DiscordMessagesResponse';
+import { FeaturedResponse } from '../models/FeaturedResponse';
+import { FeaturedToggle } from '../models/FeaturedToggle';
 import { Governance   , GovernanceVotingPowerSystemEnum  , GovernanceCouncilEntryConditionEnum   , GovernanceDaoEntryConditionEnum     } from '../models/Governance';
 import { GovernanceModel } from '../models/GovernanceModel';
 import { GovernanceModelsList } from '../models/GovernanceModelsList';
@@ -244,6 +248,8 @@ let typeMap: {[index: string]: any} = {
     "DiscordChannelsResponse": DiscordChannelsResponse,
     "DiscordMessage": DiscordMessage,
     "DiscordMessagesResponse": DiscordMessagesResponse,
+    "FeaturedResponse": FeaturedResponse,
+    "FeaturedToggle": FeaturedToggle,
     "Governance": Governance,
     "GovernanceModel": GovernanceModel,
     "GovernanceModelsList": GovernanceModelsList,

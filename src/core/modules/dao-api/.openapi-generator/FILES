@@ -59,6 +59,8 @@ models/DiscordChannelResponse.ts
 models/DiscordChannelsResponse.ts
 models/DiscordMessage.ts
 models/DiscordMessagesResponse.ts
+models/FeaturedResponse.ts
+models/FeaturedToggle.ts
 models/Governance.ts
 models/GovernanceModel.ts
 models/GovernanceModelsList.ts

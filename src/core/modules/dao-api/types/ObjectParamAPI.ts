@@ -31,6 +31,8 @@ import { DiscordChannelResponse } from '../models/DiscordChannelResponse';
 import { DiscordChannelsResponse } from '../models/DiscordChannelsResponse';
 import { DiscordMessage } from '../models/DiscordMessage';
 import { DiscordMessagesResponse } from '../models/DiscordMessagesResponse';
+import { FeaturedResponse } from '../models/FeaturedResponse';
+import { FeaturedToggle } from '../models/FeaturedToggle';
 import { Governance } from '../models/Governance';
 import { GovernanceModel } from '../models/GovernanceModel';
 import { GovernanceModelsList } from '../models/GovernanceModelsList';
@@ -627,6 +629,16 @@ export interface DaosApiGetDAOByIdRequest {
     daoId: string
 }
 
+export interface DaosApiGetDAOFeaturedStatusRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApigetDAOFeaturedStatus
+     */
+    daoId: string
+}
+
 export interface DaosApiGetDAOGovernanceRequest {
     /**
      * 
@@ -1020,6 +1032,22 @@ export interface DaosApiRespondToDAOInvitationRequest {
      * @memberof DaosApirespondToDAOInvitation
      */
     dAOInvitationAction: DAOInvitationAction
+}
+
+export interface DaosApiToggleDAOFeaturedRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApitoggleDAOFeatured
+     */
+    daoId: string
+    /**
+     * 
+     * @type FeaturedToggle
+     * @memberof DaosApitoggleDAOFeatured
+     */
+    featuredToggle: FeaturedToggle
 }
 
 export interface DaosApiUnlinkDiscordChannelFromPODRequest {
@@ -1500,6 +1528,22 @@ export class ObjectDaosApi {
     }
 
     /**
+     * Get a DAO\'s featured status
+     * @param param the request object
+     */
+    public getDAOFeaturedStatusWithHttpInfo(param: DaosApiGetDAOFeaturedStatusRequest, options?: ConfigurationOptions): Promise<HttpInfo<FeaturedResponse>> {
+        return this.api.getDAOFeaturedStatusWithHttpInfo(param.daoId,  options).toPromise();
+    }
+
+    /**
+     * Get a DAO\'s featured status
+     * @param param the request object
+     */
+    public getDAOFeaturedStatus(param: DaosApiGetDAOFeaturedStatusRequest, options?: ConfigurationOptions): Promise<FeaturedResponse> {
+        return this.api.getDAOFeaturedStatus(param.daoId,  options).toPromise();
+    }
+
+    /**
      * Get governance model for a DAO
      * @param param the request object
      */
@@ -1897,6 +1941,22 @@ export class ObjectDaosApi {
      */
     public respondToDAOInvitation(param: DaosApiRespondToDAOInvitationRequest, options?: ConfigurationOptions): Promise<DAOInvitationResponse> {
         return this.api.respondToDAOInvitation(param.daoId, param.invitationId, param.dAOInvitationAction,  options).toPromise();
+    }
+
+    /**
+     * Toggle a DAO\'s featured status
+     * @param param the request object
+     */
+    public toggleDAOFeaturedWithHttpInfo(param: DaosApiToggleDAOFeaturedRequest, options?: ConfigurationOptions): Promise<HttpInfo<FeaturedResponse>> {
+        return this.api.toggleDAOFeaturedWithHttpInfo(param.daoId, param.featuredToggle,  options).toPromise();
+    }
+
+    /**
+     * Toggle a DAO\'s featured status
+     * @param param the request object
+     */
+    public toggleDAOFeatured(param: DaosApiToggleDAOFeaturedRequest, options?: ConfigurationOptions): Promise<FeaturedResponse> {
+        return this.api.toggleDAOFeatured(param.daoId, param.featuredToggle,  options).toPromise();
     }
 
     /**

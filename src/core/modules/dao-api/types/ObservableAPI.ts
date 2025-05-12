@@ -32,6 +32,8 @@ import { DiscordChannelResponse } from '../models/DiscordChannelResponse';
 import { DiscordChannelsResponse } from '../models/DiscordChannelsResponse';
 import { DiscordMessage } from '../models/DiscordMessage';
 import { DiscordMessagesResponse } from '../models/DiscordMessagesResponse';
+import { FeaturedResponse } from '../models/FeaturedResponse';
+import { FeaturedToggle } from '../models/FeaturedToggle';
 import { Governance } from '../models/Governance';
 import { GovernanceModel } from '../models/GovernanceModel';
 import { GovernanceModelsList } from '../models/GovernanceModelsList';
@@ -1982,6 +1984,66 @@ export class ObservableDaosApi {
     }
 
     /**
+     * Get a DAO\'s featured status
+     * @param daoId
+     */
+    public getDAOFeaturedStatusWithHttpInfo(daoId: string, _options?: ConfigurationOptions): Observable<HttpInfo<FeaturedResponse>> {
+    let _config = this.configuration;
+    let allMiddleware: Middleware[] = [];
+    if (_options && _options.middleware){
+      const middlewareMergeStrategy = _options.middlewareMergeStrategy || 'replace' // default to replace behavior
+      // call-time middleware provided
+      const calltimeMiddleware: Middleware[] = _options.middleware;
+
+      switch(middlewareMergeStrategy){
+      case 'append':
+        allMiddleware = this.configuration.middleware.concat(calltimeMiddleware);
+        break;
+      case 'prepend':
+        allMiddleware = calltimeMiddleware.concat(this.configuration.middleware)
+        break;
+      case 'replace':
+        allMiddleware = calltimeMiddleware
+        break;
+      default: 
+        throw new Error(`unrecognized middleware merge strategy '${middlewareMergeStrategy}'`)
+      }
+	}
+	if (_options){
+    _config = {
+      baseServer: _options.baseServer || this.configuration.baseServer,
+      httpApi: _options.httpApi || this.configuration.httpApi,
+      authMethods: _options.authMethods || this.configuration.authMethods,
+      middleware: allMiddleware || this.configuration.middleware
+		};
+	}
+
+        const requestContextPromise = this.requestFactory.getDAOFeaturedStatus(daoId, _config);
+        // build promise chain
+        let middlewarePreObservable = from<RequestContext>(requestContextPromise);
+        for (const middleware of allMiddleware) {
+            middlewarePreObservable = middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => middleware.pre(ctx)));
+        }
+
+        return middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => this.configuration.httpApi.send(ctx))).
+            pipe(mergeMap((response: ResponseContext) => {
+                let middlewarePostObservable = of(response);
+                for (const middleware of allMiddleware.reverse()) {
+                    middlewarePostObservable = middlewarePostObservable.pipe(mergeMap((rsp: ResponseContext) => middleware.post(rsp)));
+                }
+                return middlewarePostObservable.pipe(map((rsp: ResponseContext) => this.responseProcessor.getDAOFeaturedStatusWithHttpInfo(rsp)));
+            }));
+    }
+
+    /**
+     * Get a DAO\'s featured status
+     * @param daoId
+     */
+    public getDAOFeaturedStatus(daoId: string, _options?: ConfigurationOptions): Observable<FeaturedResponse> {
+        return this.getDAOFeaturedStatusWithHttpInfo(daoId, _options).pipe(map((apiResponse: HttpInfo<FeaturedResponse>) => apiResponse.data));
+    }
+
+    /**
      * Get governance model for a DAO
      * @param daoId
      */
@@ -3523,6 +3585,68 @@ export class ObservableDaosApi {
      */
     public respondToDAOInvitation(daoId: string, invitationId: string, dAOInvitationAction: DAOInvitationAction, _options?: ConfigurationOptions): Observable<DAOInvitationResponse> {
         return this.respondToDAOInvitationWithHttpInfo(daoId, invitationId, dAOInvitationAction, _options).pipe(map((apiResponse: HttpInfo<DAOInvitationResponse>) => apiResponse.data));
+    }
+
+    /**
+     * Toggle a DAO\'s featured status
+     * @param daoId
+     * @param featuredToggle
+     */
+    public toggleDAOFeaturedWithHttpInfo(daoId: string, featuredToggle: FeaturedToggle, _options?: ConfigurationOptions): Observable<HttpInfo<FeaturedResponse>> {
+    let _config = this.configuration;
+    let allMiddleware: Middleware[] = [];
+    if (_options && _options.middleware){
+      const middlewareMergeStrategy = _options.middlewareMergeStrategy || 'replace' // default to replace behavior
+      // call-time middleware provided
+      const calltimeMiddleware: Middleware[] = _options.middleware;
+
+      switch(middlewareMergeStrategy){
+      case 'append':
+        allMiddleware = this.configuration.middleware.concat(calltimeMiddleware);
+        break;
+      case 'prepend':
+        allMiddleware = calltimeMiddleware.concat(this.configuration.middleware)
+        break;
+      case 'replace':
+        allMiddleware = calltimeMiddleware
+        break;
+      default: 
+        throw new Error(`unrecognized middleware merge strategy '${middlewareMergeStrategy}'`)
+      }
+	}
+	if (_options){
+    _config = {
+      baseServer: _options.baseServer || this.configuration.baseServer,
+      httpApi: _options.httpApi || this.configuration.httpApi,
+      authMethods: _options.authMethods || this.configuration.authMethods,
+      middleware: allMiddleware || this.configuration.middleware
+		};
+	}
+
+        const requestContextPromise = this.requestFactory.toggleDAOFeatured(daoId, featuredToggle, _config);
+        // build promise chain
+        let middlewarePreObservable = from<RequestContext>(requestContextPromise);
+        for (const middleware of allMiddleware) {
+            middlewarePreObservable = middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => middleware.pre(ctx)));
+        }
+
+        return middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => this.configuration.httpApi.send(ctx))).
+            pipe(mergeMap((response: ResponseContext) => {
+                let middlewarePostObservable = of(response);
+                for (const middleware of allMiddleware.reverse()) {
+                    middlewarePostObservable = middlewarePostObservable.pipe(mergeMap((rsp: ResponseContext) => middleware.post(rsp)));
+                }
+                return middlewarePostObservable.pipe(map((rsp: ResponseContext) => this.responseProcessor.toggleDAOFeaturedWithHttpInfo(rsp)));
+            }));
+    }
+
+    /**
+     * Toggle a DAO\'s featured status
+     * @param daoId
+     * @param featuredToggle
+     */
+    public toggleDAOFeatured(daoId: string, featuredToggle: FeaturedToggle, _options?: ConfigurationOptions): Observable<FeaturedResponse> {
+        return this.toggleDAOFeaturedWithHttpInfo(daoId, featuredToggle, _options).pipe(map((apiResponse: HttpInfo<FeaturedResponse>) => apiResponse.data));
     }
 
     /**

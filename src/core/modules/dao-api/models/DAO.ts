@@ -22,6 +22,7 @@ export class DAO {
     'description': string;
     'ownerId': string;
     'isActive'?: boolean;
+    'featured'?: boolean;
     'discordServer'?: string;
     'twitter'?: string;
     'telegram'?: string;
@@ -73,6 +74,12 @@ export class DAO {
         {
             "name": "isActive",
             "baseName": "is_active",
+            "type": "boolean",
+            "format": ""
+        },
+        {
+            "name": "featured",
+            "baseName": "featured",
             "type": "boolean",
             "format": ""
         },

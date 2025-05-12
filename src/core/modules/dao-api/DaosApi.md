@@ -27,6 +27,7 @@ Method | HTTP request | Description
 [**getAllPODsForDAO**](DaosApi.md#getAllPODsForDAO) | **GET** /daos/{dao_id}/pods | Get all PODs for a DAO
 [**getChannelMessages**](DaosApi.md#getChannelMessages) | **GET** /daos/{dao_id}/pods/{pod_id}/discord-channels/{channel_id}/messages | Get messages from a specific Discord channel
 [**getDAOById**](DaosApi.md#getDAOById) | **GET** /daos/{dao_id} | Get a DAO by ID
+[**getDAOFeaturedStatus**](DaosApi.md#getDAOFeaturedStatus) | **GET** /daos/{dao_id}/featured | Get a DAO\&#39;s featured status
 [**getDAOGovernance**](DaosApi.md#getDAOGovernance) | **GET** /daos/{dao_id}/governance | Get governance model for a DAO
 [**getDAOInvitation**](DaosApi.md#getDAOInvitation) | **GET** /daos/{dao_id}/invitations/{invitation_id} | Get details of a specific invitation
 [**getDAOInvitations**](DaosApi.md#getDAOInvitations) | **GET** /daos/{dao_id}/invitations | Get all invitations for a DAO
@@ -52,6 +53,7 @@ Method | HTTP request | Description
 [**removePermissionFromRole**](DaosApi.md#removePermissionFromRole) | **DELETE** /daos/{dao_id}/roles/{role_id}/permissions/{permission_id} | Remove a permission from a role in a DAO
 [**removeRoleFromUser**](DaosApi.md#removeRoleFromUser) | **DELETE** /daos/{dao_id}/members/{user_id}/roles/{role_id} | Remove a role from a user in a DAO
 [**respondToDAOInvitation**](DaosApi.md#respondToDAOInvitation) | **POST** /daos/{dao_id}/invitations/{invitation_id} | Respond to a DAO invitation (accept/decline)
+[**toggleDAOFeatured**](DaosApi.md#toggleDAOFeatured) | **PATCH** /daos/{dao_id}/featured | Toggle a DAO\&#39;s featured status
 [**unlinkDiscordChannelFromPOD**](DaosApi.md#unlinkDiscordChannelFromPOD) | **DELETE** /daos/{dao_id}/pods/{pod_id}/discord-channels/{channel_id} | Unlink a Discord channel from a POD
 [**updateDAO**](DaosApi.md#updateDAO) | **PUT** /daos/{dao_id} | Update a DAO
 [**updateDAOGovernance**](DaosApi.md#updateDAOGovernance) | **PUT** /daos/{dao_id}/governance | Update governance model for a DAO
@@ -1408,6 +1410,60 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | DAO retrieved successfully |  -  |
+**404** | DAO not found |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
+# **getDAOFeaturedStatus**
+> FeaturedResponse getDAOFeaturedStatus()
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+import type { DaosApiGetDAOFeaturedStatusRequest } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request: DaosApiGetDAOFeaturedStatusRequest = {
+  
+  daoId: "dao_id_example",
+};
+
+const data = await apiInstance.getDAOFeaturedStatus(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **daoId** | [**string**] |  | defaults to undefined
+
+
+### Return type
+
+**FeaturedResponse**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | DAO featured status retrieved successfully |  -  |
 **404** | DAO not found |  -  |
 **0** | Default error response |  -  |
 
@@ -2886,6 +2942,68 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
 
+# **toggleDAOFeatured**
+> FeaturedResponse toggleDAOFeatured(featuredToggle)
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+import type { DaosApiToggleDAOFeaturedRequest } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request: DaosApiToggleDAOFeaturedRequest = {
+  
+  daoId: "dao_id_example",
+  
+  featuredToggle: {
+    featured: true,
+  },
+};
+
+const data = await apiInstance.toggleDAOFeatured(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **featuredToggle** | **FeaturedToggle**|  |
+ **daoId** | [**string**] |  | defaults to undefined
+
+
+### Return type
+
+**FeaturedResponse**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**422** | Unprocessable Entity |  -  |
+**200** | DAO featured status updated successfully |  -  |
+**400** | Bad Request - Invalid data |  -  |
+**401** | Unauthorized - Invalid or missing token |  -  |
+**404** | DAO not found |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
 # **unlinkDiscordChannelFromPOD**
 > DiscordChannelResponse unlinkDiscordChannelFromPOD()
 
@@ -2970,6 +3088,7 @@ const request: DaosApiUpdateDAORequest = {
     name: "name_example",
     description: "description_example",
     isActive: true,
+    featured: true,
     discordServer: "discordServer_example",
     twitter: "twitter_example",
     telegram: "telegram_example",
