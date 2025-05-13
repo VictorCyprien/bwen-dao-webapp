@@ -66,6 +66,7 @@ import { PermissionListResponse } from '../models/PermissionListResponse';
 import { PodBasic } from '../models/PodBasic';
 import { PodProposalListResponse } from '../models/PodProposalListResponse';
 import { Proposal } from '../models/Proposal';
+import { ProposalAction } from '../models/ProposalAction';
 import { ProposalSchemaResponse } from '../models/ProposalSchemaResponse';
 import { ProposalUpdate } from '../models/ProposalUpdate';
 import { ProposalVote } from '../models/ProposalVote';

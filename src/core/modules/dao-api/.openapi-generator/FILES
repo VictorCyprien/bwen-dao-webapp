@@ -95,6 +95,7 @@ models/PermissionListResponse.ts
 models/PodBasic.ts
 models/PodProposalListResponse.ts
 models/Proposal.ts
+models/ProposalAction.ts
 models/ProposalSchemaResponse.ts
 models/ProposalUpdate.ts
 models/ProposalVote.ts

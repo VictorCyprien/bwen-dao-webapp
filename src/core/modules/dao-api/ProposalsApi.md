@@ -49,9 +49,14 @@ const request: ProposalsApiCreateProposalForDAORequest = {
     podId: "podId_example",
     startTime: new Date('1970-01-01T00:00:00.00Z'),
     endTime: new Date('1970-01-01T00:00:00.00Z'),
-    actions: {
-      "key": null,
-    },
+    actions: [
+      {
+        type: "ADD_MEMBER",
+        data: {
+          "key": null,
+        },
+      },
+    ],
     pubkey: "pubkey_example",
     transaction: "transaction_example",
   },
@@ -124,9 +129,14 @@ const request: ProposalsApiCreateProposalForPODRequest = {
     podId: "podId_example",
     startTime: new Date('1970-01-01T00:00:00.00Z'),
     endTime: new Date('1970-01-01T00:00:00.00Z'),
-    actions: {
-      "key": null,
-    },
+    actions: [
+      {
+        type: "ADD_MEMBER",
+        data: {
+          "key": null,
+        },
+      },
+    ],
     pubkey: "pubkey_example",
     transaction: "transaction_example",
   },
@@ -906,9 +916,14 @@ const request: ProposalsApiUpdateDAOProposalRequest = {
     startTime: new Date('1970-01-01T00:00:00.00Z'),
     endTime: new Date('1970-01-01T00:00:00.00Z'),
     podId: "podId_example",
-    actions: {
-      "key": null,
-    },
+    actions: [
+      {
+        type: "ADD_MEMBER",
+        data: {
+          "key": null,
+        },
+      },
+    ],
   },
 };
 
@@ -981,9 +996,14 @@ const request: ProposalsApiUpdatePODProposalRequest = {
     startTime: new Date('1970-01-01T00:00:00.00Z'),
     endTime: new Date('1970-01-01T00:00:00.00Z'),
     podId: "podId_example",
-    actions: {
-      "key": null,
-    },
+    actions: [
+      {
+        type: "ADD_MEMBER",
+        data: {
+          "key": null,
+        },
+      },
+    ],
   },
 };
 

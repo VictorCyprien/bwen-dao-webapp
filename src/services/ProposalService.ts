@@ -3,7 +3,7 @@
  * Handles all API interactions related to Proposals
  */
 
-import { createConfiguration, DaosApi, InputCreateProposal, ProposalsApi, Proposal as ApiProposal, ProposalVote, ProposalVoteVoteEnum } from '../core/modules/dao-api';
+import { createConfiguration, DaosApi, InputCreateProposal, ProposalsApi, Proposal as ApiProposal, ProposalVote, ProposalVoteVoteEnum, ProposalAction } from '../core/modules/dao-api';
 import { ServerConfiguration } from '../core/modules/dao-api/servers';
 import { walletAuthService } from './WalletAuthService';
 import { Connection, PublicKey, Transaction, Keypair } from '@solana/web3.js';
@@ -201,7 +201,7 @@ export class ProposalService {
       description: string;
       startDate?: Date;
       endDate: Date;
-      actions?: any[];
+      actions?: ProposalAction[];
       transactionSignature: string;
       proposalAccount: string;
     }
@@ -210,7 +210,7 @@ export class ProposalService {
       const apiClient = this.createAuthenticatedApiClient();
       if (!apiClient) return null;
 
-      // Convert actions to the format expected by the API if needed
+      // Use the provided actions or default to empty array
       const apiActions = proposalData.actions || [];
 
       // Create the request object for the API
@@ -405,6 +405,7 @@ export class ProposalService {
       description: string;
       startDate?: Date;
       endDate: Date;
+      actions?: ProposalAction[];
       transactionSignature: string;
       proposalAccount: string;
     }
@@ -421,7 +422,7 @@ export class ProposalService {
         endTime: proposalData.endDate,
         daoId: daoId,
         podId: podId, // Include the POD ID in the request
-        actions: [], // No actions for POD proposals
+        actions: proposalData.actions || [], // Use provided actions or empty array
         pubkey: proposalData.proposalAccount,
         transaction: proposalData.transactionSignature
       };
