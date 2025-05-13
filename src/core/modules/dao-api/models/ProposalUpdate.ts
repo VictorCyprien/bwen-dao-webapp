@@ -10,6 +10,7 @@
  * Do not edit the class manually.
  */
 
+import { ProposalAction } from '../models/ProposalAction';
 import { HttpFile } from '../http/http';
 
 /**
@@ -21,7 +22,7 @@ export class ProposalUpdate {
     'startTime'?: Date;
     'endTime'?: Date;
     'podId'?: string | null;
-    'actions'?: { [key: string]: any; } | null;
+    'actions'?: Array<ProposalAction> | null;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -61,7 +62,7 @@ export class ProposalUpdate {
         {
             "name": "actions",
             "baseName": "actions",
-            "type": "{ [key: string]: any; }",
+            "type": "Array<ProposalAction>",
             "format": ""
         }    ];
 

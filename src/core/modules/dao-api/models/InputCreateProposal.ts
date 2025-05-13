@@ -10,6 +10,7 @@
  * Do not edit the class manually.
  */
 
+import { ProposalAction } from '../models/ProposalAction';
 import { HttpFile } from '../http/http';
 
 /**
@@ -22,7 +23,7 @@ export class InputCreateProposal {
     'podId'?: string | null;
     'startTime': Date;
     'endTime': Date;
-    'actions'?: { [key: string]: any; } | null;
+    'actions'?: Array<ProposalAction> | null;
     'pubkey': string;
     'transaction': string;
 
@@ -70,7 +71,7 @@ export class InputCreateProposal {
         {
             "name": "actions",
             "baseName": "actions",
-            "type": "{ [key: string]: any; }",
+            "type": "Array<ProposalAction>",
             "format": ""
         },
         {

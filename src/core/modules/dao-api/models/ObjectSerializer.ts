@@ -62,6 +62,7 @@ export * from '../models/PermissionListResponse';
 export * from '../models/PodBasic';
 export * from '../models/PodProposalListResponse';
 export * from '../models/Proposal';
+export * from '../models/ProposalAction';
 export * from '../models/ProposalSchemaResponse';
 export * from '../models/ProposalUpdate';
 export * from '../models/ProposalVote';
@@ -158,6 +159,7 @@ import { PermissionListResponse } from '../models/PermissionListResponse';
 import { PodBasic } from '../models/PodBasic';
 import { PodProposalListResponse } from '../models/PodProposalListResponse';
 import { Proposal } from '../models/Proposal';
+import { ProposalAction, ProposalActionTypeEnum    } from '../models/ProposalAction';
 import { ProposalSchemaResponse } from '../models/ProposalSchemaResponse';
 import { ProposalUpdate } from '../models/ProposalUpdate';
 import { ProposalVote, ProposalVoteVoteEnum     } from '../models/ProposalVote';
@@ -214,6 +216,7 @@ let enumsMap: Set<string> = new Set<string>([
     "InputUpdateGovernanceVotingPowerSystemEnum",
     "InputUpdateGovernanceCouncilEntryConditionEnum",
     "InputUpdateGovernanceDaoEntryConditionEnum",
+    "ProposalActionTypeEnum",
     "ProposalVoteVoteEnum",
     "ProposalVoteResponseVoteStatusEnum",
 ]);
@@ -283,6 +286,7 @@ let typeMap: {[index: string]: any} = {
     "PodBasic": PodBasic,
     "PodProposalListResponse": PodProposalListResponse,
     "Proposal": Proposal,
+    "ProposalAction": ProposalAction,
     "ProposalSchemaResponse": ProposalSchemaResponse,
     "ProposalUpdate": ProposalUpdate,
     "ProposalVote": ProposalVote,
