@@ -36,6 +36,10 @@ const Header = ({
         return 'Treasury';
       case 'user_management':
         return 'User Management';
+      case 'featured':
+        return 'Featured';
+      case 'modules':
+        return 'Modules';
       case 'profile':
         return 'My Profile';
       default:

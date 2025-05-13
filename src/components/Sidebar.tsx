@@ -15,7 +15,8 @@ import {
   ChevronDown,
   Puzzle,
   ShieldCheck,
-  UserPlus
+  UserPlus,
+  Sparkles
 } from 'lucide-react';
 import { ui } from '../styles/theme';
 import { useAuth } from '../context/AuthContext';
@@ -68,7 +69,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     return {
       'Pods': true,
       'Proof of Love': true,
-      'Docs': true
+      'Docs': true,
+      'Management': true
     };
   });
   
@@ -221,12 +223,18 @@ const Sidebar: React.FC<SidebarProps> = ({
         { id: 'dashboard_home', label: 'Home', icon: <Home size={18} /> },
         { id: 'governance', label: 'Governance', icon: <Building2 size={18} /> },
         { id: 'treasury', label: 'Treasury', icon: <Wallet size={18} /> },
-        { id: 'members', label: 'Members', icon: <Users size={18} /> },
-        { id: 'user_management', label: 'User Management', icon: <UserPlus size={18} /> },
-        { id: 'roles', label: 'Roles', icon: <ShieldCheck size={18} /> },
-        { id: 'modules', label: 'Modules', icon: <Puzzle size={18} /> }
+        { id: 'members', label: 'Members', icon: <Users size={18} /> }
       ],
       isUncollapsable: true
+    },
+    {
+      section: 'Management',
+      items: [
+        { id: 'user_management', label: 'User Management', icon: <UserPlus size={18} /> },
+        { id: 'roles', label: 'Roles', icon: <ShieldCheck size={18} /> },
+        { id: 'modules', label: 'Modules', icon: <Puzzle size={18} /> },
+        { id: 'featured', label: 'Featured', icon: <Sparkles className="text-amber-400" size={18} /> }
+      ]
     },
     {
       section: 'Pods',
