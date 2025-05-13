@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+const { useState, useEffect } = React;
 import { useParams } from 'react-router-dom';
 import { PieChart, Plus, X, Check, AlertCircle, ChevronRight, Search, ChevronDown, ChevronLeft, Calendar, Users } from 'lucide-react';
 import PopupProposal from './PopupProposal';
@@ -14,12 +15,20 @@ import { userService } from '../services/UserService';
 import Card from './common/Card';
 import Button from './common/Button';
 import Badge from './common/Badge';
+import { ProposalAction, ProposalActionTypeEnum } from '../core/modules/dao-api/models/ProposalAction';
 
 interface Action {
-  type: string;
+  type: ProposalActionTypeEnum;
+  data: {
+    [key: string]: any;
+  };
+}
+
+interface User {
+  userId: string;
+  username: string;
   walletAddress?: string;
-  tokenAmount?: string;
-  tokenSymbol?: string;
+  profilePicture?: string;
 }
 
 interface ProposalForm {
@@ -61,9 +70,9 @@ interface ProposalDetails {
 
 const Governance = () => {
   const { daoId } = useParams<{ daoId: string }>();
-  const [showProposalForm, setShowProposalForm] = useState(false);
-  const [proposalStep, setProposalStep] = useState(1);
-  const [proposal, setProposal] = useState<ProposalForm>({
+  const [showProposalForm, setShowProposalForm] = React.useState(false);
+  const [proposalStep, setProposalStep] = React.useState(1);
+  const [proposal, setProposal] = React.useState<ProposalForm>({
     title: '',
     description: '',
     startTime: 'now',
@@ -74,28 +83,28 @@ const Governance = () => {
     expirationMinutes: '0',
     actions: []
   });
-  const [selectedProposal, setSelectedProposal] = useState<ProposalDetails | null>(null);
-  const [proposals, setProposals] = useState<ProposalDetails[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [userIsDaoMember, setUserIsDaoMember] = useState<boolean>(false);
-  const [membershipLoading, setMembershipLoading] = useState<boolean>(false);
+  const [selectedProposal, setSelectedProposal] = React.useState<ProposalDetails | null>(null);
+  const [proposals, setProposals] = React.useState<ProposalDetails[]>([]);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [userIsDaoMember, setUserIsDaoMember] = React.useState<boolean>(false);
+  const [membershipLoading, setMembershipLoading] = React.useState<boolean>(false);
   
   // Pagination states
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [rowsPerPage, setRowsPerPage] = useState<number>(10);
-  const [isPageChanging, setIsPageChanging] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = React.useState<number>(1);
+  const [rowsPerPage, setRowsPerPage] = React.useState<number>(10);
+  const [isPageChanging, setIsPageChanging] = React.useState<boolean>(false);
   
   // Filtering states
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [sortOrder, setSortOrder] = useState<string>('Recent');
-  const [filteredProposals, setFilteredProposals] = useState<ProposalDetails[]>([]);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = React.useState<string>('');
+  const [statusFilter, setStatusFilter] = React.useState<string>('all');
+  const [sortOrder, setSortOrder] = React.useState<string>('Recent');
+  const [filteredProposals, setFilteredProposals] = React.useState<ProposalDetails[]>([]);
+  const [activeDropdown, setActiveDropdown] = React.useState<string | null>(null);
   
   // Date range filters
-  const [createdSince, setCreatedSince] = useState<string>('');
-  const [createdUntil, setCreatedUntil] = useState<string>('');
+  const [createdSince, setCreatedSince] = React.useState<string>('');
+  const [createdUntil, setCreatedUntil] = React.useState<string>('');
   
   const { 
     sendTransaction, 
@@ -110,6 +119,13 @@ const Governance = () => {
 
   const wallet = useWallet();
   const connection = new Connection(SOLANA_RPC_ENDPOINT);
+
+  // Add new state variables for member selection
+  const [daoMembers, setDaoMembers] = React.useState<User[]>([]);
+  const [userSearchQuery, setUserSearchQuery] = React.useState<string>('');
+  const [searchResults, setSearchResults] = React.useState<User[]>([]);
+  const [searchLoading, setSearchLoading] = React.useState<boolean>(false);
+  const [hasSearched, setHasSearched] = React.useState<boolean>(false);
 
   useEffectOnce(() => {
     proposalService.initializeSolanaConnection(SOLANA_RPC_ENDPOINT);
@@ -126,6 +142,12 @@ const Governance = () => {
   useEffect(() => {
     setFilteredProposals(proposals);
   }, [proposals]);
+
+  useEffectOnce(() => {
+    if (daoId) {
+      loadDaoMembers();
+    }
+  }, [daoId]);
 
   const checkDaoMembership = async () => {
     if (!daoId || !publicKey) return;
@@ -382,7 +404,7 @@ const Governance = () => {
     });
   };
 
-  const toggleAction = (actionType: string) => {
+  const toggleAction = (actionType: ProposalActionTypeEnum) => {
     const existingActionIndex = proposal.actions.findIndex((action: Action) => action.type === actionType);
     
     if (existingActionIndex >= 0) {
@@ -392,18 +414,22 @@ const Governance = () => {
     } else {
       const newAction: Action = {
         type: actionType,
-        walletAddress: '',
-        tokenAmount: '',
-        tokenSymbol: 'SOL'
+        data: {}
       };
       setProposal({ ...proposal, actions: [...proposal.actions, newAction] });
     }
   };
 
-  const updateActionField = (actionType: string, fieldName: string, value: string) => {
+  const updateActionField = (actionType: ProposalActionTypeEnum, fieldName: string, value: any) => {
     const updatedActions = proposal.actions.map((action: Action) => {
       if (action.type === actionType) {
-        return { ...action, [fieldName]: value };
+        return { 
+          ...action, 
+          data: { 
+            ...action.data, 
+            [fieldName]: value 
+          } 
+        };
       }
       return action;
     });
@@ -426,22 +452,29 @@ const Governance = () => {
 
   const getActionDescription = (action: Action) => {
     switch (action.type) {
-      case 'authorize':
-        return `Authorize wallet ${action.walletAddress} to multisig`;
-      case 'remove':
-        return `Remove wallet ${action.walletAddress} from multisig`;
-      case 'withdraw':
-        return `Withdraw ${action.tokenAmount} ${action.tokenSymbol} to ${action.walletAddress}`;
+      case ProposalActionTypeEnum.AddMember:
+        if (!action.data.username) return 'Add member';
+        return `Add member: ${action.data.username}`;
+      case ProposalActionTypeEnum.RemoveMember:
+        if (!action.data.username && !action.data.user_id) return 'Remove member';
+        return `Remove member: ${action.data.username || action.data.user_id}`;
+      case ProposalActionTypeEnum.UpdateDao:
+        return 'Update DAO information';
+      case ProposalActionTypeEnum.UpdateDaoGovernance:
+        return 'Update DAO governance settings';
+      case ProposalActionTypeEnum.CreatePod:
+        if (!action.data.name) return 'Create POD';
+        return `Create POD: ${action.data.name}`;
       default:
         return 'Unknown action';
     }
   };
 
-  const isActionSelected = (actionType: string) => {
+  const isActionSelected = (actionType: ProposalActionTypeEnum) => {
     return proposal.actions.some((action: Action) => action.type === actionType);
   };
 
-  const getActionByType = (actionType: string) => {
+  const getActionByType = (actionType: ProposalActionTypeEnum) => {
     return proposal.actions.find((action: Action) => action.type === actionType);
   };
 
@@ -483,9 +516,7 @@ const Governance = () => {
       const actions = proposal.actions.map((action: Action) => {
         return {
           type: action.type,
-          walletAddress: action.walletAddress,
-          amount: action.tokenAmount,
-          token: action.tokenSymbol
+          data: action.data
         };
       });
       
@@ -552,26 +583,21 @@ const Governance = () => {
       const proposalAccountPubkey = sessionStorage.getItem('currentProposalAccount') || '';
       
       const actions = proposal.actions.map((action: Action) => {
-        let description = '';
-        
-        switch (action.type) {
-          case 'authorize':
-            description = `Authorize wallet ${action.walletAddress} to multisig`;
-            break;
-          case 'remove':
-            description = `Remove wallet ${action.walletAddress} from multisig`;
-            break;
-          case 'withdraw':
-            description = `Withdraw ${action.tokenAmount} ${action.tokenSymbol} to ${action.walletAddress}`;
-            break;
+        // For AddMember, we only need to send user_id and username to the API
+        if (action.type === ProposalActionTypeEnum.AddMember || action.type === ProposalActionTypeEnum.RemoveMember && action.data) {
+          return {
+            type: action.type,
+            data: {
+              user_id: action.data.user_id,
+              username: action.data.username
+            }
+          };
         }
         
+        // For other action types, send all the data
         return {
           type: action.type,
-          description,
-          walletAddress: action.walletAddress,
-          amount: action.tokenAmount,
-          token: action.tokenSymbol
+          data: action.data
         };
       });
       
@@ -752,6 +778,526 @@ const Governance = () => {
     }
   };
 
+  // Load DAO members
+  const loadDaoMembers = async () => {
+    if (!daoId) return;
+    
+    try {
+      const members = await daosService.getDaoMembers(daoId);
+      setDaoMembers(members || []);
+    } catch (error) {
+      console.error('Error fetching DAO members:', error);
+    }
+  };
+
+  // Safely display a wallet address
+  const displayWalletAddress = (address?: string) => {
+    if (!address) return 'No wallet address';
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  };
+
+  // Handle user search
+  const handleUserSearch = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    
+    try {
+      setSearchLoading(true);
+      setHasSearched(true); // Set this to true to indicate a search has been performed
+      const results = await userService.searchUsersByUsername(query);
+      
+      if (results && results.users) {
+        // Filter out users who are already members of the DAO
+        const membersWalletAddresses = daoMembers.map((member: User) => member.walletAddress);
+        const filteredResults = results.users.filter(
+          user => !membersWalletAddresses.includes(user.walletAddress)
+        );
+        setSearchResults(filteredResults);
+      } else {
+        setSearchResults([]);
+      }
+    } catch (error) {
+      console.error('Error searching users:', error);
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  // Toggle user selection for multiple selection
+  const toggleUserSelection = (user: User, actionType: ProposalActionTypeEnum) => {
+    const action = getActionByType(actionType);
+    if (!action) return;
+
+    if (actionType === ProposalActionTypeEnum.CreatePod) {
+      const currentMemberIds = [...(action.data.member_ids || [])];
+      
+      if (currentMemberIds.includes(user.userId)) {
+        // Remove user from selection
+        updateActionField(
+          actionType, 
+          'member_ids', 
+          currentMemberIds.filter(id => id !== user.userId)
+        );
+      } else {
+        // Add user to selection
+        updateActionField(
+          actionType,
+          'member_ids',
+          [...currentMemberIds, user.userId]
+        );
+      }
+    }
+  };
+
+  // Select a user for single selection actions
+  const selectUser = (user: User, actionType: ProposalActionTypeEnum) => {
+    // For AddMember and RemoveMember, we only need user_id and username
+    if (actionType === ProposalActionTypeEnum.AddMember || actionType === ProposalActionTypeEnum.RemoveMember) {
+      const updatedActions = proposal.actions.map((a: Action) => {
+        if (a.type === actionType) {
+          return { 
+            ...a, 
+            data: {
+              user_id: user.userId,
+              username: user.username,
+              // Keep these for UI display only, but they won't be sent to API
+              profile_picture: user.profilePicture || `https://avatars.dicebear.com/api/identicon/${user.userId}.svg`,
+              wallet_address: user.walletAddress
+            } 
+          };
+        }
+        return a;
+      });
+      
+      // Update the proposal directly
+      setProposal({
+        ...proposal,
+        actions: updatedActions
+      });
+    } else {
+      // Create a common data object with all user fields for other action types
+      const actionData = {
+        user_id: user.userId,
+        username: user.username,
+        wallet_address: user.walletAddress,
+        profile_picture: user.profilePicture || `https://avatars.dicebear.com/api/identicon/${user.userId}.svg`
+      };
+      
+      // Direct update approach for all other action types
+      const updatedActions = proposal.actions.map((a: Action) => {
+        if (a.type === actionType) {
+          return { ...a, data: actionData };
+        }
+        return a;
+      });
+      
+      // Update the proposal directly
+      setProposal({
+        ...proposal,
+        actions: updatedActions
+      });
+    }
+    
+    // Clear search for AddMember
+    if (actionType === ProposalActionTypeEnum.AddMember) {
+      setUserSearchQuery('');
+      setSearchResults([]);
+      setHasSearched(false);
+    }
+  };
+
+  // Render action input fields for different action types
+  const renderActionFields = (action: Action) => {
+    switch (action.type) {
+      case ProposalActionTypeEnum.AddMember: {
+        // Get user data from action
+        const username = action.data.username;
+        
+        return (
+          <div className="space-y-3">
+            {!username ? (
+              // Search UI
+              <div>
+                <label className="block text-sm font-medium text-text opacity-80 mb-1">Search User*</label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                      className="w-full p-2 pl-10 border border-gray-700 rounded-lg bg-[#1a1a1a] text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                      placeholder="Search by username"
+                    />
+                    <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  </div>
+                  <Button 
+                    onClick={() => handleUserSearch(userSearchQuery)}
+                    disabled={!userSearchQuery.trim() || searchLoading}
+                    isLoading={searchLoading}
+                    size="small"
+                  >
+                    Search
+                  </Button>
+                </div>
+                
+                {/* Search results */}
+                {searchResults.length > 0 && (
+                  <div className="mt-2 border border-gray-700 rounded-lg overflow-hidden max-h-60 overflow-y-auto bg-[#1a1a1a]">
+                    {searchResults.map((user: User) => (
+                      <div 
+                        key={user.userId}
+                        className="px-3 py-2 hover:bg-[#252525] cursor-pointer flex items-center justify-between border-b border-gray-700 last:border-0"
+                        onClick={() => selectUser(user, action.type)}
+                      >
+                        <div className="flex items-center">
+                          <img 
+                            src={user.profilePicture || `https://avatars.dicebear.com/api/identicon/${user.userId}.svg`}
+                            alt={user.username}
+                            className="w-6 h-6 rounded-full mr-2"
+                          />
+                          <span className="text-white">{user.username}</span>
+                        </div>
+                        <span className="text-gray-400 text-xs">
+                          {displayWalletAddress(user.walletAddress)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {searchResults.length === 0 && userSearchQuery.trim() && !searchLoading && hasSearched && (
+                  <div className="mt-2 text-center py-3 text-gray-400 border border-gray-700 rounded-lg bg-[#1a1a1a]">
+                    No users found matching '{userSearchQuery}'
+                  </div>
+                )}
+                
+                {searchLoading && (
+                  <div className="mt-2 text-center text-gray-400 py-3 border border-gray-700 rounded-lg bg-[#1a1a1a]">
+                    <div className="inline-block w-4 h-4 border-2 border-t-transparent border-primary rounded-full animate-spin mr-2"></div>
+                    Searching...
+                  </div>
+                )}
+              </div>
+            ) : (
+              // Selected user display
+              <div>
+                <label className="block text-sm font-medium text-text opacity-80 mb-1">Selected User</label>
+                <div className="bg-[#1a1a1a] rounded-lg p-4 border border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <img 
+                        src={action.data.profile_picture || `https://avatars.dicebear.com/api/identicon/${action.data.user_id}.svg`}
+                        alt={action.data.username}
+                        className="w-10 h-10 rounded-full mr-3"
+                      />
+                      <div>
+                        <div className="font-medium text-white text-lg">{action.data.username}</div>
+                        <div className="text-sm text-gray-400">Wallet: {displayWalletAddress(action.data.wallet_address)}</div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        // Simple direct removal
+                        const updatedActions = proposal.actions.map((a: Action) => {
+                          if (a.type === action.type) {
+                            return { ...a, data: {} };
+                          }
+                          return a;
+                        });
+                        
+                        // Update the proposal directly
+                        setProposal({
+                          ...proposal,
+                          actions: updatedActions
+                        });
+                        
+                        // Clear search
+                        setUserSearchQuery('');
+                        setSearchResults([]);
+                        setHasSearched(false);
+                      }}
+                      className="text-gray-400 hover:text-red-400 p-2"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
+      case ProposalActionTypeEnum.RemoveMember:
+        return (
+          <div>
+            {!action.data.username ? (
+              <>
+                <label className="block text-sm font-medium text-text opacity-80 mb-1">Select Member to Remove*</label>
+                
+                {daoMembers.length > 0 ? (
+                  <div className="border border-gray-700 rounded-lg overflow-hidden max-h-60 overflow-y-auto bg-[#1a1a1a]">
+                    {daoMembers.map((member: User) => (
+                      <div 
+                        key={member.userId}
+                        className="px-3 py-2 hover:bg-[#252525] cursor-pointer flex items-center justify-between border-b border-gray-700 last:border-0"
+                        onClick={() => selectUser(member, action.type)}
+                      >
+                        <div className="flex items-center">
+                          <img 
+                            src={member.profilePicture || `https://avatars.dicebear.com/api/identicon/${member.userId}.svg`}
+                            alt={member.username}
+                            className="w-6 h-6 rounded-full mr-2"
+                          />
+                          <span className="text-white">{member.username}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center p-4 text-gray-400 border border-gray-700 rounded-lg bg-[#1a1a1a]">
+                    No members available
+                  </div>
+                )}
+              </>
+            ) : (
+              // Selected user display for Remove Member
+              <div>
+                <label className="block text-sm font-medium text-text opacity-80 mb-1">Selected User to Remove</label>
+                <div className="bg-[#1a1a1a] rounded-lg p-4 border border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <img 
+                        src={action.data.profile_picture || `https://avatars.dicebear.com/api/identicon/${action.data.user_id}.svg`}
+                        alt={action.data.username}
+                        className="w-10 h-10 rounded-full mr-3"
+                      />
+                      <div>
+                        <div className="font-medium text-white text-lg">{action.data.username}</div>
+                        <div className="text-sm text-gray-400">Wallet: {displayWalletAddress(action.data.wallet_address)}</div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        // Simple direct removal
+                        const updatedActions = proposal.actions.map((a: Action) => {
+                          if (a.type === action.type) {
+                            return { ...a, data: {} };
+                          }
+                          return a;
+                        });
+                        
+                        // Update the proposal directly
+                        setProposal({
+                          ...proposal,
+                          actions: updatedActions
+                        });
+                      }}
+                      className="text-gray-400 hover:text-red-400 p-2"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      
+      case ProposalActionTypeEnum.UpdateDao:
+        return (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-text opacity-80 mb-1">DAO Name</label>
+              <input
+                type="text"
+                value={action.data.name || ''}
+                onChange={(e) => updateActionField(action.type, 'name', e.target.value)}
+                className="w-full p-2 border border-gray-600 rounded-md bg-surface-200 text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Enter new DAO name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text opacity-80 mb-1">Description</label>
+              <textarea
+                value={action.data.description || ''}
+                onChange={(e) => updateActionField(action.type, 'description', e.target.value)}
+                className="w-full p-2 border border-gray-600 rounded-md bg-surface-200 text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Enter new DAO description"
+                rows={3}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text opacity-80 mb-1">Website</label>
+              <input
+                type="text"
+                value={action.data.website || ''}
+                onChange={(e) => updateActionField(action.type, 'website', e.target.value)}
+                className="w-full p-2 border border-gray-600 rounded-md bg-surface-200 text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Enter website URL"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text opacity-80 mb-1">Twitter</label>
+              <input
+                type="text"
+                value={action.data.twitter || ''}
+                onChange={(e) => updateActionField(action.type, 'twitter', e.target.value)}
+                className="w-full p-2 border border-gray-600 rounded-md bg-surface-200 text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Enter Twitter URL"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text opacity-80 mb-1">GitHub</label>
+              <input
+                type="text"
+                value={action.data.github || ''}
+                onChange={(e) => updateActionField(action.type, 'github', e.target.value)}
+                className="w-full p-2 border border-gray-600 rounded-md bg-surface-200 text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Enter GitHub URL"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text opacity-80 mb-1">Discord</label>
+              <input
+                type="text"
+                value={action.data.discord || ''}
+                onChange={(e) => updateActionField(action.type, 'discord', e.target.value)}
+                className="w-full p-2 border border-gray-600 rounded-md bg-surface-200 text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Enter Discord URL"
+              />
+            </div>
+          </div>
+        );
+      
+      case ProposalActionTypeEnum.UpdateDaoGovernance:
+        return (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-text opacity-80 mb-1">Voting Period (in seconds)</label>
+              <input
+                type="number"
+                value={action.data.voting_period || ''}
+                onChange={(e) => updateActionField(action.type, 'voting_period', parseInt(e.target.value))}
+                className="w-full p-2 border border-gray-600 rounded-md bg-surface-200 text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Enter voting period in seconds"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text opacity-80 mb-1">Voting Threshold (0-1)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                max="1"
+                value={action.data.voting_threshold || ''}
+                onChange={(e) => updateActionField(action.type, 'voting_threshold', parseFloat(e.target.value))}
+                className="w-full p-2 border border-gray-600 rounded-md bg-surface-200 text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Enter voting threshold (e.g., 0.5 for 50%)"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text opacity-80 mb-1">Quorum (0-1)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                max="1"
+                value={action.data.quorum || ''}
+                onChange={(e) => updateActionField(action.type, 'quorum', parseFloat(e.target.value))}
+                className="w-full p-2 border border-gray-600 rounded-md bg-surface-200 text-text focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Enter quorum (e.g., 0.2 for 20%)"
+              />
+            </div>
+          </div>
+        );
+      
+      case ProposalActionTypeEnum.CreatePod:
+        return (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-text opacity-80 mb-1">Pod Name*</label>
+              <input
+                type="text"
+                value={action.data.name || ''}
+                onChange={(e) => updateActionField(action.type, 'name', e.target.value)}
+                className="w-full p-2 border border-gray-700 rounded-lg bg-[#1a1a1a] text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                placeholder="Enter pod name"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text opacity-80 mb-1">Description*</label>
+              <textarea
+                value={action.data.description || ''}
+                onChange={(e) => updateActionField(action.type, 'description', e.target.value)}
+                className="w-full p-2 border border-gray-700 rounded-lg bg-[#1a1a1a] text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                placeholder="Enter pod description"
+                rows={3}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-text opacity-80 mb-1">Select Members (Optional)</label>
+              
+              {daoMembers.length > 0 ? (
+                <div className="border border-gray-700 rounded-lg overflow-hidden max-h-60 overflow-y-auto bg-[#1a1a1a]">
+                  {daoMembers.map((member: User) => {
+                    const isSelected = action.data.member_ids?.includes(member.userId);
+                    return (
+                      <div 
+                        key={member.userId}
+                        className={`px-3 py-2 hover:bg-[#252525] cursor-pointer flex items-center justify-between border-b border-gray-700 last:border-0 ${
+                          isSelected ? 'bg-primary/30' : ''
+                        }`}
+                        onClick={() => toggleUserSelection(member, action.type)}
+                      >
+                        <div className="flex items-center">
+                          <div className="w-5 h-5 rounded border border-gray-500 mr-2 flex items-center justify-center">
+                            {isSelected && <Check size={14} className="text-primary" />}
+                          </div>
+                          <div className="flex items-center">
+                            <img 
+                              src={member.profilePicture || `https://avatars.dicebear.com/api/identicon/${member.userId}.svg`}
+                              alt={member.username}
+                              className="w-6 h-6 rounded-full mr-2"
+                            />
+                            <span className="text-white">{member.username}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center p-4 text-gray-400 border border-gray-700 rounded-lg bg-[#1a1a1a]">
+                  No members available
+                </div>
+              )}
+              
+              {/* Selected members count */}
+              {action.data.member_ids && action.data.member_ids.length > 0 && (
+                <div className="mt-2 text-sm text-gray-400">
+                  {action.data.member_ids.length} member{action.data.member_ids.length !== 1 ? 's' : ''} selected
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      
+      default:
+        return (
+          <div className="p-4 bg-yellow-900/20 border border-yellow-700/50 rounded-lg">
+            <p className="text-sm text-yellow-300">
+              Additional configuration for this action type will be added later.
+            </p>
+          </div>
+        );
+    }
+  };
+
   const renderProposalForm = () => {
     switch (proposalStep) {
       case 1:
@@ -923,131 +1469,56 @@ const Governance = () => {
             <h3 className="text-lg font-medium text-text">Actions (Optional)</h3>
             <p className="text-sm text-surface-500 mb-2">Select one or more actions for this proposal</p>
             
-            <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-4">
               <button
-                onClick={() => toggleAction('authorize')}
-                className={`p-2 rounded-md text-sm ${isActionSelected('authorize') ? 'bg-primary text-text' : 'bg-surface-300 text-text hover:bg-[#444444]'}`}
+                onClick={() => toggleAction(ProposalActionTypeEnum.AddMember)}
+                className={`p-2 rounded-md text-sm ${isActionSelected(ProposalActionTypeEnum.AddMember) ? 'bg-primary text-text' : 'bg-surface-300 text-text hover:bg-[#444444]'}`}
               >
-                Authorize Wallet
+                Add Member
               </button>
               <button
-                onClick={() => toggleAction('remove')}
-                className={`p-2 rounded-md text-sm ${isActionSelected('remove') ? 'bg-primary text-text' : 'bg-surface-300 text-text hover:bg-[#444444]'}`}
+                onClick={() => toggleAction(ProposalActionTypeEnum.RemoveMember)}
+                className={`p-2 rounded-md text-sm ${isActionSelected(ProposalActionTypeEnum.RemoveMember) ? 'bg-primary text-text' : 'bg-surface-300 text-text hover:bg-[#444444]'}`}
               >
-                Remove Wallet
+                Remove Member
               </button>
               <button
-                onClick={() => toggleAction('withdraw')}
-                className={`p-2 rounded-md text-sm ${isActionSelected('withdraw') ? 'bg-primary text-text' : 'bg-surface-300 text-text hover:bg-[#444444]'}`}
+                onClick={() => toggleAction(ProposalActionTypeEnum.UpdateDao)}
+                className={`p-2 rounded-md text-sm ${isActionSelected(ProposalActionTypeEnum.UpdateDao) ? 'bg-primary text-text' : 'bg-surface-300 text-text hover:bg-[#444444]'}`}
               >
-                Withdraw Tokens
+                Update DAO
+              </button>
+              <button
+                onClick={() => toggleAction(ProposalActionTypeEnum.UpdateDaoGovernance)}
+                className={`p-2 rounded-md text-sm ${isActionSelected(ProposalActionTypeEnum.UpdateDaoGovernance) ? 'bg-primary text-text' : 'bg-surface-300 text-text hover:bg-[#444444]'}`}
+              >
+                Update Governance
+              </button>
+              <button
+                onClick={() => toggleAction(ProposalActionTypeEnum.CreatePod)}
+                className={`p-2 rounded-md text-sm ${isActionSelected(ProposalActionTypeEnum.CreatePod) ? 'bg-primary text-text' : 'bg-surface-300 text-text hover:bg-[#444444]'}`}
+              >
+                Create Pod
               </button>
             </div>
             
             <div className="space-y-4">
               {proposal.actions.length > 0 ? (
                 <>
-                  {isActionSelected('authorize') && (
-                    <div className="p-4 bg-surface-200 rounded-md border border-gray-600">
+                  {proposal.actions.map((action: Action, index: number) => (
+                    <div key={index} className="p-4 bg-surface-200 rounded-md border border-gray-600">
                       <div className="flex justify-between items-center mb-2">
-                        <h5 className="font-medium text-primary">Authorize Wallet</h5>
+                        <h5 className="font-medium text-primary">{action.type.replace('_', ' ')}</h5>
                         <button 
-                          onClick={() => toggleAction('authorize')}
+                          onClick={() => toggleAction(action.type)}
                           className="text-surface-500 hover:text-gray-200"
                         >
                           <X size={16} />
                         </button>
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-text opacity-80 mb-1">Wallet Address to Authorize</label>
-                        <input
-                          type="text"
-                          value={getActionByType('authorize')?.walletAddress || ''}
-                          onChange={(e) => updateActionField('authorize', 'walletAddress', e.target.value)}
-                          className="w-full p-2 border border-gray-600 rounded-md bg-surface-200 text-text focus:outline-none focus:ring-2 focus:ring-primary"
-                          placeholder="Enter wallet address"
-                        />
-                      </div>
+                      {renderActionFields(action)}
                     </div>
-                  )}
-                  
-                  {isActionSelected('remove') && (
-                    <div className="p-4 bg-surface-200 rounded-md border border-gray-600">
-                      <div className="flex justify-between items-center mb-2">
-                        <h5 className="font-medium text-primary">Remove Wallet</h5>
-                        <button 
-                          onClick={() => toggleAction('remove')}
-                          className="text-surface-500 hover:text-gray-200"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-text opacity-80 mb-1">Wallet Address to Remove</label>
-                        <input
-                          type="text"
-                          value={getActionByType('remove')?.walletAddress || ''}
-                          onChange={(e) => updateActionField('remove', 'walletAddress', e.target.value)}
-                          className="w-full p-2 border border-gray-600 rounded-md bg-surface-200 text-text focus:outline-none focus:ring-2 focus:ring-primary"
-                          placeholder="Enter wallet address"
-                        />
-                      </div>
-                    </div>
-                  )}
-                  
-                  {isActionSelected('withdraw') && (
-                    <div className="p-4 bg-surface-200 rounded-md border border-gray-600">
-                      <div className="flex justify-between items-center mb-2">
-                        <h5 className="font-medium text-primary">Withdraw Tokens</h5>
-                        <button 
-                          onClick={() => toggleAction('withdraw')}
-                          className="text-surface-500 hover:text-gray-200"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-sm font-medium text-text opacity-80 mb-1">Recipient Wallet</label>
-                          <input
-                            type="text"
-                            value={getActionByType('withdraw')?.walletAddress || ''}
-                            onChange={(e) => updateActionField('withdraw', 'walletAddress', e.target.value)}
-                            className="w-full p-2 border border-gray-600 rounded-md bg-surface-200 text-text focus:outline-none focus:ring-2 focus:ring-primary"
-                            placeholder="Enter recipient wallet address"
-                          />
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="block text-sm font-medium text-text opacity-80 mb-1">Amount</label>
-                            <input
-                              type="number"
-                              value={getActionByType('withdraw')?.tokenAmount || ''}
-                              onChange={(e) => updateActionField('withdraw', 'tokenAmount', e.target.value)}
-                              className="w-full p-2 border border-gray-600 rounded-md bg-surface-200 text-text focus:outline-none focus:ring-2 focus:ring-primary"
-                              placeholder="Enter amount"
-                            />
-                          </div>
-                          
-                          <div>
-                            <label className="block text-sm font-medium text-text opacity-80 mb-1">Token</label>
-                            <select
-                              value={getActionByType('withdraw')?.tokenSymbol || 'SOL'}
-                              onChange={(e) => updateActionField('withdraw', 'tokenSymbol', e.target.value)}
-                              className="w-full p-2 border border-gray-600 rounded-md bg-surface-200 text-text focus:outline-none focus:ring-2 focus:ring-primary"
-                            >
-                              <option value="SOL">SOL</option>
-                              <option value="USDC">USDC</option>
-                              <option value="USDT">USDT</option>
-                              <option value="BTC">BTC</option>
-                              <option value="ETH">ETH</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  ))}
                 </>
               ) : (
                 <div className="p-4 bg-surface-200 rounded-md text-center text-surface-500">
@@ -1137,6 +1608,12 @@ const Governance = () => {
   
   const closeProposalDetails = () => {
     setSelectedProposal(null);
+  };
+
+  const resetSearch = () => {
+    setUserSearchQuery('');
+    setSearchResults([]);
+    setHasSearched(false);
   };
 
   return (
