@@ -3,7 +3,7 @@
  * Handles all API interactions related to DAOs
  */
 
-import { createConfiguration, DaosApi, DAO, DAOUpdate, DAOMembership, InputCreateDAO, UserDAOOwnershipResponse, InputInitDAO, DAOModule, DAOModulesList, DAOModuleResponse, InputCreateGovernance, DAOInvitation, DAOInvitationResponse, DAOInvitationAction, DAOInvitationList } from '../core/modules/dao-api';
+import { createConfiguration, DaosApi, DAO, DAOUpdate, DAOMembership, InputCreateDAO, UserDAOOwnershipResponse, InputInitDAO, DAOModule, DAOModulesList, DAOModuleResponse, InputCreateGovernance, DAOInvitation, DAOInvitationResponse, DAOInvitationAction, DAOInvitationList, FeaturedToggle, FeaturedResponse } from '../core/modules/dao-api';
 import { ServerConfiguration } from '../core/modules/dao-api/servers';
 import { walletAuthService } from './WalletAuthService';
 import { fileToMinioStorage } from '../utils/fileUtils';
@@ -602,6 +602,56 @@ export class DaosService {
       return response || null;
     } catch (error) {
       console.error(`Error canceling invitation ${invitationId} for DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get the featured status of a DAO
+   * @param daoId The ID of the DAO
+   * @returns The featured status response or null if there was an error
+   */
+  async getDAOFeaturedStatus(daoId: string): Promise<FeaturedResponse | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      const response = await apiClient.getDAOFeaturedStatus(daoId);
+      return response || null;
+    } catch (error) {
+      console.error(`Error getting featured status for DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Enable or disable the featured status of a DAO
+   * @param daoId The ID of the DAO
+   * @param featuredData The featured toggle data
+   * @returns The featured status response or null if there was an error
+   */
+  async enableDAOFeatured(daoId: string, featuredData: {
+    featured: boolean;
+    days?: number;
+  }): Promise<FeaturedResponse | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      const featuredToggle = new FeaturedToggle();
+
+      if (featuredData.days !== undefined) {
+        featuredToggle.days = featuredData.days;
+      }
+
+      const response = await apiClient.enableDAOFeatured(daoId, featuredToggle);
+      
+      // Clear the DAO cache after updating featured status
+      this.clearDaoCache(daoId);
+      
+      return response || null;
+    } catch (error) {
+      console.error(`Error updating featured status for DAO ${daoId}:`, error);
       return null;
     }
   }

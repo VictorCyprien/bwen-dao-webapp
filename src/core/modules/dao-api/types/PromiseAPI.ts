@@ -1229,6 +1229,50 @@ export class PromiseDaosApi {
     }
 
     /**
+     * Enable a DAO\'s featured option
+     * @param daoId
+     * @param featuredToggle
+     */
+    public enableDAOFeaturedWithHttpInfo(daoId: string, featuredToggle: FeaturedToggle, _options?: PromiseConfigurationOptions): Promise<HttpInfo<FeaturedResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.enableDAOFeaturedWithHttpInfo(daoId, featuredToggle, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Enable a DAO\'s featured option
+     * @param daoId
+     * @param featuredToggle
+     */
+    public enableDAOFeatured(daoId: string, featuredToggle: FeaturedToggle, _options?: PromiseConfigurationOptions): Promise<FeaturedResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.enableDAOFeatured(daoId, featuredToggle, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
      * List all DAOs
      */
     public getAllDAOsWithHttpInfo(_options?: PromiseConfigurationOptions): Promise<HttpInfo<Array<DAO>>> {
@@ -2575,50 +2619,6 @@ export class PromiseDaosApi {
 	    }
 	}
         const result = this.api.respondToDAOInvitation(daoId, invitationId, dAOInvitationAction, observableOptions);
-        return result.toPromise();
-    }
-
-    /**
-     * Toggle a DAO\'s featured status
-     * @param daoId
-     * @param featuredToggle
-     */
-    public toggleDAOFeaturedWithHttpInfo(daoId: string, featuredToggle: FeaturedToggle, _options?: PromiseConfigurationOptions): Promise<HttpInfo<FeaturedResponse>> {
-        let observableOptions: undefined | ConfigurationOptions
-        if (_options){
-	    observableOptions = {
-                baseServer: _options.baseServer,
-                httpApi: _options.httpApi,
-                middleware: _options.middleware?.map(
-                    m => new PromiseMiddlewareWrapper(m)
-		),
-		middlewareMergeStrategy: _options.middlewareMergeStrategy,
-                authMethods: _options.authMethods
-	    }
-	}
-        const result = this.api.toggleDAOFeaturedWithHttpInfo(daoId, featuredToggle, observableOptions);
-        return result.toPromise();
-    }
-
-    /**
-     * Toggle a DAO\'s featured status
-     * @param daoId
-     * @param featuredToggle
-     */
-    public toggleDAOFeatured(daoId: string, featuredToggle: FeaturedToggle, _options?: PromiseConfigurationOptions): Promise<FeaturedResponse> {
-        let observableOptions: undefined | ConfigurationOptions
-        if (_options){
-	    observableOptions = {
-                baseServer: _options.baseServer,
-                httpApi: _options.httpApi,
-                middleware: _options.middleware?.map(
-                    m => new PromiseMiddlewareWrapper(m)
-		),
-		middlewareMergeStrategy: _options.middlewareMergeStrategy,
-                authMethods: _options.authMethods
-	    }
-	}
-        const result = this.api.toggleDAOFeatured(daoId, featuredToggle, observableOptions);
         return result.toPromise();
     }
 
