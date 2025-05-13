@@ -22,6 +22,7 @@ Method | HTTP request | Description
 [**deleteDAO**](DaosApi.md#deleteDAO) | **DELETE** /daos/{dao_id} | Delete a DAO
 [**deleteDAORole**](DaosApi.md#deleteDAORole) | **DELETE** /daos/{dao_id}/roles/{role_id} | Delete a role from a DAO
 [**deletePOD**](DaosApi.md#deletePOD) | **DELETE** /daos/{dao_id}/pods/{pod_id} | Delete a POD
+[**enableDAOFeatured**](DaosApi.md#enableDAOFeatured) | **PATCH** /daos/{dao_id}/featured | Enable a DAO\&#39;s featured option
 [**getAllDAOs**](DaosApi.md#getAllDAOs) | **GET** /daos/ | List all DAOs
 [**getAllMembersOfPOD**](DaosApi.md#getAllMembersOfPOD) | **GET** /daos/{dao_id}/pods/{pod_id}/members | Get all members of a POD
 [**getAllPODsForDAO**](DaosApi.md#getAllPODsForDAO) | **GET** /daos/{dao_id}/pods | Get all PODs for a DAO
@@ -53,7 +54,6 @@ Method | HTTP request | Description
 [**removePermissionFromRole**](DaosApi.md#removePermissionFromRole) | **DELETE** /daos/{dao_id}/roles/{role_id}/permissions/{permission_id} | Remove a permission from a role in a DAO
 [**removeRoleFromUser**](DaosApi.md#removeRoleFromUser) | **DELETE** /daos/{dao_id}/members/{user_id}/roles/{role_id} | Remove a role from a user in a DAO
 [**respondToDAOInvitation**](DaosApi.md#respondToDAOInvitation) | **POST** /daos/{dao_id}/invitations/{invitation_id} | Respond to a DAO invitation (accept/decline)
-[**toggleDAOFeatured**](DaosApi.md#toggleDAOFeatured) | **PATCH** /daos/{dao_id}/featured | Toggle a DAO\&#39;s featured status
 [**unlinkDiscordChannelFromPOD**](DaosApi.md#unlinkDiscordChannelFromPOD) | **DELETE** /daos/{dao_id}/pods/{pod_id}/discord-channels/{channel_id} | Unlink a Discord channel from a POD
 [**updateDAO**](DaosApi.md#updateDAO) | **PUT** /daos/{dao_id} | Update a DAO
 [**updateDAOGovernance**](DaosApi.md#updateDAOGovernance) | **PUT** /daos/{dao_id}/governance | Update governance model for a DAO
@@ -1137,6 +1137,68 @@ No authorization required
 **400** | Bad Request - Error deleting POD |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
 **404** | User, DAO or POD not found |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
+# **enableDAOFeatured**
+> FeaturedResponse enableDAOFeatured(featuredToggle)
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+import type { DaosApiEnableDAOFeaturedRequest } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request: DaosApiEnableDAOFeaturedRequest = {
+  
+  daoId: "dao_id_example",
+  
+  featuredToggle: {
+    days: 7,
+  },
+};
+
+const data = await apiInstance.enableDAOFeatured(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **featuredToggle** | **FeaturedToggle**|  |
+ **daoId** | [**string**] |  | defaults to undefined
+
+
+### Return type
+
+**FeaturedResponse**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**422** | Unprocessable Entity |  -  |
+**201** | DAO featured option enabled successfully |  -  |
+**400** | Bad Request - Invalid data |  -  |
+**401** | Unauthorized - Invalid or missing token |  -  |
+**404** | DAO not found |  -  |
 **0** | Default error response |  -  |
 
 [[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
@@ -2938,68 +3000,6 @@ No authorization required
 **400** | Bad Request |  -  |
 **401** | Unauthorized |  -  |
 **404** | Invitation, DAO, or user not found |  -  |
-**0** | Default error response |  -  |
-
-[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
-
-# **toggleDAOFeatured**
-> FeaturedResponse toggleDAOFeatured(featuredToggle)
-
-
-### Example
-
-
-```typescript
-import { createConfiguration, DaosApi } from '';
-import type { DaosApiToggleDAOFeaturedRequest } from '';
-
-const configuration = createConfiguration();
-const apiInstance = new DaosApi(configuration);
-
-const request: DaosApiToggleDAOFeaturedRequest = {
-  
-  daoId: "dao_id_example",
-  
-  featuredToggle: {
-    featured: true,
-  },
-};
-
-const data = await apiInstance.toggleDAOFeatured(request);
-console.log('API called successfully. Returned data:', data);
-```
-
-
-### Parameters
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **featuredToggle** | **FeaturedToggle**|  |
- **daoId** | [**string**] |  | defaults to undefined
-
-
-### Return type
-
-**FeaturedResponse**
-
-### Authorization
-
-No authorization required
-
-### HTTP request headers
-
- - **Content-Type**: application/json
- - **Accept**: application/json
-
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-**422** | Unprocessable Entity |  -  |
-**200** | DAO featured status updated successfully |  -  |
-**400** | Bad Request - Invalid data |  -  |
-**401** | Unauthorized - Invalid or missing token |  -  |
-**404** | DAO not found |  -  |
 **0** | Default error response |  -  |
 
 [[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)

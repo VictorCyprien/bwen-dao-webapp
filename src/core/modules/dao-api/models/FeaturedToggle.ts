@@ -16,7 +16,10 @@ import { HttpFile } from '../http/http';
 * Schema for featured toggle
 */
 export class FeaturedToggle {
-    'featured': boolean;
+    /**
+    * Number of days the DAO should remain featured (default: 7, max: 30)
+    */
+    'days'?: number;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -24,9 +27,9 @@ export class FeaturedToggle {
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "featured",
-            "baseName": "featured",
-            "type": "boolean",
+            "name": "days",
+            "baseName": "days",
+            "type": "number",
             "format": ""
         }    ];
 

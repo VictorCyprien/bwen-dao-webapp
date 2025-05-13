@@ -566,6 +566,22 @@ export interface DaosApiDeletePODRequest {
     podId: string
 }
 
+export interface DaosApiEnableDAOFeaturedRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApienableDAOFeatured
+     */
+    daoId: string
+    /**
+     * 
+     * @type FeaturedToggle
+     * @memberof DaosApienableDAOFeatured
+     */
+    featuredToggle: FeaturedToggle
+}
+
 export interface DaosApiGetAllDAOsRequest {
 }
 
@@ -1035,22 +1051,6 @@ export interface DaosApiRespondToDAOInvitationRequest {
     dAOInvitationAction: DAOInvitationAction
 }
 
-export interface DaosApiToggleDAOFeaturedRequest {
-    /**
-     * 
-     * Defaults to: undefined
-     * @type string
-     * @memberof DaosApitoggleDAOFeatured
-     */
-    daoId: string
-    /**
-     * 
-     * @type FeaturedToggle
-     * @memberof DaosApitoggleDAOFeatured
-     */
-    featuredToggle: FeaturedToggle
-}
-
 export interface DaosApiUnlinkDiscordChannelFromPODRequest {
     /**
      * 
@@ -1446,6 +1446,22 @@ export class ObjectDaosApi {
      */
     public deletePOD(param: DaosApiDeletePODRequest, options?: ConfigurationOptions): Promise<PODSchemaResponse> {
         return this.api.deletePOD(param.daoId, param.podId,  options).toPromise();
+    }
+
+    /**
+     * Enable a DAO\'s featured option
+     * @param param the request object
+     */
+    public enableDAOFeaturedWithHttpInfo(param: DaosApiEnableDAOFeaturedRequest, options?: ConfigurationOptions): Promise<HttpInfo<FeaturedResponse>> {
+        return this.api.enableDAOFeaturedWithHttpInfo(param.daoId, param.featuredToggle,  options).toPromise();
+    }
+
+    /**
+     * Enable a DAO\'s featured option
+     * @param param the request object
+     */
+    public enableDAOFeatured(param: DaosApiEnableDAOFeaturedRequest, options?: ConfigurationOptions): Promise<FeaturedResponse> {
+        return this.api.enableDAOFeatured(param.daoId, param.featuredToggle,  options).toPromise();
     }
 
     /**
@@ -1942,22 +1958,6 @@ export class ObjectDaosApi {
      */
     public respondToDAOInvitation(param: DaosApiRespondToDAOInvitationRequest, options?: ConfigurationOptions): Promise<DAOInvitationResponse> {
         return this.api.respondToDAOInvitation(param.daoId, param.invitationId, param.dAOInvitationAction,  options).toPromise();
-    }
-
-    /**
-     * Toggle a DAO\'s featured status
-     * @param param the request object
-     */
-    public toggleDAOFeaturedWithHttpInfo(param: DaosApiToggleDAOFeaturedRequest, options?: ConfigurationOptions): Promise<HttpInfo<FeaturedResponse>> {
-        return this.api.toggleDAOFeaturedWithHttpInfo(param.daoId, param.featuredToggle,  options).toPromise();
-    }
-
-    /**
-     * Toggle a DAO\'s featured status
-     * @param param the request object
-     */
-    public toggleDAOFeatured(param: DaosApiToggleDAOFeaturedRequest, options?: ConfigurationOptions): Promise<FeaturedResponse> {
-        return this.api.toggleDAOFeatured(param.daoId, param.featuredToggle,  options).toPromise();
     }
 
     /**
