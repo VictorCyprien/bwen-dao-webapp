@@ -596,13 +596,14 @@ const Governance = () => {
       const proposalAccountPubkey = sessionStorage.getItem('currentProposalAccount') || '';
       
       const actions = proposal.actions.map((action: Action) => {
-        // For AddMember, we only need to send user_id and username to the API
+        // For AddMember and RemoveMember, we need user_id, username, and wallet_address
         if (action.type === ProposalActionTypeEnum.AddMember || action.type === ProposalActionTypeEnum.RemoveMember && action.data) {
           return {
             type: action.type,
             data: {
               user_id: action.data.user_id,
-              username: action.data.username
+              username: action.data.username,
+              wallet_address: action.data.wallet_address
             }
           };
         }
@@ -910,21 +911,28 @@ const Governance = () => {
     if (!action) return;
 
     if (actionType === ProposalActionTypeEnum.CreatePod) {
-      const currentMemberIds = [...(action.data.member_ids || [])];
+      // For CreatePod, store complete user data for each member
+      const currentMembers = [...(action.data.users || [])];
+      const memberIndex = currentMembers.findIndex(m => m.user_id === user.userId);
       
-      if (currentMemberIds.includes(user.userId)) {
+      if (memberIndex >= 0) {
         // Remove user from selection
+        currentMembers.splice(memberIndex, 1);
         updateActionField(
           actionType, 
-          'member_ids', 
-          currentMemberIds.filter(id => id !== user.userId)
+          'users',
+          currentMembers
         );
       } else {
-        // Add user to selection
+        // Add user to selection with required fields
         updateActionField(
           actionType,
-          'member_ids',
-          [...currentMemberIds, user.userId]
+          'users',
+          [...currentMembers, {
+            user_id: user.userId,
+            username: user.username,
+            wallet_address: user.walletAddress,
+          }]
         );
       }
     }
@@ -932,7 +940,7 @@ const Governance = () => {
 
   // Select a user for single selection actions
   const selectUser = (user: User, actionType: ProposalActionTypeEnum) => {
-    // For AddMember and RemoveMember, we only need user_id and username
+    // For AddMember and RemoveMember, we need user_id, username, and wallet_address
     if (actionType === ProposalActionTypeEnum.AddMember || actionType === ProposalActionTypeEnum.RemoveMember) {
       const updatedActions = proposal.actions.map((a: Action) => {
         if (a.type === actionType) {
@@ -941,9 +949,9 @@ const Governance = () => {
             data: {
               user_id: user.userId,
               username: user.username,
-              // Keep these for UI display only, but they won't be sent to API
-              profile_picture: user.profilePicture || `https://avatars.dicebear.com/api/identicon/${user.userId}.svg`,
-              wallet_address: user.walletAddress
+              wallet_address: user.walletAddress,
+              // Keep profile_picture for UI display only, won't be sent to API
+              profile_picture: user.profilePicture || `https://avatars.dicebear.com/api/identicon/${user.userId}.svg`
             } 
           };
         }
@@ -1323,7 +1331,7 @@ const Governance = () => {
               {daoMembers.length > 0 ? (
                 <div className="border border-gray-700 rounded-lg overflow-hidden max-h-60 overflow-y-auto bg-[#1a1a1a]">
                   {daoMembers.map((member: User) => {
-                    const isSelected = action.data.member_ids?.includes(member.userId);
+                    const isSelected = action.data.users?.some((m: {user_id: string}) => m.user_id === member.userId);
                     return (
                       <div 
                         key={member.userId}
@@ -1356,9 +1364,9 @@ const Governance = () => {
               )}
               
               {/* Selected members count */}
-              {action.data.member_ids && action.data.member_ids.length > 0 && (
+              {action.data.users && action.data.users.length > 0 && (
                 <div className="mt-2 text-sm text-gray-400">
-                  {action.data.member_ids.length} member{action.data.member_ids.length !== 1 ? 's' : ''} selected
+                  {action.data.users.length} member{action.data.users.length !== 1 ? 's' : ''} selected
                 </div>
               )}
             </div>
