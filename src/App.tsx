@@ -15,6 +15,7 @@ import LandingPageDev from './components/Landingpage_dev';
 import BabyWenOnboarding from './components/BabyWenOnboarding';
 import ChatBot from './components/ChatBot';
 import Featured from './components/Featured';
+import Chart from './components/Chart';
 import { useEffectOnce } from './hooks/useEffectOnce';
 import useMediaQuery from './hooks/useMediaQuery';
 import { userService } from './services/UserService';
@@ -190,6 +191,9 @@ const Dashboard = () => {
           break;
         case 'featured':
           setCurrentComponent(<Featured />);
+          break;
+        case 'chart':
+          setCurrentComponent(<Chart />);
           break;
         case 'dashboard_home':
           setCurrentComponent(<Home />);

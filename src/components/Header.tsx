@@ -40,6 +40,8 @@ const Header = ({
         return 'Featured';
       case 'modules':
         return 'Modules';
+      case 'chart':
+        return 'Chart';
       case 'profile':
         return 'My Profile';
       default:
