@@ -21,6 +21,8 @@ interface ProposalActions {
     // ADD_MEMBER
     user_id?: string;
     username?: string;
+    wallet_address?: string;
+    profile_picture?: string;
     
     // UPDATE_DAO
     name?: string;
@@ -36,7 +38,12 @@ interface ProposalActions {
     quorum?: number;
     
     // CREATE_POD
-    member_ids?: string[];
+    users?: Array<{
+      user_id: string;
+      username: string;
+      wallet_address: string;
+      profile_picture?: string;
+    }>;
     
     // Any other potential fields
     [key: string]: any;
@@ -243,17 +250,24 @@ const PopupProposal: React.FC<PopupProposalProps> = ({ proposal, onClose, onVote
 
                       {/* ADD_MEMBER action data */}
                       {action.type === 'ADD_MEMBER' && action.data && (
-                        <div className="mt-2 space-y-1">
+                        <div className="mt-2 bg-[#111] p-3 rounded-lg">
                           {action.data.username && (
-                            <div className="flex items-center text-gray-400 text-sm">
-                              <Users size={14} className="mr-2" />
-                              <span>Username: <span className="text-white">{action.data.username}</span></span>
-                            </div>
-                          )}
-                          {action.data.user_id && (
-                            <div className="flex items-center text-gray-400 text-sm">
-                              <span className="mr-2">User ID:</span>
-                              <span className="font-mono text-xs">{action.data.user_id}</span>
+                            <div className="flex items-center">
+                              <div className="mr-3">
+                                <img 
+                                  src={action.data.profile_picture || `https://avatars.dicebear.com/api/identicon/${action.data.user_id}.svg`}
+                                  alt={action.data.username}
+                                  className="w-10 h-10 rounded-full"
+                                />
+                              </div>
+                              <div>
+                                <div className="text-white text-sm font-medium">{action.data.username}</div>
+                                {action.data.wallet_address && (
+                                  <div className="text-gray-400 text-xs font-mono mt-1">
+                                    {action.data.wallet_address.substring(0, 6)}...{action.data.wallet_address.substring(action.data.wallet_address.length - 4)}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           )}
                         </div>
@@ -261,17 +275,24 @@ const PopupProposal: React.FC<PopupProposalProps> = ({ proposal, onClose, onVote
 
                       {/* REMOVE_MEMBER action data */}
                       {action.type === 'REMOVE_MEMBER' && action.data && (
-                        <div className="mt-2 space-y-1">
+                        <div className="mt-2 bg-[#111] p-3 rounded-lg">
                           {action.data.username && (
-                            <div className="flex items-center text-gray-400 text-sm">
-                              <UserMinus size={14} className="mr-2" />
-                              <span>Username: <span className="text-white">{action.data.username}</span></span>
-                            </div>
-                          )}
-                          {action.data.user_id && (
-                            <div className="flex items-center text-gray-400 text-sm">
-                              <span className="mr-2">User ID:</span>
-                              <span className="font-mono text-xs">{action.data.user_id}</span>
+                            <div className="flex items-center">
+                              <div className="mr-3">
+                                <img 
+                                  src={action.data.profile_picture || `https://avatars.dicebear.com/api/identicon/${action.data.user_id}.svg`}
+                                  alt={action.data.username}
+                                  className="w-10 h-10 rounded-full"
+                                />
+                              </div>
+                              <div>
+                                <div className="text-white text-sm font-medium">{action.data.username}</div>
+                                {action.data.wallet_address && (
+                                  <div className="text-gray-400 text-xs font-mono mt-1">
+                                    {action.data.wallet_address.substring(0, 6)}...{action.data.wallet_address.substring(action.data.wallet_address.length - 4)}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           )}
                         </div>
@@ -279,36 +300,47 @@ const PopupProposal: React.FC<PopupProposalProps> = ({ proposal, onClose, onVote
 
                       {/* UPDATE_DAO action data */}
                       {action.type === 'UPDATE_DAO' && action.data && (
-                        <div className="mt-2 space-y-2 bg-[#111] p-2 rounded-lg">
-                          {action.data.name && (
-                            <div className="text-gray-400 text-sm">
-                              <span className="text-purple-400">Name:</span> {action.data.name}
-                            </div>
-                          )}
-                          {action.data.description && (
-                            <div className="text-gray-400 text-sm">
-                              <span className="text-purple-400">Description:</span> {action.data.description}
-                            </div>
-                          )}
-                          <div className="grid grid-cols-2 gap-2">
+                        <div className="mt-2 bg-[#111] p-3 rounded-lg">
+                          <div className="space-y-2 text-sm">
+                            {action.data.name && (
+                              <div className="flex">
+                                <span className="text-purple-400 w-28">Name:</span> 
+                                <span className="text-white">{action.data.name}</span>
+                              </div>
+                            )}
+                            
+                            {action.data.description && (
+                              <div className="flex">
+                                <span className="text-purple-400 w-28">Description:</span> 
+                                <span className="text-white">{action.data.description}</span>
+                              </div>
+                            )}
+                            
                             {action.data.website && (
-                              <div className="text-gray-400 text-sm">
-                                <span className="text-purple-400">Website:</span> {action.data.website}
+                              <div className="flex">
+                                <span className="text-purple-400 w-28">Website:</span> 
+                                <span className="text-white">{action.data.website}</span>
                               </div>
                             )}
+                            
                             {action.data.twitter && (
-                              <div className="text-gray-400 text-sm">
-                                <span className="text-purple-400">Twitter:</span> {action.data.twitter}
+                              <div className="flex">
+                                <span className="text-purple-400 w-28">Twitter:</span> 
+                                <span className="text-white">{action.data.twitter}</span>
                               </div>
                             )}
+                            
                             {action.data.github && (
-                              <div className="text-gray-400 text-sm">
-                                <span className="text-purple-400">GitHub:</span> {action.data.github}
+                              <div className="flex">
+                                <span className="text-purple-400 w-28">GitHub:</span> 
+                                <span className="text-white">{action.data.github}</span>
                               </div>
                             )}
+                            
                             {action.data.discord && (
-                              <div className="text-gray-400 text-sm">
-                                <span className="text-purple-400">Discord:</span> {action.data.discord}
+                              <div className="flex">
+                                <span className="text-purple-400 w-28">Discord:</span> 
+                                <span className="text-white">{action.data.discord}</span>
                               </div>
                             )}
                           </div>
@@ -354,19 +386,34 @@ const PopupProposal: React.FC<PopupProposalProps> = ({ proposal, onClose, onVote
                               <p className="text-gray-300 mt-1 text-sm bg-[#111] p-2 rounded-lg">{action.data.description}</p>
                             </div>
                           )}
-                          {action.data.member_ids && action.data.member_ids.length > 0 && (
-                            <div className="text-gray-400 text-sm">
-                              <span className="mr-2">Members:</span>
-                              <span className="text-purple-400">{action.data.member_ids.length} members</span>
+                          
+                          {/* Display users in CREATE_POD action */}
+                          {action.data.users && action.data.users.length > 0 && (
+                            <div className="text-gray-400 text-sm mt-4">
+                              <span className="mr-2 font-medium">Members ({action.data.users.length}):</span>
+                              <div className="mt-2 bg-[#111] p-2 rounded-lg max-h-60 overflow-y-auto">
+                                {action.data.users.map((user, userIndex) => (
+                                  <div key={userIndex} className="flex items-center p-2 border-b border-gray-800 last:border-0">
+                                    <div className="mr-3">
+                                      <img 
+                                        src={user.profile_picture || `https://avatars.dicebear.com/api/identicon/${user.user_id}.svg`}
+                                        alt={user.username}
+                                        className="w-8 h-8 rounded-full"
+                                      />
+                                    </div>
+                                    <div>
+                                      <div className="text-white text-sm">{user.username}</div>
+                                      {user.wallet_address && (
+                                        <div className="text-gray-400 text-xs font-mono">
+                                          {user.wallet_address.substring(0, 6)}...{user.wallet_address.substring(user.wallet_address.length - 4)}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           )}
-                        </div>
-                      )}
-                      
-                      {action.walletAddress && (
-                        <div className="flex items-center text-gray-400 text-sm mt-2">
-                          <Wallet size={14} className="mr-2" />
-                          <span className="font-mono">{action.walletAddress}</span>
                         </div>
                       )}
                       
