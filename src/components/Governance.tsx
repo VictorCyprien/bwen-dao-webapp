@@ -207,30 +207,36 @@ const Governance = () => {
         return;
       }
       
-      const transformedProposals = fetchedProposals.map(p => ({
-        id: p.proposalId || '',
-        name: p.name || '',
-        description: p.description || '',
-        status: p.isActive ? 'Active' : p.hasPassed ? 'Passed' : 'Rejected',
-        creator: p.createdByUsername || 'Unknown',
-        createdAt: formatDate(new Date()),
-        startTime: formatDate(p.startTime instanceof Date ? p.startTime : new Date(p.startTime)),
-        endTime: formatDate(p.endTime instanceof Date ? p.endTime : new Date(p.endTime)),
-        votes: {
-          for: p.forVotesCount || 0,
-          against: p.againstVotesCount || 0,
-        },
-        actions: Object.values(p.actions || {}).map((action: any) => ({
-          type: action.type || '',
-          description: action.description || '',
-          walletAddress: action.wallet_address,
-          amount: action.amount,
-          token: action.token
-        })),
-        quorum: 1000,
-        minApproval: 60,
-        daoId: p.daoId
-      }));
+      const transformedProposals = fetchedProposals.map(p => {
+        // Check if the proposal is scheduled for the future
+        const startTime = p.startTime instanceof Date ? p.startTime : new Date(p.startTime);
+        const isNotStartedYet = startTime > new Date();
+        
+        return {
+          id: p.proposalId || '',
+          name: p.name || '',
+          description: p.description || '',
+          status: isNotStartedYet ? 'Not Active' : p.isActive ? 'Active' : p.hasPassed ? 'Passed' : 'Rejected',
+          creator: p.createdByUsername || 'Unknown',
+          createdAt: formatDate(new Date()),
+          startTime: formatDate(startTime),
+          endTime: formatDate(p.endTime instanceof Date ? p.endTime : new Date(p.endTime)),
+          votes: {
+            for: p.forVotesCount || 0,
+            against: p.againstVotesCount || 0,
+          },
+          actions: Object.values(p.actions || {}).map((action: any) => ({
+            type: action.type || '',
+            description: action.description || '',
+            walletAddress: action.wallet_address,
+            amount: action.amount,
+            token: action.token
+          })),
+          quorum: 1000,
+          minApproval: 60,
+          daoId: p.daoId
+        };
+      });
       setProposals(transformedProposals);
     } catch (error) {
       console.error('Failed to fetch proposals:', error);
@@ -260,6 +266,8 @@ const Governance = () => {
             return proposal.status === 'Passed' || proposal.status === 'completed' || proposal.status === 'Completed';
           case 'rejected':
             return proposal.status === 'Rejected' || proposal.status === 'rejected';
+          case 'notActive':
+            return proposal.status === 'Not Active';
           default:
             return true;
         }
@@ -508,9 +516,9 @@ const Governance = () => {
       
       const minVotingPeriod = 5 * 60 * 1000;
       if (endDate.getTime() - startDate.getTime() < minVotingPeriod) {
-        alert('Voting period must be at least 5 minutes long.');
-        setIsSubmitting(false);
-        return;
+        // alert('Voting period must be at least 5 minutes long.');
+        // setIsSubmitting(false);
+        // return;
       }
 
       const actions = proposal.actions.map((action: Action) => {
@@ -641,16 +649,21 @@ const Governance = () => {
         return;
       }
       
-      const votes = await proposalService.getProposalVotes(daoId, proposalId);;
+      const votes = await proposalService.getProposalVotes(daoId, proposalId);
+      
+      // Check if the proposal is scheduled for the future
+      const startTime = proposalDetails.startTime instanceof Date ? 
+        proposalDetails.startTime : new Date(proposalDetails.startTime);
+      const isNotStartedYet = startTime > new Date();
       
       const transformedProposal: ProposalDetails = {
         id: proposalDetails.proposalId || '',
         name: proposalDetails.name || '',
         description: proposalDetails.description || '',
-        status: proposalDetails.isActive ? 'Active' : proposalDetails.hasPassed ? 'Passed' : 'Rejected',
+        status: isNotStartedYet ? 'Not Active' : proposalDetails.isActive ? 'Active' : proposalDetails.hasPassed ? 'Passed' : 'Rejected',
         creator: proposalDetails.createdByUsername || 'Unknown',
         createdAt: formatDate(new Date()),
-        startTime: formatDate(proposalDetails.startTime instanceof Date ? proposalDetails.startTime : new Date(proposalDetails.startTime)),
+        startTime: formatDate(startTime),
         endTime: formatDate(proposalDetails.endTime instanceof Date ? proposalDetails.endTime : new Date(proposalDetails.endTime)),
         votes: {
           for: votes?.forVotes || proposalDetails.forVotesCount || 0,
@@ -747,14 +760,19 @@ const Governance = () => {
       
       const votes = await proposalService.getProposalVotes(daoId, proposalId);
       
+      // Check if the proposal is scheduled for the future
+      const startTime = proposalDetails.startTime instanceof Date ? 
+        proposalDetails.startTime : new Date(proposalDetails.startTime);
+      const isNotStartedYet = startTime > new Date();
+      
       const transformedProposal: ProposalDetails = {
         id: proposalDetails.proposalId || '',
         name: proposalDetails.name || '',
         description: proposalDetails.description || '',
-        status: proposalDetails.isActive ? 'Active' : proposalDetails.hasPassed ? 'Passed' : 'Rejected',
+        status: isNotStartedYet ? 'Not Active' : proposalDetails.isActive ? 'Active' : proposalDetails.hasPassed ? 'Passed' : 'Rejected',
         creator: proposalDetails.createdByUsername || 'Unknown',
         createdAt: formatDate(new Date()),
-        startTime: formatDate(proposalDetails.startTime instanceof Date ? proposalDetails.startTime : new Date(proposalDetails.startTime)),
+        startTime: formatDate(startTime),
         endTime: formatDate(proposalDetails.endTime instanceof Date ? proposalDetails.endTime : new Date(proposalDetails.endTime)),
         votes: {
           for: votes?.forVotes || proposalDetails.forVotesCount || 0,
@@ -1725,7 +1743,8 @@ const Governance = () => {
                     { value: 'all', label: 'All Proposals' },
                     { value: 'active', label: 'Active' },
                     { value: 'passed', label: 'Passed' },
-                    { value: 'rejected', label: 'Rejected' }
+                    { value: 'rejected', label: 'Rejected' },
+                    { value: 'notActive', label: 'Not Active' }
                   ].map(option => (
                     <button
                       key={option.value}
@@ -1908,17 +1927,23 @@ const Governance = () => {
                       </div>
                     </td>
                     <td className={ui.table.cell}>
-                      <Badge 
-                        variant={
-                          proposal.status === 'Active' || proposal.status === 'active' 
-                            ? 'primary' 
-                            : proposal.status === 'Passed' || proposal.status === 'completed' || proposal.status === 'Completed' 
-                              ? 'success' 
-                              : 'error'
-                        }
-                      >
-                        {proposal.status}
-                      </Badge>
+                      {proposal.status === 'Not Active' ? (
+                        <span className="inline-flex items-center bg-gray-700 text-white px-2 py-0.5 rounded-full text-xs">
+                          Not Active
+                        </span>
+                      ) : (
+                        <Badge 
+                          variant={
+                            proposal.status === 'Active' || proposal.status === 'active' 
+                              ? 'primary' 
+                              : proposal.status === 'Passed' || proposal.status === 'completed' || proposal.status === 'Completed' 
+                                ? 'success' 
+                                : 'error'
+                          }
+                        >
+                          {proposal.status}
+                        </Badge>
+                      )}
                     </td>
                     <td className={ui.table.cell}>
                       <div className="text-gray-300">{proposal.creator}</div>
