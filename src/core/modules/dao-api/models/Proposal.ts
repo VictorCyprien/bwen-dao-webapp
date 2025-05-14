@@ -10,6 +10,7 @@
  * Do not edit the class manually.
  */
 
+import { ProposalAction } from '../models/ProposalAction';
 import { UserBasic1 } from '../models/UserBasic1';
 import { HttpFile } from '../http/http';
 
@@ -26,7 +27,7 @@ export class Proposal {
     'createdByUsername': string;
     'startTime': Date;
     'endTime': Date;
-    'actions'?: { [key: string]: any; } | null;
+    'actions'?: Array<ProposalAction> | null;
     'forVotesCount'?: number;
     'againstVotesCount'?: number;
     'pubkey': string;
@@ -98,7 +99,7 @@ export class Proposal {
         {
             "name": "actions",
             "baseName": "actions",
-            "type": "{ [key: string]: any; }",
+            "type": "Array<ProposalAction>",
             "format": ""
         },
         {

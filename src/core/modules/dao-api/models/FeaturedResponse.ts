@@ -17,6 +17,10 @@ import { HttpFile } from '../http/http';
 */
 export class FeaturedResponse {
     'isFeatured'?: boolean;
+    /**
+    * DateTime when the DAO will be unfeatured, null if not featured
+    */
+    'featuredUntil'?: Date | null;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -28,6 +32,12 @@ export class FeaturedResponse {
             "baseName": "is_featured",
             "type": "boolean",
             "format": ""
+        },
+        {
+            "name": "featuredUntil",
+            "baseName": "featured_until",
+            "type": "Date",
+            "format": "date-time"
         }    ];
 
     static getAttributeTypeMap() {
