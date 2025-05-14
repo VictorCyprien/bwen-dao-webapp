@@ -17,6 +17,30 @@ interface ProposalActions {
   walletAddress?: string;
   amount?: string;
   token?: string;
+  data?: {
+    // ADD_MEMBER
+    user_id?: string;
+    username?: string;
+    
+    // UPDATE_DAO
+    name?: string;
+    description?: string;
+    website?: string;
+    twitter?: string;
+    github?: string;
+    discord?: string;
+    
+    // UPDATE_DAO_GOVERNANCE
+    voting_period?: number;
+    voting_threshold?: number;
+    quorum?: number;
+    
+    // CREATE_POD
+    member_ids?: string[];
+    
+    // Any other potential fields
+    [key: string]: any;
+  };
 }
 
 interface ProposalDetails {
@@ -167,28 +191,195 @@ const PopupProposal: React.FC<PopupProposalProps> = ({ proposal, onClose, onVote
           <p className="text-gray-300 whitespace-pre-line">{localProposal.description}</p>
         </div>
         
-        {localProposal.actions.length > 0 && (
+        {localProposal.actions && localProposal.actions.length > 0 && (
           <div className="bg-[#151515] p-6 rounded-xl border border-gray-800">
             <h3 className="text-lg font-medium text-white mb-4">Actions</h3>
             <ul className="space-y-4">
-              {localProposal.actions.map((action, index) => (
-                <li key={index} className="flex items-start bg-[#1a1a1a] p-4 rounded-lg border border-gray-800">
-                  <Check size={18} className="text-purple-500 mr-3 mt-0.5" />
-                  <div>
-                    <p className="text-white">{action.description}</p>
-                    {action.walletAddress && (
-                      <p className="text-gray-400 text-sm font-mono mt-2">
-                        {action.walletAddress}
-                      </p>
-                    )}
-                    {action.amount && action.token && (
-                      <p className="text-gray-400 text-sm mt-2">
-                        Amount: {action.amount} {action.token}
-                      </p>
-                    )}
-                  </div>
-                </li>
-              ))}
+              {localProposal.actions.map((action, index) => {
+                let actionIcon;
+                let actionTitle;
+                let actionColor;
+                
+                // Determine icon and title based on action type
+                switch(action.type) {
+                  case 'ADD_MEMBER':
+                    actionIcon = <Users size={18} className="text-green-500 mr-3 mt-0.5" />;
+                    actionTitle = "Add Member";
+                    actionColor = "text-green-400";
+                    break;
+                  case 'REMOVE_MEMBER':
+                    actionIcon = <UserMinus size={18} className="text-red-500 mr-3 mt-0.5" />;
+                    actionTitle = "Remove Member";
+                    actionColor = "text-red-400";
+                    break;
+                  case 'UPDATE_DAO':
+                    actionIcon = <ArrowUpRight size={18} className="text-blue-500 mr-3 mt-0.5" />;
+                    actionTitle = "Update DAO";
+                    actionColor = "text-blue-400";
+                    break;
+                  case 'UPDATE_DAO_GOVERNANCE':
+                    actionIcon = <Check size={18} className="text-yellow-500 mr-3 mt-0.5" />;
+                    actionTitle = "Update Governance Settings";
+                    actionColor = "text-yellow-400";
+                    break;
+                  case 'CREATE_POD':
+                    actionIcon = <Users size={18} className="text-purple-500 mr-3 mt-0.5" />;
+                    actionTitle = "Create Pod";
+                    actionColor = "text-purple-400";
+                    break;
+                  default:
+                    actionIcon = <Check size={18} className="text-purple-500 mr-3 mt-0.5" />;
+                    actionTitle = "Action";
+                    actionColor = "text-white";
+                }
+                
+                return (
+                  <li key={index} className="flex items-start bg-[#1a1a1a] p-4 rounded-lg border border-gray-800">
+                    {actionIcon}
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className={`font-medium ${actionColor}`}>{actionTitle}</h4>
+                      </div>
+
+                      {/* ADD_MEMBER action data */}
+                      {action.type === 'ADD_MEMBER' && action.data && (
+                        <div className="mt-2 space-y-1">
+                          {action.data.username && (
+                            <div className="flex items-center text-gray-400 text-sm">
+                              <Users size={14} className="mr-2" />
+                              <span>Username: <span className="text-white">{action.data.username}</span></span>
+                            </div>
+                          )}
+                          {action.data.user_id && (
+                            <div className="flex items-center text-gray-400 text-sm">
+                              <span className="mr-2">User ID:</span>
+                              <span className="font-mono text-xs">{action.data.user_id}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* REMOVE_MEMBER action data */}
+                      {action.type === 'REMOVE_MEMBER' && action.data && (
+                        <div className="mt-2 space-y-1">
+                          {action.data.username && (
+                            <div className="flex items-center text-gray-400 text-sm">
+                              <UserMinus size={14} className="mr-2" />
+                              <span>Username: <span className="text-white">{action.data.username}</span></span>
+                            </div>
+                          )}
+                          {action.data.user_id && (
+                            <div className="flex items-center text-gray-400 text-sm">
+                              <span className="mr-2">User ID:</span>
+                              <span className="font-mono text-xs">{action.data.user_id}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* UPDATE_DAO action data */}
+                      {action.type === 'UPDATE_DAO' && action.data && (
+                        <div className="mt-2 space-y-2 bg-[#111] p-2 rounded-lg">
+                          {action.data.name && (
+                            <div className="text-gray-400 text-sm">
+                              <span className="text-purple-400">Name:</span> {action.data.name}
+                            </div>
+                          )}
+                          {action.data.description && (
+                            <div className="text-gray-400 text-sm">
+                              <span className="text-purple-400">Description:</span> {action.data.description}
+                            </div>
+                          )}
+                          <div className="grid grid-cols-2 gap-2">
+                            {action.data.website && (
+                              <div className="text-gray-400 text-sm">
+                                <span className="text-purple-400">Website:</span> {action.data.website}
+                              </div>
+                            )}
+                            {action.data.twitter && (
+                              <div className="text-gray-400 text-sm">
+                                <span className="text-purple-400">Twitter:</span> {action.data.twitter}
+                              </div>
+                            )}
+                            {action.data.github && (
+                              <div className="text-gray-400 text-sm">
+                                <span className="text-purple-400">GitHub:</span> {action.data.github}
+                              </div>
+                            )}
+                            {action.data.discord && (
+                              <div className="text-gray-400 text-sm">
+                                <span className="text-purple-400">Discord:</span> {action.data.discord}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* UPDATE_DAO_GOVERNANCE action data */}
+                      {action.type === 'UPDATE_DAO_GOVERNANCE' && action.data && (
+                        <div className="mt-2 space-y-1 bg-[#111] p-2 rounded-lg">
+                          {action.data.voting_period !== undefined && (
+                            <div className="text-gray-400 text-sm flex justify-between">
+                              <span>Voting Period:</span>
+                              <span className="text-yellow-400">{action.data.voting_period} seconds</span>
+                            </div>
+                          )}
+                          {action.data.voting_threshold !== undefined && (
+                            <div className="text-gray-400 text-sm flex justify-between">
+                              <span>Voting Threshold:</span>
+                              <span className="text-yellow-400">{action.data.voting_threshold * 100}%</span>
+                            </div>
+                          )}
+                          {action.data.quorum !== undefined && (
+                            <div className="text-gray-400 text-sm flex justify-between">
+                              <span>Quorum:</span>
+                              <span className="text-yellow-400">{action.data.quorum * 100}%</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* CREATE_POD action data */}
+                      {action.type === 'CREATE_POD' && action.data && (
+                        <div className="mt-2 space-y-2">
+                          {action.data.name && (
+                            <div className="flex items-center text-gray-400 text-sm">
+                              <span className="mr-2">Pod Name:</span>
+                              <span className="text-purple-400 font-medium">{action.data.name}</span>
+                            </div>
+                          )}
+                          {action.data.description && (
+                            <div className="text-gray-400 text-sm">
+                              <span className="mr-2">Description:</span>
+                              <p className="text-gray-300 mt-1 text-sm bg-[#111] p-2 rounded-lg">{action.data.description}</p>
+                            </div>
+                          )}
+                          {action.data.member_ids && action.data.member_ids.length > 0 && (
+                            <div className="text-gray-400 text-sm">
+                              <span className="mr-2">Members:</span>
+                              <span className="text-purple-400">{action.data.member_ids.length} members</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {action.walletAddress && (
+                        <div className="flex items-center text-gray-400 text-sm mt-2">
+                          <Wallet size={14} className="mr-2" />
+                          <span className="font-mono">{action.walletAddress}</span>
+                        </div>
+                      )}
+                      
+                      {action.amount && action.token && (
+                        <div className="text-gray-400 text-sm mt-2 flex items-center">
+                          <span className="mr-2">Amount:</span>
+                          <span className="text-green-400 font-medium">{action.amount} {action.token}</span>
+                        </div>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}

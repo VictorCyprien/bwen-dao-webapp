@@ -62,6 +62,7 @@ interface ProposalDetails {
     walletAddress?: string;
     amount?: string;
     token?: string;
+    data?: any;
   }[];
   quorum: number;
   minApproval: number;
@@ -229,9 +230,10 @@ const Governance = () => {
           actions: Object.values(p.actions || {}).map((action: any) => ({
             type: action.type || '',
             description: action.description || '',
-            walletAddress: action.wallet_address,
-            amount: action.amount,
-            token: action.token
+            walletAddress: action.data?.wallet_address || action.wallet_address,
+            amount: action.data?.amount || action.amount,
+            token: action.data?.token || action.token,
+            data: action.data || {}
           })),
           quorum: 1000,
           minApproval: 60,
@@ -673,13 +675,40 @@ const Governance = () => {
           for: votes?.forVotes || proposalDetails.forVotesCount || 0,
           against: votes?.againstVotes || proposalDetails.againstVotesCount || 0
         },
-        actions: Object.values(proposalDetails.actions || {}).map((action: any) => ({
-          type: action.type || '',
-          description: action.description || '',
-          walletAddress: action.wallet_address,
-          amount: action.amount,
-          token: action.token
-        })),
+        actions: proposalDetails.actions ? Object.values(proposalDetails.actions).map((action: any) => {
+          // Handle different action types with appropriate descriptions
+          let description = '';
+          
+          switch(action.type) {
+            case 'ADD_MEMBER':
+              description = action.data?.username ? `Add member: ${action.data.username}` : 'Add member to DAO';
+              break;
+            case 'REMOVE_MEMBER':
+              description = action.data?.username ? `Remove member: ${action.data.username}` : 'Remove member from DAO';
+              break;
+            case 'UPDATE_DAO':
+              description = 'Update DAO settings';
+              if (action.data?.name) description += ` - Name: ${action.data.name}`;
+              break;
+            case 'UPDATE_DAO_GOVERNANCE':
+              description = 'Update governance parameters';
+              break;
+            case 'CREATE_POD':
+              description = action.data?.name ? `Create pod: ${action.data.name}` : 'Create new pod';
+              break;
+            default:
+              description = action.description || '';
+          }
+          
+          return {
+            type: action.type || '',
+            description: description,
+            walletAddress: action.data?.wallet_address || action.wallet_address,
+            amount: action.data?.amount || action.amount,
+            token: action.data?.token || action.token,
+            data: action.data || {}
+          };
+        }) : [],
         quorum: 1000,
         minApproval: 60,
         daoId: proposalDetails.daoId
@@ -783,13 +812,39 @@ const Governance = () => {
           for: votes?.forVotes || proposalDetails.forVotesCount || 0,
           against: votes?.againstVotes || proposalDetails.againstVotesCount || 0
         },
-        actions: Object.values(proposalDetails.actions || {}).map((action: any) => ({
-          type: action.type || '',
-          description: action.description || '',
-          walletAddress: action.wallet_address,
-          amount: action.amount,
-          token: action.token
-        })),
+        actions: proposalDetails.actions ? Object.values(proposalDetails.actions).map((action: any) => {
+          // Handle different action types with appropriate descriptions
+          let description = '';
+          
+          switch(action.type) {
+            case 'ADD_MEMBER':
+              description = 'Add member to DAO';
+              break;
+            case 'REMOVE_MEMBER':
+              description = 'Remove member from DAO';
+              break;
+            case 'UPDATE_DAO':
+              description = 'Update DAO settings';
+              break;
+            case 'UPDATE_DAO_GOVERNANCE':
+              description = 'Update governance parameters';
+              break;
+            case 'CREATE_POD':
+              description = 'Create new pod';
+              break;
+            default:
+              description = action.description || '';
+          }
+          
+          return {
+            type: action.type || '',
+            description: description,
+            walletAddress: action.data?.wallet_address || action.wallet_address,
+            amount: action.data?.amount || action.amount,
+            token: action.data?.token || action.token,
+            data: action.data || {}
+          };
+        }) : [],
         quorum: 1000,
         minApproval: 60,
         daoId: proposalDetails.daoId
