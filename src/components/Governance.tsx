@@ -211,6 +211,7 @@ const Governance = () => {
         // Check if the proposal is scheduled for the future
         const startTime = p.startTime instanceof Date ? p.startTime : new Date(p.startTime);
         const isNotStartedYet = startTime > new Date();
+        const createdAt = p.startTime;
         
         return {
           id: p.proposalId || '',
@@ -218,7 +219,7 @@ const Governance = () => {
           description: p.description || '',
           status: isNotStartedYet ? 'Not Active' : p.isActive ? 'Active' : p.hasPassed ? 'Passed' : 'Rejected',
           creator: p.createdByUsername || 'Unknown',
-          createdAt: formatDate(new Date()),
+          createdAt: formatDate(createdAt),
           startTime: formatDate(startTime),
           endTime: formatDate(p.endTime instanceof Date ? p.endTime : new Date(p.endTime)),
           votes: {
@@ -376,10 +377,12 @@ const Governance = () => {
 
   const formatDate = (date?: Date | string) => {
     if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-US', {
+    return new Date(date).toLocaleString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -655,6 +658,7 @@ const Governance = () => {
       const startTime = proposalDetails.startTime instanceof Date ? 
         proposalDetails.startTime : new Date(proposalDetails.startTime);
       const isNotStartedYet = startTime > new Date();
+      const createdAt = proposalDetails.startTime;
       
       const transformedProposal: ProposalDetails = {
         id: proposalDetails.proposalId || '',
@@ -662,7 +666,7 @@ const Governance = () => {
         description: proposalDetails.description || '',
         status: isNotStartedYet ? 'Not Active' : proposalDetails.isActive ? 'Active' : proposalDetails.hasPassed ? 'Passed' : 'Rejected',
         creator: proposalDetails.createdByUsername || 'Unknown',
-        createdAt: formatDate(new Date()),
+        createdAt: formatDate(createdAt),
         startTime: formatDate(startTime),
         endTime: formatDate(proposalDetails.endTime instanceof Date ? proposalDetails.endTime : new Date(proposalDetails.endTime)),
         votes: {
@@ -764,6 +768,7 @@ const Governance = () => {
       const startTime = proposalDetails.startTime instanceof Date ? 
         proposalDetails.startTime : new Date(proposalDetails.startTime);
       const isNotStartedYet = startTime > new Date();
+      const createdAt = proposalDetails.startTime;
       
       const transformedProposal: ProposalDetails = {
         id: proposalDetails.proposalId || '',
@@ -771,7 +776,7 @@ const Governance = () => {
         description: proposalDetails.description || '',
         status: isNotStartedYet ? 'Not Active' : proposalDetails.isActive ? 'Active' : proposalDetails.hasPassed ? 'Passed' : 'Rejected',
         creator: proposalDetails.createdByUsername || 'Unknown',
-        createdAt: formatDate(new Date()),
+        createdAt: formatDate(createdAt),
         startTime: formatDate(startTime),
         endTime: formatDate(proposalDetails.endTime instanceof Date ? proposalDetails.endTime : new Date(proposalDetails.endTime)),
         votes: {
