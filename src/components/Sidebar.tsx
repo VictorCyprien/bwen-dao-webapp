@@ -16,7 +16,8 @@ import {
   Puzzle,
   ShieldCheck,
   UserPlus,
-  Sparkles
+  Sparkles,
+  BarChart4
 } from 'lucide-react';
 import { ui } from '../styles/theme';
 import { useAuth } from '../context/AuthContext';
@@ -223,7 +224,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         { id: 'dashboard_home', label: 'Home', icon: <Home size={18} /> },
         { id: 'governance', label: 'Governance', icon: <Building2 size={18} /> },
         { id: 'treasury', label: 'Treasury', icon: <Wallet size={18} /> },
-        { id: 'members', label: 'Members', icon: <Users size={18} /> }
+        { id: 'members', label: 'Members', icon: <Users size={18} /> },
+        { id: 'chart', label: 'Chart', icon: <BarChart4 size={18} /> }
       ],
       isUncollapsable: true
     },
