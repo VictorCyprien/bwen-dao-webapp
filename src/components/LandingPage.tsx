@@ -763,11 +763,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnterDashboard }: LandingPa
             
             {/* Section title based on current filter */}
             <div className="mb-8 text-center">
-              <h3 className="text-2xl font-bold mb-2">
-                {activeFilter === 'featured' ? 'Featured DAOs' : 
-                 activeFilter === 'mydaos' ? 'My DAOs' : 
-                 'Discover DAOs'}
-              </h3>
               {activeFilter === 'featured' && ownedDaos.length === 0 && !isLoading && (
                 <p className="text-gray-400">No featured DAOs available at the moment.</p>
               )}
