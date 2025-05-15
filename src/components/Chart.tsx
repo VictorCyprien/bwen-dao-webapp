@@ -2,14 +2,12 @@ import React from 'react';
 import { useParams } from 'react-router-dom';
 import { 
   Loader,
-  AlertCircle,
-  Info
+  AlertCircle
 } from 'lucide-react';
 import { useEffectOnce } from '../hooks/useEffectOnce';
-import { typography, ui } from '../styles/theme';
+import { typography } from '../styles/theme';
 import Card from './common/Card';
 import { daosService } from '../services/DaosService';
-import TradingViewWidget from './TradingViewWidget';
 
 const Chart: React.FC = () => {
   const { daoId } = useParams<{ daoId: string }>();
@@ -17,8 +15,7 @@ const Chart: React.FC = () => {
   const [error, setError] = React.useState<string | null>(null);
   const [tokenSymbol, setTokenSymbol] = React.useState<string | null>(null);
   const [tokenAddress, setTokenAddress] = React.useState<string | null>(null);
-  // Using SOL as default trading symbol for now
-  const tradingViewSymbol = "BINANCE:SOLUSDT";
+  const [pairAddress, setPairAddress] = React.useState<string | null>(null);
 
   // Function to fetch token data for the current DAO
   const fetchTokenData = async () => {
@@ -38,14 +35,39 @@ const Chart: React.FC = () => {
         setTokenAddress(daoData.tokenAddress);
         // Since tokenSymbol is not in the DAO model, we'll use a placeholder or derive it
         setTokenSymbol(daoData.name || 'Unknown Token');
+        
+        // Now fetch the pair address from Dexscreener
+        await fetchPairAddress(daoData.tokenAddress);
       } else {
         setError('No token associated with this DAO');
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error('Error fetching token data:', err);
+      setError('Failed to load token data. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  // Function to fetch pair address from Dexscreener API
+  const fetchPairAddress = async (tokenAddress: string) => {
+    try {
+      const response = await fetch(`https://api.dexscreener.com/tokens/v1/solana/${tokenAddress}`);
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        // Get the first pair from the response
+        const pairAddress = data[0].pairAddress;
+        console.log(pairAddress);
+        setPairAddress(pairAddress);
+      } else {
+        setError('No trading pairs found for this token');
       }
       
       setLoading(false);
     } catch (err) {
-      console.error('Error fetching token data:', err);
-      setError('Failed to load token data. Please try again.');
+      console.error('Error fetching pair data:', err);
+      setError('Failed to load trading pair data. Please try again.');
       setLoading(false);
     }
   };
@@ -88,42 +110,24 @@ const Chart: React.FC = () => {
             <AlertCircle size={40} className="mb-4" />
             <p>{error}</p>
           </div>
+        ) : pairAddress ? (
+          <div className="relative overflow-hidden" style={{ height: '700px' }}>
+            <iframe 
+              id="dextools-widget"
+              title="DEXTools Trading Chart"
+              width="100%" 
+              height="700"
+              src={`https://www.dextools.io/widget-chart/en/solana/pe-light/${pairAddress}?theme=dark&chartType=1&chartResolution=30&drawingToolbars=true`}
+              className="border-0"
+            />
+          </div>
         ) : (
-          <div className="relative h-80">
-            <TradingViewWidget symbol={tradingViewSymbol} />
+          <div className="flex flex-col items-center justify-center h-80 text-gray-400">
+            <AlertCircle size={40} className="mb-4" />
+            <p>No trading pair found for this token</p>
           </div>
         )}
       </Card>
-      
-      {/* Token information */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <Card title="Market Information">
-          <div className="p-4">
-            <div className="flex items-center justify-center h-40 text-gray-400">
-              <div className="flex flex-col items-center">
-                <Info size={40} className="mb-4" />
-                <p>Token market data will be available here</p>
-              </div>
-            </div>
-          </div>
-        </Card>
-        
-        <Card title="Trading History">
-          <div className="p-4">
-            <div className="flex items-center justify-center h-40 text-gray-400">
-              <div className="flex flex-col items-center">
-                <Info size={40} className="mb-4" />
-                <p>Trading history will be available here</p>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
-      
-      {/* Note about temporary symbol */}
-      <div className="text-center text-gray-400 text-sm mt-4">
-        <p>Note: Currently showing SOL chart as an example. Future updates will display the actual token chart.</p>
-      </div>
     </div>
   );
 };
