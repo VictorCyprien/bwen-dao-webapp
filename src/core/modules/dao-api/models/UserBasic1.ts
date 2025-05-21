@@ -16,8 +16,10 @@ import { HttpFile } from '../http/http';
 * Basic user information for nested proposals relationships
 */
 export class UserBasic1 {
-    'userId'?: string;
-    'username'?: string;
+    'userId': string;
+    'username': string;
+    'walletAddress': string;
+    'profilePicture': string;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -33,6 +35,18 @@ export class UserBasic1 {
         {
             "name": "username",
             "baseName": "username",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "walletAddress",
+            "baseName": "wallet_address",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "profilePicture",
+            "baseName": "profile_picture",
             "type": "string",
             "format": ""
         }    ];

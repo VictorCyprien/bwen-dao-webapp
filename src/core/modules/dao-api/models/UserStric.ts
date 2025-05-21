@@ -13,13 +13,11 @@
 import { HttpFile } from '../http/http';
 
 /**
-* Basic user information for nested proposals relationships
+* Strict user information for nested relationships
 */
-export class UserBasic {
+export class UserStric {
     'userId': string;
     'username': string;
-    'walletAddress': string;
-    'profilePicture': string;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -37,22 +35,10 @@ export class UserBasic {
             "baseName": "username",
             "type": "string",
             "format": ""
-        },
-        {
-            "name": "walletAddress",
-            "baseName": "wallet_address",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "profilePicture",
-            "baseName": "profile_picture",
-            "type": "string",
-            "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return UserBasic.attributeTypeMap;
+        return UserStric.attributeTypeMap;
     }
 
     public constructor() {

@@ -87,8 +87,8 @@ export * from '../models/User';
 export * from '../models/UserApplication';
 export * from '../models/UserApplicationResponse';
 export * from '../models/UserBasic';
-export * from '../models/UserBasic1';
 export * from '../models/UserDAOOwnershipResponse';
+export * from '../models/UserDetailed';
 export * from '../models/UserExistResponse';
 export * from '../models/UserInfoError';
 export * from '../models/UserInvitation';
@@ -99,6 +99,7 @@ export * from '../models/UserRoleAssignment';
 export * from '../models/UserRoleCheck';
 export * from '../models/UserRoleResponse';
 export * from '../models/UserSearchResponse';
+export * from '../models/UserStric';
 export * from '../models/VerifySignature';
 
 import { ChallengeRequest } from '../models/ChallengeRequest';
@@ -190,8 +191,8 @@ import { User } from '../models/User';
 import { UserApplication } from '../models/UserApplication';
 import { UserApplicationResponse } from '../models/UserApplicationResponse';
 import { UserBasic } from '../models/UserBasic';
-import { UserBasic1 } from '../models/UserBasic1';
 import { UserDAOOwnershipResponse } from '../models/UserDAOOwnershipResponse';
+import { UserDetailed } from '../models/UserDetailed';
 import { UserExistResponse } from '../models/UserExistResponse';
 import { UserInfoError } from '../models/UserInfoError';
 import { UserInvitation } from '../models/UserInvitation';
@@ -202,6 +203,7 @@ import { UserRoleAssignment } from '../models/UserRoleAssignment';
 import { UserRoleCheck } from '../models/UserRoleCheck';
 import { UserRoleResponse } from '../models/UserRoleResponse';
 import { UserSearchResponse } from '../models/UserSearchResponse';
+import { UserStric } from '../models/UserStric';
 import { VerifySignature } from '../models/VerifySignature';
 
 /* tslint:disable:no-unused-variable */
@@ -323,8 +325,8 @@ let typeMap: {[index: string]: any} = {
     "UserApplication": UserApplication,
     "UserApplicationResponse": UserApplicationResponse,
     "UserBasic": UserBasic,
-    "UserBasic1": UserBasic1,
     "UserDAOOwnershipResponse": UserDAOOwnershipResponse,
+    "UserDetailed": UserDetailed,
     "UserExistResponse": UserExistResponse,
     "UserInfoError": UserInfoError,
     "UserInvitation": UserInvitation,
@@ -335,6 +337,7 @@ let typeMap: {[index: string]: any} = {
     "UserRoleCheck": UserRoleCheck,
     "UserRoleResponse": UserRoleResponse,
     "UserSearchResponse": UserSearchResponse,
+    "UserStric": UserStric,
     "VerifySignature": VerifySignature,
 }
 

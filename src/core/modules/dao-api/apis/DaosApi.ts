@@ -1126,7 +1126,7 @@ export class DaosApiRequestFactory extends BaseAPIRequestFactory {
     }
 
     /**
-     * Get all applications for a DAO
+     * Get all pending applications for a DAO
      * @param daoId 
      */
     public async getDAOApplications(daoId: string, _options?: Configuration): Promise<RequestContext> {

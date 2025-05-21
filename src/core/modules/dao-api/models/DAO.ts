@@ -10,7 +10,7 @@
  * Do not edit the class manually.
  */
 
-import { UserBasic } from '../models/UserBasic';
+import { UserDetailed } from '../models/UserDetailed';
 import { HttpFile } from '../http/http';
 
 /**
@@ -39,8 +39,8 @@ export class DAO {
     'governanceModelName'?: string;
     'votingPowerSystem'?: string;
     'quorumPercentage'?: number;
-    'admins'?: Array<UserBasic>;
-    'members'?: Array<UserBasic>;
+    'admins'?: Array<UserDetailed>;
+    'members'?: Array<UserDetailed>;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -182,13 +182,13 @@ export class DAO {
         {
             "name": "admins",
             "baseName": "admins",
-            "type": "Array<UserBasic>",
+            "type": "Array<UserDetailed>",
             "format": ""
         },
         {
             "name": "members",
             "baseName": "members",
-            "type": "Array<UserBasic>",
+            "type": "Array<UserDetailed>",
             "format": ""
         }    ];
 

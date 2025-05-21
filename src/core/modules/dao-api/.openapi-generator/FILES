@@ -120,8 +120,8 @@ models/User.ts
 models/UserApplication.ts
 models/UserApplicationResponse.ts
 models/UserBasic.ts
-models/UserBasic1.ts
 models/UserDAOOwnershipResponse.ts
+models/UserDetailed.ts
 models/UserExistResponse.ts
 models/UserInfoError.ts
 models/UserInvitation.ts
@@ -132,6 +132,7 @@ models/UserRoleAssignment.ts
 models/UserRoleCheck.ts
 models/UserRoleResponse.ts
 models/UserSearchResponse.ts
+models/UserStric.ts
 models/VerifySignature.ts
 models/all.ts
 package.json

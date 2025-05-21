@@ -92,8 +92,8 @@ import { User } from '../models/User';
 import { UserApplication } from '../models/UserApplication';
 import { UserApplicationResponse } from '../models/UserApplicationResponse';
 import { UserBasic } from '../models/UserBasic';
-import { UserBasic1 } from '../models/UserBasic1';
 import { UserDAOOwnershipResponse } from '../models/UserDAOOwnershipResponse';
+import { UserDetailed } from '../models/UserDetailed';
 import { UserExistResponse } from '../models/UserExistResponse';
 import { UserInfoError } from '../models/UserInfoError';
 import { UserInvitation } from '../models/UserInvitation';
@@ -104,6 +104,7 @@ import { UserRoleAssignment } from '../models/UserRoleAssignment';
 import { UserRoleCheck } from '../models/UserRoleCheck';
 import { UserRoleResponse } from '../models/UserRoleResponse';
 import { UserSearchResponse } from '../models/UserSearchResponse';
+import { UserStric } from '../models/UserStric';
 import { VerifySignature } from '../models/VerifySignature';
 
 import { ApiKeysApiRequestFactory, ApiKeysApiResponseProcessor} from "../apis/ApiKeysApi";
@@ -2179,7 +2180,7 @@ export class ObservableDaosApi {
     }
 
     /**
-     * Get all applications for a DAO
+     * Get all pending applications for a DAO
      * @param daoId
      */
     public getDAOApplicationsWithHttpInfo(daoId: string, _options?: ConfigurationOptions): Observable<HttpInfo<DAOApplicationList>> {
@@ -2231,7 +2232,7 @@ export class ObservableDaosApi {
     }
 
     /**
-     * Get all applications for a DAO
+     * Get all pending applications for a DAO
      * @param daoId
      */
     public getDAOApplications(daoId: string, _options?: ConfigurationOptions): Observable<DAOApplicationList> {

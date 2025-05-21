@@ -10,6 +10,7 @@
  * Do not edit the class manually.
  */
 
+import { UserBasic } from '../models/UserBasic';
 import { HttpFile } from '../http/http';
 
 export class DAOApplicationResponse {
@@ -22,9 +23,9 @@ export class DAOApplicationResponse {
     */
     'daoId'?: string;
     /**
-    * Username of the applicant
+    * Current applicant
     */
-    'user'?: string;
+    'user'?: UserBasic;
     /**
     * Status of the application
     */
@@ -66,7 +67,7 @@ export class DAOApplicationResponse {
         {
             "name": "user",
             "baseName": "user",
-            "type": "string",
+            "type": "UserBasic",
             "format": ""
         },
         {

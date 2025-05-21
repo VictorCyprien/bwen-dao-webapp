@@ -29,10 +29,6 @@ export class UserApplication {
     */
     'daoName'?: string;
     /**
-    * Username of the user who applied
-    */
-    'user'?: string;
-    /**
     * Status of the application
     */
     'status'?: string;
@@ -69,12 +65,6 @@ export class UserApplication {
         {
             "name": "daoName",
             "baseName": "dao_name",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "user",
-            "baseName": "user",
             "type": "string",
             "format": ""
         },

@@ -11,7 +11,7 @@
  */
 
 import { ProposalAction } from '../models/ProposalAction';
-import { UserBasic1 } from '../models/UserBasic1';
+import { UserStric } from '../models/UserStric';
 import { HttpFile } from '../http/http';
 
 /**
@@ -32,8 +32,8 @@ export class Proposal {
     'againstVotesCount'?: number;
     'pubkey': string;
     'transaction': string;
-    'forVoters'?: Array<UserBasic1>;
-    'againstVoters'?: Array<UserBasic1>;
+    'forVoters'?: Array<UserStric>;
+    'againstVoters'?: Array<UserStric>;
     'isActive'?: any | null;
     'hasPassed'?: any | null;
 
@@ -129,13 +129,13 @@ export class Proposal {
         {
             "name": "forVoters",
             "baseName": "for_voters",
-            "type": "Array<UserBasic1>",
+            "type": "Array<UserStric>",
             "format": ""
         },
         {
             "name": "againstVoters",
             "baseName": "against_voters",
-            "type": "Array<UserBasic1>",
+            "type": "Array<UserStric>",
             "format": ""
         },
         {
