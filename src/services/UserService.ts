@@ -12,7 +12,8 @@ import {
   User,
   InputCreateUser,
   UserSearchResponse,
-  UserInvitationsResponse
+  UserInvitationsResponse,
+  UserApplicationResponse
 } from '../core/modules/dao-api';
 import { ServerConfiguration } from '../core/modules/dao-api/servers';
 import { walletAuthService } from './WalletAuthService';
@@ -29,6 +30,8 @@ export class UserService {
   private usersApi: UsersApi;
   // Add cache for user data with expiration
   private userCache: { data: any; timestamp: number } | null = null;
+  // Add cache for user applications
+  private applicationsCache: { data: UserApplicationResponse; timestamp: number } | null = null;
   private readonly CACHE_EXPIRY_MS = 60000; // Cache for 1 minute
 
   constructor(apiEndpoint: string = DEFAULT_API_ENDPOINT) {
@@ -301,10 +304,48 @@ export class UserService {
   }
 
   /**
+   * Get all applications submitted by the authenticated user
+   * @returns List of applications submitted by the current user or null if there was an error
+   */
+  async getUserApplications(): Promise<UserApplicationResponse | null> {
+    try {
+      // Return cached data if available and not expired
+      if (this.applicationsCache && (Date.now() - this.applicationsCache.timestamp < this.CACHE_EXPIRY_MS)) {
+        console.log('Returning cached user applications data (cached for 1 minute)');
+        return this.applicationsCache.data;
+      }
+
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      const response = await apiClient.getUserApplications();
+      
+      // Cache the response
+      this.applicationsCache = {
+        data: response,
+        timestamp: Date.now()
+      };
+      
+      return response;
+    } catch (error) {
+      console.error('Error fetching user applications:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Clear the applications cache
+   */
+  clearApplicationsCache(): void {
+    this.applicationsCache = null;
+  }
+
+  /**
   * Clear the user cache - should be called on logout
   */
   clearUserCache(): void {
     this.userCache = null;
+    this.clearApplicationsCache();
   }
 }
 

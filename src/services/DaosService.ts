@@ -3,7 +3,7 @@
  * Handles all API interactions related to DAOs
  */
 
-import { createConfiguration, DaosApi, DAO, DAOUpdate, DAOMembership, InputCreateDAO, UserDAOOwnershipResponse, InputInitDAO, DAOModule, DAOModulesList, DAOModuleResponse, InputCreateGovernance, DAOInvitation, DAOInvitationResponse, DAOInvitationAction, DAOInvitationList, FeaturedToggle, FeaturedResponse } from '../core/modules/dao-api';
+import { createConfiguration, DaosApi, DAO, DAOUpdate, DAOMembership, InputCreateDAO, UserDAOOwnershipResponse, InputInitDAO, DAOModule, DAOModulesList, DAOModuleResponse, InputCreateGovernance, DAOInvitation, DAOInvitationResponse, DAOInvitationAction, DAOInvitationList, FeaturedToggle, FeaturedResponse, DAOApplicationList, DAOApplicationResponse, DAOApplication, DAOApplicationAction } from '../core/modules/dao-api';
 import { ServerConfiguration } from '../core/modules/dao-api/servers';
 import { walletAuthService } from './WalletAuthService';
 import { fileToMinioStorage } from '../utils/fileUtils';
@@ -19,6 +19,8 @@ export class DaosService {
   private daosApi: DaosApi;
   // Add cache for DAOs with expiration
   private daosCache: Map<string, { data: DAO; timestamp: number }> = new Map();
+  // Add cache for DAO applications
+  private applicationsCache: Map<string, { data: DAOApplicationList; timestamp: number }> = new Map();
   private readonly CACHE_EXPIRY_MS = 60000; // Cache for 1 minute
 
   constructor(apiEndpoint: string = DEFAULT_API_ENDPOINT) {
@@ -657,6 +659,140 @@ export class DaosService {
   }
 
   /**
+   * Get all applications for a DAO
+   * @param daoId The ID of the DAO
+   * @returns List of applications for the DAO or null if there was an error
+   */
+  async getDAOApplications(daoId: string): Promise<DAOApplicationList | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      // Check cache first
+      const cacheKey = `applications-${daoId}`;
+      if (this.applicationsCache.has(cacheKey)) {
+        const cached = this.applicationsCache.get(cacheKey)!;
+        if (Date.now() - cached.timestamp < this.CACHE_EXPIRY_MS) {
+          console.log('Returning cached applications data');
+          return cached.data;
+        }
+      }
+
+      // Not in cache or expired, fetch from API
+      const response = await apiClient.getDAOApplications(daoId);
+      
+      // Cache the response if it exists
+      if (response) {
+        this.applicationsCache.set(cacheKey, {
+          data: response,
+          timestamp: Date.now()
+        });
+      }
+      
+      return response || null;
+    } catch (error) {
+      console.error(`Error getting applications for DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get details of a specific application
+   * @param daoId The ID of the DAO
+   * @param applicationId The ID of the application
+   * @returns The application details or null if there was an error
+   */
+  async getDAOApplication(daoId: string, applicationId: string): Promise<DAOApplicationResponse | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      const response = await apiClient.getDAOApplication(daoId, applicationId);
+      return response || null;
+    } catch (error) {
+      console.error(`Error getting application ${applicationId} for DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Respond to a DAO application (accept/reject)
+   * @param daoId The ID of the DAO
+   * @param applicationId The ID of the application
+   * @param action The action to take ('accept' or 'reject')
+   * @param response Optional response message
+   * @returns The application response or null if there was an error
+   */
+  async respondToDAOApplication(
+    daoId: string, 
+    applicationId: string, 
+    action: 'accept' | 'reject',
+    responseMessage?: string
+  ): Promise<DAOApplicationResponse | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      const applicationAction = new DAOApplicationAction();
+      applicationAction.action = action;
+      if (responseMessage) {
+        applicationAction.response = responseMessage;
+      }
+
+      const response = await apiClient.respondToDAOApplication(daoId, applicationId, applicationAction);
+      
+      // Clear applications cache since the status has changed
+      this.clearApplicationsCache(daoId);
+      
+      // Clear DAO cache if application is accepted as it will change members
+      if (action === 'accept') {
+        this.clearDaoCache(daoId);
+      }
+      
+      return response || null;
+    } catch (error) {
+      console.error(`Error responding to application ${applicationId} for DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Delete a DAO application
+   * @param daoId The ID of the DAO
+   * @param applicationId The ID of the application to delete
+   * @returns The response or null if there was an error
+   */
+  async deleteDAOApplication(daoId: string, applicationId: string): Promise<DAOApplicationResponse | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      const response = await apiClient.deleteDAOApplication(daoId, applicationId);
+      
+      // Clear applications cache since an application was deleted
+      this.clearApplicationsCache(daoId);
+      
+      return response || null;
+    } catch (error) {
+      console.error(`Error deleting application ${applicationId} for DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Clear applications cache for a specific DAO or all DAOs
+   */
+  clearApplicationsCache(daoId?: string): void {
+    if (daoId) {
+      // Clear applications for specific DAO
+      this.applicationsCache.delete(`applications-${daoId}`);
+    } else {
+      // Clear all applications
+      this.applicationsCache.clear();
+    }
+  }
+
+  /**
    * Clear DAO cache
    */
   clearDaoCache(daoId?: string): void {
@@ -674,6 +810,7 @@ export class DaosService {
    */
   clearCaches(): void {
     this.daosCache.clear();
+    this.applicationsCache.clear();
   }
 }
 
