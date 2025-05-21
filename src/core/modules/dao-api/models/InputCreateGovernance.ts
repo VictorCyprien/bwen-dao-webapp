@@ -93,7 +93,7 @@ export enum InputCreateGovernanceCouncilEntryConditionEnum {
     Open = 'Open'
 }
 export enum InputCreateGovernanceDaoEntryConditionEnum {
-    Candidature = 'Candidature',
+    Application = 'Application',
     Token = 'Token',
     Closed = 'Closed',
     Open = 'Open'

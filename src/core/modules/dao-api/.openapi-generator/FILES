@@ -37,6 +37,10 @@ models/ConnectionsList.ts
 models/CreateDeviceRequest.ts
 models/CreateDeviceResponse.ts
 models/DAO.ts
+models/DAOApplication.ts
+models/DAOApplicationAction.ts
+models/DAOApplicationList.ts
+models/DAOApplicationResponse.ts
 models/DAOInvitation.ts
 models/DAOInvitationAction.ts
 models/DAOInvitationList.ts
@@ -113,6 +117,8 @@ models/TransferCreate.ts
 models/TransferSchemaResponse.ts
 models/Treasury.ts
 models/User.ts
+models/UserApplication.ts
+models/UserApplicationResponse.ts
 models/UserBasic.ts
 models/UserBasic1.ts
 models/UserDAOOwnershipResponse.ts

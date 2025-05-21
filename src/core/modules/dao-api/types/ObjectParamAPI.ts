@@ -9,6 +9,10 @@ import { ConnectionsList } from '../models/ConnectionsList';
 import { CreateDeviceRequest } from '../models/CreateDeviceRequest';
 import { CreateDeviceResponse } from '../models/CreateDeviceResponse';
 import { DAO } from '../models/DAO';
+import { DAOApplication } from '../models/DAOApplication';
+import { DAOApplicationAction } from '../models/DAOApplicationAction';
+import { DAOApplicationList } from '../models/DAOApplicationList';
+import { DAOApplicationResponse } from '../models/DAOApplicationResponse';
 import { DAOInvitation } from '../models/DAOInvitation';
 import { DAOInvitationAction } from '../models/DAOInvitationAction';
 import { DAOInvitationList } from '../models/DAOInvitationList';
@@ -84,6 +88,8 @@ import { TransferCreate } from '../models/TransferCreate';
 import { TransferSchemaResponse } from '../models/TransferSchemaResponse';
 import { Treasury } from '../models/Treasury';
 import { User } from '../models/User';
+import { UserApplication } from '../models/UserApplication';
+import { UserApplicationResponse } from '../models/UserApplicationResponse';
 import { UserBasic } from '../models/UserBasic';
 import { UserBasic1 } from '../models/UserBasic1';
 import { UserDAOOwnershipResponse } from '../models/UserDAOOwnershipResponse';
@@ -364,6 +370,22 @@ export interface DaosApiAddMemberToPODRequest {
     podId: string
 }
 
+export interface DaosApiApplyToDAORequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApiapplyToDAO
+     */
+    daoId: string
+    /**
+     * 
+     * @type DAOApplication
+     * @memberof DaosApiapplyToDAO
+     */
+    dAOApplication?: DAOApplication
+}
+
 export interface DaosApiAssignPermissionToRoleRequest {
     /**
      * 
@@ -532,6 +554,23 @@ export interface DaosApiDeleteDAORequest {
     daoId: string
 }
 
+export interface DaosApiDeleteDAOApplicationRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApideleteDAOApplication
+     */
+    daoId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApideleteDAOApplication
+     */
+    applicationId: string
+}
+
 export interface DaosApiDeleteDAORoleRequest {
     /**
      * 
@@ -634,6 +673,33 @@ export interface DaosApiGetChannelMessagesRequest {
      * @memberof DaosApigetChannelMessages
      */
     channelId: string
+}
+
+export interface DaosApiGetDAOApplicationRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApigetDAOApplication
+     */
+    daoId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApigetDAOApplication
+     */
+    applicationId: string
+}
+
+export interface DaosApiGetDAOApplicationsRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApigetDAOApplications
+     */
+    daoId: string
 }
 
 export interface DaosApiGetDAOByIdRequest {
@@ -1028,6 +1094,29 @@ export interface DaosApiRemoveRoleFromUserRequest {
     roleId: string
 }
 
+export interface DaosApiRespondToDAOApplicationRequest {
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApirespondToDAOApplication
+     */
+    daoId: string
+    /**
+     * 
+     * Defaults to: undefined
+     * @type string
+     * @memberof DaosApirespondToDAOApplication
+     */
+    applicationId: string
+    /**
+     * 
+     * @type DAOApplicationAction
+     * @memberof DaosApirespondToDAOApplication
+     */
+    dAOApplicationAction: DAOApplicationAction
+}
+
 export interface DaosApiRespondToDAOInvitationRequest {
     /**
      * 
@@ -1241,6 +1330,22 @@ export class ObjectDaosApi {
     }
 
     /**
+     * Create an application to join a DAO
+     * @param param the request object
+     */
+    public applyToDAOWithHttpInfo(param: DaosApiApplyToDAORequest, options?: ConfigurationOptions): Promise<HttpInfo<DAOApplicationResponse>> {
+        return this.api.applyToDAOWithHttpInfo(param.daoId, param.dAOApplication,  options).toPromise();
+    }
+
+    /**
+     * Create an application to join a DAO
+     * @param param the request object
+     */
+    public applyToDAO(param: DaosApiApplyToDAORequest, options?: ConfigurationOptions): Promise<DAOApplicationResponse> {
+        return this.api.applyToDAO(param.daoId, param.dAOApplication,  options).toPromise();
+    }
+
+    /**
      * Assign a permission to a role in a DAO
      * @param param the request object
      */
@@ -1417,6 +1522,22 @@ export class ObjectDaosApi {
     }
 
     /**
+     * Delete a DAO application
+     * @param param the request object
+     */
+    public deleteDAOApplicationWithHttpInfo(param: DaosApiDeleteDAOApplicationRequest, options?: ConfigurationOptions): Promise<HttpInfo<DAOApplicationResponse>> {
+        return this.api.deleteDAOApplicationWithHttpInfo(param.daoId, param.applicationId,  options).toPromise();
+    }
+
+    /**
+     * Delete a DAO application
+     * @param param the request object
+     */
+    public deleteDAOApplication(param: DaosApiDeleteDAOApplicationRequest, options?: ConfigurationOptions): Promise<DAOApplicationResponse> {
+        return this.api.deleteDAOApplication(param.daoId, param.applicationId,  options).toPromise();
+    }
+
+    /**
      * Delete a role from a DAO
      * @param param the request object
      */
@@ -1526,6 +1647,38 @@ export class ObjectDaosApi {
      */
     public getChannelMessages(param: DaosApiGetChannelMessagesRequest, options?: ConfigurationOptions): Promise<DiscordMessagesResponse> {
         return this.api.getChannelMessages(param.daoId, param.podId, param.channelId,  options).toPromise();
+    }
+
+    /**
+     * Get details of a specific application
+     * @param param the request object
+     */
+    public getDAOApplicationWithHttpInfo(param: DaosApiGetDAOApplicationRequest, options?: ConfigurationOptions): Promise<HttpInfo<DAOApplicationResponse>> {
+        return this.api.getDAOApplicationWithHttpInfo(param.daoId, param.applicationId,  options).toPromise();
+    }
+
+    /**
+     * Get details of a specific application
+     * @param param the request object
+     */
+    public getDAOApplication(param: DaosApiGetDAOApplicationRequest, options?: ConfigurationOptions): Promise<DAOApplicationResponse> {
+        return this.api.getDAOApplication(param.daoId, param.applicationId,  options).toPromise();
+    }
+
+    /**
+     * Get all applications for a DAO
+     * @param param the request object
+     */
+    public getDAOApplicationsWithHttpInfo(param: DaosApiGetDAOApplicationsRequest, options?: ConfigurationOptions): Promise<HttpInfo<DAOApplicationList>> {
+        return this.api.getDAOApplicationsWithHttpInfo(param.daoId,  options).toPromise();
+    }
+
+    /**
+     * Get all applications for a DAO
+     * @param param the request object
+     */
+    public getDAOApplications(param: DaosApiGetDAOApplicationsRequest, options?: ConfigurationOptions): Promise<DAOApplicationList> {
+        return this.api.getDAOApplications(param.daoId,  options).toPromise();
     }
 
     /**
@@ -1942,6 +2095,22 @@ export class ObjectDaosApi {
      */
     public removeRoleFromUser(param: DaosApiRemoveRoleFromUserRequest, options?: ConfigurationOptions): Promise<UserRoleResponse> {
         return this.api.removeRoleFromUser(param.daoId, param.userId, param.roleId,  options).toPromise();
+    }
+
+    /**
+     * Respond to a DAO application (accept/reject)
+     * @param param the request object
+     */
+    public respondToDAOApplicationWithHttpInfo(param: DaosApiRespondToDAOApplicationRequest, options?: ConfigurationOptions): Promise<HttpInfo<DAOApplicationResponse>> {
+        return this.api.respondToDAOApplicationWithHttpInfo(param.daoId, param.applicationId, param.dAOApplicationAction,  options).toPromise();
+    }
+
+    /**
+     * Respond to a DAO application (accept/reject)
+     * @param param the request object
+     */
+    public respondToDAOApplication(param: DaosApiRespondToDAOApplicationRequest, options?: ConfigurationOptions): Promise<DAOApplicationResponse> {
+        return this.api.respondToDAOApplication(param.daoId, param.applicationId, param.dAOApplicationAction,  options).toPromise();
     }
 
     /**
@@ -3085,6 +3254,9 @@ export interface UsersApiCreateUserRequest {
 export interface UsersApiGetAuthUserInfosRequest {
 }
 
+export interface UsersApiGetUserApplicationsRequest {
+}
+
 export interface UsersApiGetUserInvitationsRequest {
 }
 
@@ -3161,6 +3333,22 @@ export class ObjectUsersApi {
      */
     public getAuthUserInfos(param: UsersApiGetAuthUserInfosRequest = {}, options?: ConfigurationOptions): Promise<User> {
         return this.api.getAuthUserInfos( options).toPromise();
+    }
+
+    /**
+     * Get all applications submitted by the authenticated user
+     * @param param the request object
+     */
+    public getUserApplicationsWithHttpInfo(param: UsersApiGetUserApplicationsRequest = {}, options?: ConfigurationOptions): Promise<HttpInfo<UserApplicationResponse>> {
+        return this.api.getUserApplicationsWithHttpInfo( options).toPromise();
+    }
+
+    /**
+     * Get all applications submitted by the authenticated user
+     * @param param the request object
+     */
+    public getUserApplications(param: UsersApiGetUserApplicationsRequest = {}, options?: ConfigurationOptions): Promise<UserApplicationResponse> {
+        return this.api.getUserApplications( options).toPromise();
     }
 
     /**

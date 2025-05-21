@@ -10,6 +10,10 @@ import { ConnectionsList } from '../models/ConnectionsList';
 import { CreateDeviceRequest } from '../models/CreateDeviceRequest';
 import { CreateDeviceResponse } from '../models/CreateDeviceResponse';
 import { DAO } from '../models/DAO';
+import { DAOApplication } from '../models/DAOApplication';
+import { DAOApplicationAction } from '../models/DAOApplicationAction';
+import { DAOApplicationList } from '../models/DAOApplicationList';
+import { DAOApplicationResponse } from '../models/DAOApplicationResponse';
 import { DAOInvitation } from '../models/DAOInvitation';
 import { DAOInvitationAction } from '../models/DAOInvitationAction';
 import { DAOInvitationList } from '../models/DAOInvitationList';
@@ -85,6 +89,8 @@ import { TransferCreate } from '../models/TransferCreate';
 import { TransferSchemaResponse } from '../models/TransferSchemaResponse';
 import { Treasury } from '../models/Treasury';
 import { User } from '../models/User';
+import { UserApplication } from '../models/UserApplication';
+import { UserApplicationResponse } from '../models/UserApplicationResponse';
 import { UserBasic } from '../models/UserBasic';
 import { UserBasic1 } from '../models/UserBasic1';
 import { UserDAOOwnershipResponse } from '../models/UserDAOOwnershipResponse';
@@ -879,6 +885,68 @@ export class ObservableDaosApi {
     }
 
     /**
+     * Create an application to join a DAO
+     * @param daoId
+     * @param [dAOApplication]
+     */
+    public applyToDAOWithHttpInfo(daoId: string, dAOApplication?: DAOApplication, _options?: ConfigurationOptions): Observable<HttpInfo<DAOApplicationResponse>> {
+    let _config = this.configuration;
+    let allMiddleware: Middleware[] = [];
+    if (_options && _options.middleware){
+      const middlewareMergeStrategy = _options.middlewareMergeStrategy || 'replace' // default to replace behavior
+      // call-time middleware provided
+      const calltimeMiddleware: Middleware[] = _options.middleware;
+
+      switch(middlewareMergeStrategy){
+      case 'append':
+        allMiddleware = this.configuration.middleware.concat(calltimeMiddleware);
+        break;
+      case 'prepend':
+        allMiddleware = calltimeMiddleware.concat(this.configuration.middleware)
+        break;
+      case 'replace':
+        allMiddleware = calltimeMiddleware
+        break;
+      default: 
+        throw new Error(`unrecognized middleware merge strategy '${middlewareMergeStrategy}'`)
+      }
+	}
+	if (_options){
+    _config = {
+      baseServer: _options.baseServer || this.configuration.baseServer,
+      httpApi: _options.httpApi || this.configuration.httpApi,
+      authMethods: _options.authMethods || this.configuration.authMethods,
+      middleware: allMiddleware || this.configuration.middleware
+		};
+	}
+
+        const requestContextPromise = this.requestFactory.applyToDAO(daoId, dAOApplication, _config);
+        // build promise chain
+        let middlewarePreObservable = from<RequestContext>(requestContextPromise);
+        for (const middleware of allMiddleware) {
+            middlewarePreObservable = middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => middleware.pre(ctx)));
+        }
+
+        return middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => this.configuration.httpApi.send(ctx))).
+            pipe(mergeMap((response: ResponseContext) => {
+                let middlewarePostObservable = of(response);
+                for (const middleware of allMiddleware.reverse()) {
+                    middlewarePostObservable = middlewarePostObservable.pipe(mergeMap((rsp: ResponseContext) => middleware.post(rsp)));
+                }
+                return middlewarePostObservable.pipe(map((rsp: ResponseContext) => this.responseProcessor.applyToDAOWithHttpInfo(rsp)));
+            }));
+    }
+
+    /**
+     * Create an application to join a DAO
+     * @param daoId
+     * @param [dAOApplication]
+     */
+    public applyToDAO(daoId: string, dAOApplication?: DAOApplication, _options?: ConfigurationOptions): Observable<DAOApplicationResponse> {
+        return this.applyToDAOWithHttpInfo(daoId, dAOApplication, _options).pipe(map((apiResponse: HttpInfo<DAOApplicationResponse>) => apiResponse.data));
+    }
+
+    /**
      * Assign a permission to a role in a DAO
      * @param daoId
      * @param roleId
@@ -1557,6 +1625,68 @@ export class ObservableDaosApi {
     }
 
     /**
+     * Delete a DAO application
+     * @param daoId
+     * @param applicationId
+     */
+    public deleteDAOApplicationWithHttpInfo(daoId: string, applicationId: string, _options?: ConfigurationOptions): Observable<HttpInfo<DAOApplicationResponse>> {
+    let _config = this.configuration;
+    let allMiddleware: Middleware[] = [];
+    if (_options && _options.middleware){
+      const middlewareMergeStrategy = _options.middlewareMergeStrategy || 'replace' // default to replace behavior
+      // call-time middleware provided
+      const calltimeMiddleware: Middleware[] = _options.middleware;
+
+      switch(middlewareMergeStrategy){
+      case 'append':
+        allMiddleware = this.configuration.middleware.concat(calltimeMiddleware);
+        break;
+      case 'prepend':
+        allMiddleware = calltimeMiddleware.concat(this.configuration.middleware)
+        break;
+      case 'replace':
+        allMiddleware = calltimeMiddleware
+        break;
+      default: 
+        throw new Error(`unrecognized middleware merge strategy '${middlewareMergeStrategy}'`)
+      }
+	}
+	if (_options){
+    _config = {
+      baseServer: _options.baseServer || this.configuration.baseServer,
+      httpApi: _options.httpApi || this.configuration.httpApi,
+      authMethods: _options.authMethods || this.configuration.authMethods,
+      middleware: allMiddleware || this.configuration.middleware
+		};
+	}
+
+        const requestContextPromise = this.requestFactory.deleteDAOApplication(daoId, applicationId, _config);
+        // build promise chain
+        let middlewarePreObservable = from<RequestContext>(requestContextPromise);
+        for (const middleware of allMiddleware) {
+            middlewarePreObservable = middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => middleware.pre(ctx)));
+        }
+
+        return middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => this.configuration.httpApi.send(ctx))).
+            pipe(mergeMap((response: ResponseContext) => {
+                let middlewarePostObservable = of(response);
+                for (const middleware of allMiddleware.reverse()) {
+                    middlewarePostObservable = middlewarePostObservable.pipe(mergeMap((rsp: ResponseContext) => middleware.post(rsp)));
+                }
+                return middlewarePostObservable.pipe(map((rsp: ResponseContext) => this.responseProcessor.deleteDAOApplicationWithHttpInfo(rsp)));
+            }));
+    }
+
+    /**
+     * Delete a DAO application
+     * @param daoId
+     * @param applicationId
+     */
+    public deleteDAOApplication(daoId: string, applicationId: string, _options?: ConfigurationOptions): Observable<DAOApplicationResponse> {
+        return this.deleteDAOApplicationWithHttpInfo(daoId, applicationId, _options).pipe(map((apiResponse: HttpInfo<DAOApplicationResponse>) => apiResponse.data));
+    }
+
+    /**
      * Delete a role from a DAO
      * @param daoId
      * @param roleId
@@ -1984,6 +2114,128 @@ export class ObservableDaosApi {
      */
     public getChannelMessages(daoId: string, podId: string, channelId: string, _options?: ConfigurationOptions): Observable<DiscordMessagesResponse> {
         return this.getChannelMessagesWithHttpInfo(daoId, podId, channelId, _options).pipe(map((apiResponse: HttpInfo<DiscordMessagesResponse>) => apiResponse.data));
+    }
+
+    /**
+     * Get details of a specific application
+     * @param daoId
+     * @param applicationId
+     */
+    public getDAOApplicationWithHttpInfo(daoId: string, applicationId: string, _options?: ConfigurationOptions): Observable<HttpInfo<DAOApplicationResponse>> {
+    let _config = this.configuration;
+    let allMiddleware: Middleware[] = [];
+    if (_options && _options.middleware){
+      const middlewareMergeStrategy = _options.middlewareMergeStrategy || 'replace' // default to replace behavior
+      // call-time middleware provided
+      const calltimeMiddleware: Middleware[] = _options.middleware;
+
+      switch(middlewareMergeStrategy){
+      case 'append':
+        allMiddleware = this.configuration.middleware.concat(calltimeMiddleware);
+        break;
+      case 'prepend':
+        allMiddleware = calltimeMiddleware.concat(this.configuration.middleware)
+        break;
+      case 'replace':
+        allMiddleware = calltimeMiddleware
+        break;
+      default: 
+        throw new Error(`unrecognized middleware merge strategy '${middlewareMergeStrategy}'`)
+      }
+	}
+	if (_options){
+    _config = {
+      baseServer: _options.baseServer || this.configuration.baseServer,
+      httpApi: _options.httpApi || this.configuration.httpApi,
+      authMethods: _options.authMethods || this.configuration.authMethods,
+      middleware: allMiddleware || this.configuration.middleware
+		};
+	}
+
+        const requestContextPromise = this.requestFactory.getDAOApplication(daoId, applicationId, _config);
+        // build promise chain
+        let middlewarePreObservable = from<RequestContext>(requestContextPromise);
+        for (const middleware of allMiddleware) {
+            middlewarePreObservable = middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => middleware.pre(ctx)));
+        }
+
+        return middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => this.configuration.httpApi.send(ctx))).
+            pipe(mergeMap((response: ResponseContext) => {
+                let middlewarePostObservable = of(response);
+                for (const middleware of allMiddleware.reverse()) {
+                    middlewarePostObservable = middlewarePostObservable.pipe(mergeMap((rsp: ResponseContext) => middleware.post(rsp)));
+                }
+                return middlewarePostObservable.pipe(map((rsp: ResponseContext) => this.responseProcessor.getDAOApplicationWithHttpInfo(rsp)));
+            }));
+    }
+
+    /**
+     * Get details of a specific application
+     * @param daoId
+     * @param applicationId
+     */
+    public getDAOApplication(daoId: string, applicationId: string, _options?: ConfigurationOptions): Observable<DAOApplicationResponse> {
+        return this.getDAOApplicationWithHttpInfo(daoId, applicationId, _options).pipe(map((apiResponse: HttpInfo<DAOApplicationResponse>) => apiResponse.data));
+    }
+
+    /**
+     * Get all applications for a DAO
+     * @param daoId
+     */
+    public getDAOApplicationsWithHttpInfo(daoId: string, _options?: ConfigurationOptions): Observable<HttpInfo<DAOApplicationList>> {
+    let _config = this.configuration;
+    let allMiddleware: Middleware[] = [];
+    if (_options && _options.middleware){
+      const middlewareMergeStrategy = _options.middlewareMergeStrategy || 'replace' // default to replace behavior
+      // call-time middleware provided
+      const calltimeMiddleware: Middleware[] = _options.middleware;
+
+      switch(middlewareMergeStrategy){
+      case 'append':
+        allMiddleware = this.configuration.middleware.concat(calltimeMiddleware);
+        break;
+      case 'prepend':
+        allMiddleware = calltimeMiddleware.concat(this.configuration.middleware)
+        break;
+      case 'replace':
+        allMiddleware = calltimeMiddleware
+        break;
+      default: 
+        throw new Error(`unrecognized middleware merge strategy '${middlewareMergeStrategy}'`)
+      }
+	}
+	if (_options){
+    _config = {
+      baseServer: _options.baseServer || this.configuration.baseServer,
+      httpApi: _options.httpApi || this.configuration.httpApi,
+      authMethods: _options.authMethods || this.configuration.authMethods,
+      middleware: allMiddleware || this.configuration.middleware
+		};
+	}
+
+        const requestContextPromise = this.requestFactory.getDAOApplications(daoId, _config);
+        // build promise chain
+        let middlewarePreObservable = from<RequestContext>(requestContextPromise);
+        for (const middleware of allMiddleware) {
+            middlewarePreObservable = middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => middleware.pre(ctx)));
+        }
+
+        return middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => this.configuration.httpApi.send(ctx))).
+            pipe(mergeMap((response: ResponseContext) => {
+                let middlewarePostObservable = of(response);
+                for (const middleware of allMiddleware.reverse()) {
+                    middlewarePostObservable = middlewarePostObservable.pipe(mergeMap((rsp: ResponseContext) => middleware.post(rsp)));
+                }
+                return middlewarePostObservable.pipe(map((rsp: ResponseContext) => this.responseProcessor.getDAOApplicationsWithHttpInfo(rsp)));
+            }));
+    }
+
+    /**
+     * Get all applications for a DAO
+     * @param daoId
+     */
+    public getDAOApplications(daoId: string, _options?: ConfigurationOptions): Observable<DAOApplicationList> {
+        return this.getDAOApplicationsWithHttpInfo(daoId, _options).pipe(map((apiResponse: HttpInfo<DAOApplicationList>) => apiResponse.data));
     }
 
     /**
@@ -3584,6 +3836,70 @@ export class ObservableDaosApi {
      */
     public removeRoleFromUser(daoId: string, userId: string, roleId: string, _options?: ConfigurationOptions): Observable<UserRoleResponse> {
         return this.removeRoleFromUserWithHttpInfo(daoId, userId, roleId, _options).pipe(map((apiResponse: HttpInfo<UserRoleResponse>) => apiResponse.data));
+    }
+
+    /**
+     * Respond to a DAO application (accept/reject)
+     * @param daoId
+     * @param applicationId
+     * @param dAOApplicationAction
+     */
+    public respondToDAOApplicationWithHttpInfo(daoId: string, applicationId: string, dAOApplicationAction: DAOApplicationAction, _options?: ConfigurationOptions): Observable<HttpInfo<DAOApplicationResponse>> {
+    let _config = this.configuration;
+    let allMiddleware: Middleware[] = [];
+    if (_options && _options.middleware){
+      const middlewareMergeStrategy = _options.middlewareMergeStrategy || 'replace' // default to replace behavior
+      // call-time middleware provided
+      const calltimeMiddleware: Middleware[] = _options.middleware;
+
+      switch(middlewareMergeStrategy){
+      case 'append':
+        allMiddleware = this.configuration.middleware.concat(calltimeMiddleware);
+        break;
+      case 'prepend':
+        allMiddleware = calltimeMiddleware.concat(this.configuration.middleware)
+        break;
+      case 'replace':
+        allMiddleware = calltimeMiddleware
+        break;
+      default: 
+        throw new Error(`unrecognized middleware merge strategy '${middlewareMergeStrategy}'`)
+      }
+	}
+	if (_options){
+    _config = {
+      baseServer: _options.baseServer || this.configuration.baseServer,
+      httpApi: _options.httpApi || this.configuration.httpApi,
+      authMethods: _options.authMethods || this.configuration.authMethods,
+      middleware: allMiddleware || this.configuration.middleware
+		};
+	}
+
+        const requestContextPromise = this.requestFactory.respondToDAOApplication(daoId, applicationId, dAOApplicationAction, _config);
+        // build promise chain
+        let middlewarePreObservable = from<RequestContext>(requestContextPromise);
+        for (const middleware of allMiddleware) {
+            middlewarePreObservable = middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => middleware.pre(ctx)));
+        }
+
+        return middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => this.configuration.httpApi.send(ctx))).
+            pipe(mergeMap((response: ResponseContext) => {
+                let middlewarePostObservable = of(response);
+                for (const middleware of allMiddleware.reverse()) {
+                    middlewarePostObservable = middlewarePostObservable.pipe(mergeMap((rsp: ResponseContext) => middleware.post(rsp)));
+                }
+                return middlewarePostObservable.pipe(map((rsp: ResponseContext) => this.responseProcessor.respondToDAOApplicationWithHttpInfo(rsp)));
+            }));
+    }
+
+    /**
+     * Respond to a DAO application (accept/reject)
+     * @param daoId
+     * @param applicationId
+     * @param dAOApplicationAction
+     */
+    public respondToDAOApplication(daoId: string, applicationId: string, dAOApplicationAction: DAOApplicationAction, _options?: ConfigurationOptions): Observable<DAOApplicationResponse> {
+        return this.respondToDAOApplicationWithHttpInfo(daoId, applicationId, dAOApplicationAction, _options).pipe(map((apiResponse: HttpInfo<DAOApplicationResponse>) => apiResponse.data));
     }
 
     /**
@@ -6126,6 +6442,64 @@ export class ObservableUsersApi {
      */
     public getAuthUserInfos(_options?: ConfigurationOptions): Observable<User> {
         return this.getAuthUserInfosWithHttpInfo(_options).pipe(map((apiResponse: HttpInfo<User>) => apiResponse.data));
+    }
+
+    /**
+     * Get all applications submitted by the authenticated user
+     */
+    public getUserApplicationsWithHttpInfo(_options?: ConfigurationOptions): Observable<HttpInfo<UserApplicationResponse>> {
+    let _config = this.configuration;
+    let allMiddleware: Middleware[] = [];
+    if (_options && _options.middleware){
+      const middlewareMergeStrategy = _options.middlewareMergeStrategy || 'replace' // default to replace behavior
+      // call-time middleware provided
+      const calltimeMiddleware: Middleware[] = _options.middleware;
+
+      switch(middlewareMergeStrategy){
+      case 'append':
+        allMiddleware = this.configuration.middleware.concat(calltimeMiddleware);
+        break;
+      case 'prepend':
+        allMiddleware = calltimeMiddleware.concat(this.configuration.middleware)
+        break;
+      case 'replace':
+        allMiddleware = calltimeMiddleware
+        break;
+      default: 
+        throw new Error(`unrecognized middleware merge strategy '${middlewareMergeStrategy}'`)
+      }
+	}
+	if (_options){
+    _config = {
+      baseServer: _options.baseServer || this.configuration.baseServer,
+      httpApi: _options.httpApi || this.configuration.httpApi,
+      authMethods: _options.authMethods || this.configuration.authMethods,
+      middleware: allMiddleware || this.configuration.middleware
+		};
+	}
+
+        const requestContextPromise = this.requestFactory.getUserApplications(_config);
+        // build promise chain
+        let middlewarePreObservable = from<RequestContext>(requestContextPromise);
+        for (const middleware of allMiddleware) {
+            middlewarePreObservable = middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => middleware.pre(ctx)));
+        }
+
+        return middlewarePreObservable.pipe(mergeMap((ctx: RequestContext) => this.configuration.httpApi.send(ctx))).
+            pipe(mergeMap((response: ResponseContext) => {
+                let middlewarePostObservable = of(response);
+                for (const middleware of allMiddleware.reverse()) {
+                    middlewarePostObservable = middlewarePostObservable.pipe(mergeMap((rsp: ResponseContext) => middleware.post(rsp)));
+                }
+                return middlewarePostObservable.pipe(map((rsp: ResponseContext) => this.responseProcessor.getUserApplicationsWithHttpInfo(rsp)));
+            }));
+    }
+
+    /**
+     * Get all applications submitted by the authenticated user
+     */
+    public getUserApplications(_options?: ConfigurationOptions): Observable<UserApplicationResponse> {
+        return this.getUserApplicationsWithHttpInfo(_options).pipe(map((apiResponse: HttpInfo<UserApplicationResponse>) => apiResponse.data));
     }
 
     /**
