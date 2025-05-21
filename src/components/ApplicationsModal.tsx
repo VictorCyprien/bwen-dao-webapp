@@ -1,9 +1,10 @@
 import React from 'react';
-import { X, Check, AlertCircle, Clock, Calendar, Building, FileText } from 'lucide-react';
+import { X, Check, AlertCircle, Clock, Calendar, Building, FileText, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Button from './common/Button';
 import { typography, ui } from '../styles/theme';
 import { userService } from '../services/UserService';
+import { daosService } from '../services/DaosService';
 
 // Generic interface for application data
 interface ApplicationData {
@@ -34,6 +35,7 @@ const ApplicationsModal = ({
   const [activeFilter, setActiveFilter] = React.useState<ApplicationStatus>('pending');
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [deletingIds, setDeletingIds] = React.useState<Set<string>>(new Set());
 
   React.useEffect(() => {
     if (isOpen) {
@@ -80,9 +82,38 @@ const ApplicationsModal = ({
     setActiveFilter(filter);
   };
 
-  const handleViewDao = (daoId: string) => {
-    onClose();
-    navigate(`/daos/${daoId}`);
+  const handleDeleteApplication = async (applicationId: string, daoId: string) => {
+    try {
+      // Add applicationId to deleting set
+      setDeletingIds((prev: Set<string>) => {
+        const newSet = new Set(prev);
+        newSet.add(applicationId);
+        return newSet;
+      });
+
+      // Call the service to delete the application
+      await daosService.deleteDAOApplication(daoId, applicationId);
+      
+      // If successful, remove from applications list
+      setApplications(applications.filter((app: ApplicationData) => app.applicationId !== applicationId));
+      
+      // Remove from deletingIds
+      setDeletingIds((prev: Set<string>) => {
+        const newSet = new Set(prev);
+        newSet.delete(applicationId);
+        return newSet;
+      });
+    } catch (err) {
+      console.error('Error deleting application:', err);
+      setError('Failed to delete application. Please try again.');
+      
+      // Remove from deletingIds
+      setDeletingIds((prev: Set<string>) => {
+        const newSet = new Set(prev);
+        newSet.delete(applicationId);
+        return newSet;
+      });
+    }
   };
 
   const formatDate = (dateString?: string): string => {
@@ -231,7 +262,7 @@ const ApplicationsModal = ({
                     <div className="flex-shrink-0 bg-indigo-900/30 rounded-full p-2 mr-3">
                       <Building size={16} className="text-indigo-400" />
                     </div>
-                    <div>
+                    <div className="flex-grow">
                       <p className="text-gray-300 mb-1">
                         {application.message || "No application message provided."}
                       </p>
@@ -240,8 +271,8 @@ const ApplicationsModal = ({
                         <span>Applied: {formatDate(application.createdAt)}</span>
                       </div>
                       {application.response && (
-                        <div className="mt-3 p-2 bg-gray-800/50 rounded border border-gray-700 text-sm">
-                          <p className="font-medium text-gray-300 mb-1">Response:</p>
+                        <div className="mt-3 p-3 bg-gray-800/50 rounded border border-gray-700 text-sm">
+                          <p className="font-medium text-gray-300 mb-1">Response from DAO:</p>
                           <p className="text-gray-400">{application.response}</p>
                         </div>
                       )}
@@ -250,12 +281,14 @@ const ApplicationsModal = ({
                   
                   <div className="flex justify-end">
                     <Button 
-                      variant="secondary" 
+                      variant="error" 
                       size="small" 
-                      onClick={() => handleViewDao(application.daoId || '')}
-                      disabled={!application.daoId}
+                      onClick={() => handleDeleteApplication(application.applicationId || '', application.daoId || '')}
+                      disabled={!application.applicationId || !application.daoId || deletingIds.has(application.applicationId)}
+                      isLoading={application.applicationId && deletingIds.has(application.applicationId)}
                     >
-                      View DAO
+                      <Trash2 size={16} className="mr-1" />
+                      Delete
                     </Button>
                   </div>
                 </div>
