@@ -4,7 +4,7 @@ import Modal from './common/Modal';
 import { DAO } from '../core/modules/dao-api';
 import { daosService } from '../services/DaosService';
 import { ProposalService } from '../services/ProposalService';
-import { Users, FileText, Globe, Sparkles, ArrowUpRight, Rocket, Check, UserPlus, Twitter, Instagram, MessageCircle, Wallet } from 'lucide-react';
+import { Users, FileText, Globe, Sparkles, ArrowUpRight, Rocket, Check, UserPlus, Twitter, Instagram, MessageCircle, Wallet, Lock, SendHorizonal, Mail } from 'lucide-react';
 import Button from './common/Button';
 import { useNavigate } from 'react-router-dom';
 import useApiAndWallet from '../hooks/useApiAndWallet';
@@ -46,6 +46,10 @@ const DAOPublicProfileModal: React.FC<DAOPublicProfileModalProps> = ({
   const [membershipLoading, setMembershipLoading] = useState<boolean>(false);
   const [showJoinAnimation, setShowJoinAnimation] = useState<boolean>(false);
   const [memberCount, setMemberCount] = useState<number>(0);
+  const [governance, setGovernance] = useState<any | null>(null);
+  const [governanceLoading, setGovernanceLoading] = useState<boolean>(false);
+  const [applicationMessage, setApplicationMessage] = useState<string>('');
+  const [showApplicationForm, setShowApplicationForm] = useState<boolean>(false);
   const navigate = useNavigate();
   const { publicKey, connected } = useApiAndWallet();
   
@@ -66,6 +70,15 @@ const DAOPublicProfileModal: React.FC<DAOPublicProfileModalProps> = ({
           // Fetch proposal count
           const proposals = await proposalService.getAllProposals(daoId);
           setProposalCount(proposals.length);
+          
+          // Fetch governance data
+          setGovernanceLoading(true);
+          const governanceData = await daosService.getDAOGovernance(daoId);
+          if (governanceData) {
+            setGovernance(governanceData);
+            console.log('DAO governance data:', governanceData);
+          }
+          setGovernanceLoading(false);
         } else {
           setError("Couldn't load DAO information");
         }
@@ -175,14 +188,282 @@ const DAOPublicProfileModal: React.FC<DAOPublicProfileModalProps> = ({
     }
   }, [daoId, publicKey, connected, isOpen]);
   
+  // Handle application submission
+  const handleSubmitApplication = async () => {
+    if (!daoId || !publicKey || !applicationMessage.trim()) {
+      console.error("Missing required data for applying to DAO");
+      return;
+    }
+    
+    try {
+      setMembershipLoading(true);
+      
+      // Get the user ID from the user service
+      const currentUser = await userService.getCurrentUser();
+      
+      if (!currentUser || !currentUser.userId) {
+        console.error("Could not find current user's ID");
+        setMembershipLoading(false);
+        return;
+      }
+      
+      // Call the API to submit application
+      const application = {
+        message: applicationMessage.trim()
+      };
+      
+      // Use the DAOs API to apply to the DAO
+      const result = await daosService.applyToDAO(daoId, application);
+      
+      if (result) {
+        console.log('Successfully applied to DAO');
+        setShowApplicationForm(false);
+        setMembershipLoading(false);
+        // Show success message or notification
+      } else {
+        console.error('Failed to apply to DAO');
+        setMembershipLoading(false);
+      }
+    } catch (err) {
+      console.error('Error applying to DAO:', err);
+      setMembershipLoading(false);
+    }
+  };
+  
+  // Get entry condition display info
+  const getEntryConditionInfo = () => {
+    if (!governance) return { icon: <Rocket size={14} />, text: 'Join DAO', description: null };
+    
+    // Extract entry condition from governance
+    const entryCondition = governance.daoEntryCondition;
+    
+    switch(entryCondition) {
+      case 'Open':
+        return {
+          icon: <Rocket size={14} />,
+          text: 'Join DAO',
+          description: 'This DAO is open to anyone'
+        };
+      case 'Token':
+        return {
+          icon: <Wallet size={14} />,
+          text: 'Join with Token',
+          description: `You need to hold the DAO token to join`
+        };
+      case 'Application':
+        return {
+          icon: <SendHorizonal size={14} />,
+          text: 'Apply to Join',
+          description: 'This DAO requires an application to join'
+        };
+      case 'Invitation':
+        return {
+          icon: <Mail size={14} />,
+          text: 'Invitation Only',
+          description: 'This DAO is by invitation only'
+        };
+      default:
+        return {
+          icon: <Rocket size={14} />,
+          text: 'Join DAO',
+          description: null
+        };
+    }
+  };
+  
+  const renderJoinButton = () => {
+    if (!connected) {
+      return (
+        <WalletMultiButton 
+          className="px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base transition-all duration-300 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500"
+        >
+          <span className="flex items-center">
+            Connect to join the DAO
+            <Wallet className="ml-2 h-4 w-4" />
+          </span>
+        </WalletMultiButton>
+      );
+    }
+    
+    if (userIsDaoMember) {
+      return (
+        <Button 
+          variant="primary"
+          onClick={handleAction}
+          disabled={membershipLoading}
+        >
+          <span className="flex items-center">
+            {membershipLoading ? (
+              <>
+                <span className="mr-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                Loading...
+              </>
+            ) : showJoinAnimation ? (
+              <div className="flex items-center overflow-hidden">
+                <div className="flex items-center opacity-0 animate-fadeIn" style={{ animationDelay: '0.1s', animationFillMode: 'forwards' }}>
+                  <Check className="mr-2 h-4 w-4" />
+                </div>
+                <div className="flex items-center">
+                  <span className="opacity-0 animate-fadeIn" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>Joined&nbsp;</span>
+                  <span className="opacity-0 animate-fadeIn" style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}>DAO!</span>
+                  <span className="ml-1 opacity-0 animate-fadeIn" style={{ animationDelay: '0.4s', animationFillMode: 'forwards' }}>
+                    <UserPlus size={14} className="text-green-300" />
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <>
+                Enter Dashboard
+                <ArrowUpRight className="ml-2 h-4 w-4" />
+              </>
+            )}
+          </span>
+        </Button>
+      );
+    }
+    
+    if (governanceLoading) {
+      return (
+        <Button 
+          variant="primary"
+          disabled={true}
+        >
+          <span className="flex items-center">
+            <span className="mr-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            Loading...
+          </span>
+        </Button>
+      );
+    }
+    
+    const { icon, text, description } = getEntryConditionInfo();
+    
+    // For invitation-only DAOs, just show disabled button
+    if (governance?.daoEntryCondition === 'Invitation') {
+      return (
+        <div className="flex flex-col items-center">
+          <Button 
+            variant="secondary"
+            disabled={true}
+            className="mb-2"
+          >
+            <span className="flex items-center">
+              <Lock className="mr-2 h-4 w-4" />
+              Invitation Only
+            </span>
+          </Button>
+          {description && <p className="text-xs text-gray-400 mt-1">{description}</p>}
+        </div>
+      );
+    }
+    
+    // For application-based DAOs, show apply button
+    if (governance?.daoEntryCondition === 'Application') {
+      return showApplicationForm ? (
+        <div className="flex flex-col w-full">
+          <textarea
+            className="w-full p-3 bg-gray-800 border border-gray-700 rounded-md text-sm text-white mb-3 min-h-[100px]"
+            placeholder="Tell us why you'd like to join this DAO..."
+            value={applicationMessage}
+            onChange={(e) => setApplicationMessage(e.target.value)}
+          />
+          <div className="flex gap-2">
+            <Button 
+              variant="secondary"
+              onClick={() => setShowApplicationForm(false)}
+              disabled={membershipLoading}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="primary"
+              onClick={handleSubmitApplication}
+              disabled={membershipLoading || !applicationMessage.trim()}
+            >
+              <span className="flex items-center">
+                {membershipLoading ? (
+                  <>
+                    <span className="mr-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    Submit Application
+                    <SendHorizonal className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </span>
+            </Button>
+          </div>
+          {description && <p className="text-xs text-gray-400 mt-2">{description}</p>}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center">
+          <Button 
+            variant="primary"
+            onClick={() => setShowApplicationForm(true)}
+            disabled={membershipLoading}
+          >
+            <span className="flex items-center">
+              {icon}
+              <span className="ml-2">{text}</span>
+            </span>
+          </Button>
+          {description && <p className="text-xs text-gray-400 mt-1">{description}</p>}
+        </div>
+      );
+    }
+    
+    // For token-based or open DAOs, show join button
+    return (
+      <div className="flex flex-col items-center">
+        <Button 
+          variant="primary"
+          className={`px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base transition-all duration-300 ${
+            showJoinAnimation ? 
+            'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 animate-gradientShift scale-105 shadow-lg shadow-green-500/30' : 
+            ''
+          }`}
+          onClick={handleAction}
+          disabled={membershipLoading}
+        >
+          <span className="flex items-center">
+            {membershipLoading ? (
+              <>
+                <span className="mr-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                Joining...
+              </>
+            ) : (
+              <>
+                {icon}
+                <span className="ml-2">{text}</span>
+              </>
+            )}
+          </span>
+        </Button>
+        {description && <p className="text-xs text-gray-400 mt-1">{description}</p>}
+      </div>
+    );
+  };
+  
   const handleAction = () => {
     if (userIsDaoMember) {
       // If user is a member, enter the dashboard
       onClose();
       onEnterDashboard(daoId);
     } else if (connected) {
-      // If user is not a member but connected, join the DAO
-      handleJoinDao();
+      const entryCondition = governance?.daoEntryCondition;
+      
+      if (entryCondition === 'Application') {
+        // Show application form
+        setShowApplicationForm(true);
+      } else if (entryCondition === 'Invitation') {
+        // Do nothing for invitation-only DAOs
+        return;
+      } else {
+        // For open and token-based DAOs, try to join
+        handleJoinDao();
+      }
     }
   };
   
@@ -422,59 +703,7 @@ const DAOPublicProfileModal: React.FC<DAOPublicProfileModalProps> = ({
                   hyphens: auto;
                 }
               `}</style>
-              {!connected ? (
-                <WalletMultiButton 
-                  className="px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base transition-all duration-300 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500"
-                >
-                  <span className="flex items-center">
-                    Connect to join the DAO
-                    <Wallet className="ml-2 h-4 w-4" />
-                  </span>
-                </WalletMultiButton>
-              ) : (
-                <Button 
-                  variant="primary"
-                  className={`px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base transition-all duration-300 ${
-                    showJoinAnimation ? 
-                    'bg-gradient-to-r from-emerald-500 via-green-500 to-teal-500 animate-gradientShift scale-105 shadow-lg shadow-green-500/30' : 
-                    ''
-                  }`}
-                  onClick={handleAction}
-                  disabled={membershipLoading}
-                >
-                  <span className="flex items-center">
-                    {membershipLoading ? (
-                      <>
-                        <span className="mr-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                        {userIsDaoMember ? 'Loading...' : 'Joining...'}
-                      </>
-                    ) : showJoinAnimation ? (
-                      <div className="flex items-center overflow-hidden">
-                        <div className="flex items-center opacity-0 animate-fadeIn" style={{ animationDelay: '0.1s', animationFillMode: 'forwards' }}>
-                          <Check className="mr-2 h-4 w-4" />
-                        </div>
-                        <div className="flex items-center">
-                          <span className="opacity-0 animate-fadeIn" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>Joined&nbsp;</span>
-                          <span className="opacity-0 animate-fadeIn" style={{ animationDelay: '0.3s', animationFillMode: 'forwards' }}>DAO!</span>
-                          <span className="ml-1 opacity-0 animate-fadeIn" style={{ animationDelay: '0.4s', animationFillMode: 'forwards' }}>
-                            <UserPlus size={14} className="text-green-300" />
-                          </span>
-                        </div>
-                      </div>
-                    ) : userIsDaoMember ? (
-                      <>
-                        Enter Dashboard
-                        <ArrowUpRight className="ml-2 h-4 w-4" />
-                      </>
-                    ) : (
-                      <>
-                        Join DAO
-                        <Rocket className="ml-2 h-4 w-4" />
-                      </>
-                    )}
-                  </span>
-                </Button>
-              )}
+              {renderJoinButton()}
             </div>
           </div>
         </div>
