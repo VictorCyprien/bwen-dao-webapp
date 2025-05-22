@@ -812,6 +812,43 @@ export class DaosService {
     this.daosCache.clear();
     this.applicationsCache.clear();
   }
+
+  /**
+   * Get governance model for a DAO
+   * @param daoId The ID of the DAO
+   * @returns The governance model or null if there was an error
+   */
+  async getDAOGovernance(daoId: string): Promise<any | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      const response = await apiClient.getDAOGovernance(daoId);
+      return response || null;
+    } catch (error) {
+      console.error(`Error getting governance for DAO ${daoId}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Create an application to join a DAO
+   * @param daoId The ID of the DAO
+   * @param application The application data (message)
+   * @returns The application response or null if there was an error
+   */
+  async applyToDAO(daoId: string, application: { message: string }): Promise<any | null> {
+    try {
+      const apiClient = this.createAuthenticatedApiClient();
+      if (!apiClient) return null;
+
+      const response = await apiClient.applyToDAO(daoId, application);
+      return response || null;
+    } catch (error) {
+      console.error(`Error applying to DAO ${daoId}:`, error);
+      return null;
+    }
+  }
 }
 
 // Create a singleton instance
