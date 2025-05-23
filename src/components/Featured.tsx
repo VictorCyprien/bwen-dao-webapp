@@ -146,12 +146,9 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
       
       setFeaturedStatus(response?.isFeatured || false);
       
-      // If featured is active, calculate expiry date (this will need to come from the API)
-      // For now, using a placeholder of 7 days from now
-      if (response?.isFeatured) {
-        const expiry = new Date();
-        expiry.setDate(expiry.getDate() + 7); // Placeholder - actual date should come from API
-        setExpiryDate(expiry);
+      // If featured is active, use featuredUntil from the API response
+      if (response?.isFeatured && response?.featuredUntil) {
+        setExpiryDate(new Date(response.featuredUntil));
       } else {
         setExpiryDate(null);
       }
@@ -175,8 +172,15 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
     
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     
-    return `${days} days and ${hours} hours`;
+    if (days > 0) {
+      return `${days} day${days === 1 ? '' : 's'} and ${hours} hour${hours === 1 ? '' : 's'}`;
+    } else if (hours > 0) {
+      return `${hours} hour${hours === 1 ? '' : 's'} and ${minutes} minute${minutes === 1 ? '' : 's'}`;
+    } else {
+      return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+    }
   };
   
   // Handle activating the featured service
@@ -194,10 +198,10 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
       });
       
       if (response?.isFeatured) {
-        // Set expiry date based on the days selected
-        const expiry = new Date();
-        expiry.setDate(expiry.getDate() + formState.days);
-        setExpiryDate(expiry);
+        // Set expiry date from the API response
+        if (response.featuredUntil) {
+          setExpiryDate(new Date(response.featuredUntil));
+        }
         setFeaturedStatus(true);
         
         // Close the modal
