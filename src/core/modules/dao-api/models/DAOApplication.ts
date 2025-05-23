@@ -13,13 +13,13 @@
 import { HttpFile } from '../http/http';
 
 /**
-* Basic user information for nested proposals relationships
+* Schema for DAO application
 */
-export class UserBasic {
-    'userId': string;
-    'username': string;
-    'walletAddress': string;
-    'profilePicture': string;
+export class DAOApplication {
+    /**
+    * The application text
+    */
+    'message': string;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -27,32 +27,14 @@ export class UserBasic {
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "userId",
-            "baseName": "user_id",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "username",
-            "baseName": "username",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "walletAddress",
-            "baseName": "wallet_address",
-            "type": "string",
-            "format": ""
-        },
-        {
-            "name": "profilePicture",
-            "baseName": "profile_picture",
+            "name": "message",
+            "baseName": "message",
             "type": "string",
             "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return UserBasic.attributeTypeMap;
+        return DAOApplication.attributeTypeMap;
     }
 
     public constructor() {

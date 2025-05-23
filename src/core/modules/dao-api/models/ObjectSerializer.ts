@@ -5,6 +5,10 @@ export * from '../models/ConnectionsList';
 export * from '../models/CreateDeviceRequest';
 export * from '../models/CreateDeviceResponse';
 export * from '../models/DAO';
+export * from '../models/DAOApplication';
+export * from '../models/DAOApplicationAction';
+export * from '../models/DAOApplicationList';
+export * from '../models/DAOApplicationResponse';
 export * from '../models/DAOInvitation';
 export * from '../models/DAOInvitationAction';
 export * from '../models/DAOInvitationList';
@@ -80,9 +84,11 @@ export * from '../models/TransferCreate';
 export * from '../models/TransferSchemaResponse';
 export * from '../models/Treasury';
 export * from '../models/User';
+export * from '../models/UserApplication';
+export * from '../models/UserApplicationResponse';
 export * from '../models/UserBasic';
-export * from '../models/UserBasic1';
 export * from '../models/UserDAOOwnershipResponse';
+export * from '../models/UserDetailed';
 export * from '../models/UserExistResponse';
 export * from '../models/UserInfoError';
 export * from '../models/UserInvitation';
@@ -93,6 +99,7 @@ export * from '../models/UserRoleAssignment';
 export * from '../models/UserRoleCheck';
 export * from '../models/UserRoleResponse';
 export * from '../models/UserSearchResponse';
+export * from '../models/UserStric';
 export * from '../models/VerifySignature';
 
 import { ChallengeRequest } from '../models/ChallengeRequest';
@@ -102,6 +109,10 @@ import { ConnectionsList } from '../models/ConnectionsList';
 import { CreateDeviceRequest } from '../models/CreateDeviceRequest';
 import { CreateDeviceResponse } from '../models/CreateDeviceResponse';
 import { DAO } from '../models/DAO';
+import { DAOApplication } from '../models/DAOApplication';
+import { DAOApplicationAction } from '../models/DAOApplicationAction';
+import { DAOApplicationList } from '../models/DAOApplicationList';
+import { DAOApplicationResponse } from '../models/DAOApplicationResponse';
 import { DAOInvitation } from '../models/DAOInvitation';
 import { DAOInvitationAction } from '../models/DAOInvitationAction';
 import { DAOInvitationList } from '../models/DAOInvitationList';
@@ -177,9 +188,11 @@ import { TransferCreate } from '../models/TransferCreate';
 import { TransferSchemaResponse } from '../models/TransferSchemaResponse';
 import { Treasury } from '../models/Treasury';
 import { User } from '../models/User';
+import { UserApplication } from '../models/UserApplication';
+import { UserApplicationResponse } from '../models/UserApplicationResponse';
 import { UserBasic } from '../models/UserBasic';
-import { UserBasic1 } from '../models/UserBasic1';
 import { UserDAOOwnershipResponse } from '../models/UserDAOOwnershipResponse';
+import { UserDetailed } from '../models/UserDetailed';
 import { UserExistResponse } from '../models/UserExistResponse';
 import { UserInfoError } from '../models/UserInfoError';
 import { UserInvitation } from '../models/UserInvitation';
@@ -190,6 +203,7 @@ import { UserRoleAssignment } from '../models/UserRoleAssignment';
 import { UserRoleCheck } from '../models/UserRoleCheck';
 import { UserRoleResponse } from '../models/UserRoleResponse';
 import { UserSearchResponse } from '../models/UserSearchResponse';
+import { UserStric } from '../models/UserStric';
 import { VerifySignature } from '../models/VerifySignature';
 
 /* tslint:disable:no-unused-variable */
@@ -229,6 +243,10 @@ let typeMap: {[index: string]: any} = {
     "CreateDeviceRequest": CreateDeviceRequest,
     "CreateDeviceResponse": CreateDeviceResponse,
     "DAO": DAO,
+    "DAOApplication": DAOApplication,
+    "DAOApplicationAction": DAOApplicationAction,
+    "DAOApplicationList": DAOApplicationList,
+    "DAOApplicationResponse": DAOApplicationResponse,
     "DAOInvitation": DAOInvitation,
     "DAOInvitationAction": DAOInvitationAction,
     "DAOInvitationList": DAOInvitationList,
@@ -304,9 +322,11 @@ let typeMap: {[index: string]: any} = {
     "TransferSchemaResponse": TransferSchemaResponse,
     "Treasury": Treasury,
     "User": User,
+    "UserApplication": UserApplication,
+    "UserApplicationResponse": UserApplicationResponse,
     "UserBasic": UserBasic,
-    "UserBasic1": UserBasic1,
     "UserDAOOwnershipResponse": UserDAOOwnershipResponse,
+    "UserDetailed": UserDetailed,
     "UserExistResponse": UserExistResponse,
     "UserInfoError": UserInfoError,
     "UserInvitation": UserInvitation,
@@ -317,6 +337,7 @@ let typeMap: {[index: string]: any} = {
     "UserRoleCheck": UserRoleCheck,
     "UserRoleResponse": UserRoleResponse,
     "UserSearchResponse": UserSearchResponse,
+    "UserStric": UserStric,
     "VerifySignature": VerifySignature,
 }
 

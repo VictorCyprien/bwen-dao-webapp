@@ -6,6 +6,7 @@ Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**createUser**](UsersApi.md#createUser) | **POST** /users/ | Create a new user
 [**getAuthUserInfos**](UsersApi.md#getAuthUserInfos) | **GET** /users/@me | Get authenticated user informations
+[**getUserApplications**](UsersApi.md#getUserApplications) | **GET** /users/@me/applications | Get all applications submitted by the authenticated user
 [**getUserInvitations**](UsersApi.md#getUserInvitations) | **GET** /users/@me/invitations | Get all invitations for the authenticated user
 [**getUserWithWalletAddress**](UsersApi.md#getUserWithWalletAddress) | **GET** /users/{wallet_address} | Check if user with the wallet address exists
 [**searchUsers**](UsersApi.md#searchUsers) | **GET** /users/search | Search for users by username to invite to a DAO
@@ -115,6 +116,54 @@ No authorization required
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 **200** | User information retrieved successfully |  -  |
+**401** | Unauthorized - Invalid or missing token |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
+# **getUserApplications**
+> UserApplicationResponse getUserApplications()
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, UsersApi } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new UsersApi(configuration);
+
+const request = {};
+
+const data = await apiInstance.getUserApplications(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+This endpoint does not need any parameter.
+
+
+### Return type
+
+**UserApplicationResponse**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | User applications retrieved successfully |  -  |
+**404** | User not found |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
 **0** | Default error response |  -  |
 

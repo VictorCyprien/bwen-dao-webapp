@@ -9,6 +9,7 @@ Method | HTTP request | Description
 [**addDAOModule**](DaosApi.md#addDAOModule) | **POST** /daos/{dao_id}/modules/add | Add a module to a DAO
 [**addMemberToDAO**](DaosApi.md#addMemberToDAO) | **POST** /daos/{dao_id}/members | Add a member to a DAO
 [**addMemberToPOD**](DaosApi.md#addMemberToPOD) | **POST** /daos/{dao_id}/pods/{pod_id}/members | Add a member to a POD
+[**applyToDAO**](DaosApi.md#applyToDAO) | **POST** /daos/{dao_id}/applications | Create an application to join a DAO
 [**assignPermissionToRole**](DaosApi.md#assignPermissionToRole) | **POST** /daos/{dao_id}/roles/{role_id}/permissions | Assign a permission to a role in a DAO
 [**assignRoleToUser**](DaosApi.md#assignRoleToUser) | **POST** /daos/{dao_id}/members/{user_id}/roles | Assign a role to a user in a DAO
 [**cancelDAOInvitation**](DaosApi.md#cancelDAOInvitation) | **DELETE** /daos/{dao_id}/invitations/{invitation_id} | Cancel/delete a DAO invitation
@@ -20,6 +21,7 @@ Method | HTTP request | Description
 [**createDAORole**](DaosApi.md#createDAORole) | **POST** /daos/{dao_id}/roles | Create a new role for a DAO
 [**createPOD**](DaosApi.md#createPOD) | **POST** /daos/{dao_id}/pods | Create a new POD
 [**deleteDAO**](DaosApi.md#deleteDAO) | **DELETE** /daos/{dao_id} | Delete a DAO
+[**deleteDAOApplication**](DaosApi.md#deleteDAOApplication) | **DELETE** /daos/{dao_id}/applications/{application_id} | Delete a DAO application
 [**deleteDAORole**](DaosApi.md#deleteDAORole) | **DELETE** /daos/{dao_id}/roles/{role_id} | Delete a role from a DAO
 [**deletePOD**](DaosApi.md#deletePOD) | **DELETE** /daos/{dao_id}/pods/{pod_id} | Delete a POD
 [**enableDAOFeatured**](DaosApi.md#enableDAOFeatured) | **PATCH** /daos/{dao_id}/featured | Enable a DAO\&#39;s featured option
@@ -27,6 +29,8 @@ Method | HTTP request | Description
 [**getAllMembersOfPOD**](DaosApi.md#getAllMembersOfPOD) | **GET** /daos/{dao_id}/pods/{pod_id}/members | Get all members of a POD
 [**getAllPODsForDAO**](DaosApi.md#getAllPODsForDAO) | **GET** /daos/{dao_id}/pods | Get all PODs for a DAO
 [**getChannelMessages**](DaosApi.md#getChannelMessages) | **GET** /daos/{dao_id}/pods/{pod_id}/discord-channels/{channel_id}/messages | Get messages from a specific Discord channel
+[**getDAOApplication**](DaosApi.md#getDAOApplication) | **GET** /daos/{dao_id}/applications/{application_id} | Get details of a specific application
+[**getDAOApplications**](DaosApi.md#getDAOApplications) | **GET** /daos/{dao_id}/applications | Get all pending applications for a DAO
 [**getDAOById**](DaosApi.md#getDAOById) | **GET** /daos/{dao_id} | Get a DAO by ID
 [**getDAOFeaturedStatus**](DaosApi.md#getDAOFeaturedStatus) | **GET** /daos/{dao_id}/featured | Get a DAO\&#39;s featured status
 [**getDAOGovernance**](DaosApi.md#getDAOGovernance) | **GET** /daos/{dao_id}/governance | Get governance model for a DAO
@@ -53,6 +57,7 @@ Method | HTTP request | Description
 [**removeMemberFromPOD**](DaosApi.md#removeMemberFromPOD) | **DELETE** /daos/{dao_id}/pods/{pod_id}/members | Remove a member from a POD
 [**removePermissionFromRole**](DaosApi.md#removePermissionFromRole) | **DELETE** /daos/{dao_id}/roles/{role_id}/permissions/{permission_id} | Remove a permission from a role in a DAO
 [**removeRoleFromUser**](DaosApi.md#removeRoleFromUser) | **DELETE** /daos/{dao_id}/members/{user_id}/roles/{role_id} | Remove a role from a user in a DAO
+[**respondToDAOApplication**](DaosApi.md#respondToDAOApplication) | **POST** /daos/{dao_id}/applications/{application_id} | Respond to a DAO application (accept/reject)
 [**respondToDAOInvitation**](DaosApi.md#respondToDAOInvitation) | **POST** /daos/{dao_id}/invitations/{invitation_id} | Respond to a DAO invitation (accept/decline)
 [**unlinkDiscordChannelFromPOD**](DaosApi.md#unlinkDiscordChannelFromPOD) | **DELETE** /daos/{dao_id}/pods/{pod_id}/discord-channels/{channel_id} | Unlink a Discord channel from a POD
 [**updateDAO**](DaosApi.md#updateDAO) | **PUT** /daos/{dao_id} | Update a DAO
@@ -355,6 +360,68 @@ No authorization required
 **400** | Bad Request - User already in POD |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
 **404** | User, DAO or POD not found |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
+# **applyToDAO**
+> DAOApplicationResponse applyToDAO()
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+import type { DaosApiApplyToDAORequest } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request: DaosApiApplyToDAORequest = {
+  
+  daoId: "dao_id_example",
+  
+  dAOApplication: {
+    message: "message_example",
+  },
+};
+
+const data = await apiInstance.applyToDAO(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **dAOApplication** | **DAOApplication**|  |
+ **daoId** | [**string**] |  | defaults to undefined
+
+
+### Return type
+
+**DAOApplicationResponse**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**422** | Unprocessable Entity |  -  |
+**200** | Application created successfully |  -  |
+**400** | Bad Request |  -  |
+**401** | Unauthorized |  -  |
+**404** | User or DAO not found |  -  |
 **0** | Default error response |  -  |
 
 [[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
@@ -1023,6 +1090,65 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
 
+# **deleteDAOApplication**
+> DAOApplicationResponse deleteDAOApplication()
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+import type { DaosApiDeleteDAOApplicationRequest } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request: DaosApiDeleteDAOApplicationRequest = {
+  
+  daoId: "dao_id_example",
+  
+  applicationId: "application_id_example",
+};
+
+const data = await apiInstance.deleteDAOApplication(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **daoId** | [**string**] |  | defaults to undefined
+ **applicationId** | [**string**] |  | defaults to undefined
+
+
+### Return type
+
+**DAOApplicationResponse**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | Application deleted successfully |  -  |
+**400** | Bad Request |  -  |
+**401** | Unauthorized |  -  |
+**404** | Application, DAO, or user not found |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
 # **deleteDAORole**
 > RoleResponse deleteDAORole()
 
@@ -1419,6 +1545,119 @@ No authorization required
 **400** | Bad Request - Channel not linked to this POD |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
 **404** | DAO, POD or Discord channel not found |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
+# **getDAOApplication**
+> DAOApplicationResponse getDAOApplication()
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+import type { DaosApiGetDAOApplicationRequest } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request: DaosApiGetDAOApplicationRequest = {
+  
+  daoId: "dao_id_example",
+  
+  applicationId: "application_id_example",
+};
+
+const data = await apiInstance.getDAOApplication(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **daoId** | [**string**] |  | defaults to undefined
+ **applicationId** | [**string**] |  | defaults to undefined
+
+
+### Return type
+
+**DAOApplicationResponse**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | DAO application |  -  |
+**401** | Unauthorized |  -  |
+**404** | Application or DAO not found |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
+# **getDAOApplications**
+> DAOApplicationList getDAOApplications()
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+import type { DaosApiGetDAOApplicationsRequest } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request: DaosApiGetDAOApplicationsRequest = {
+  
+  daoId: "dao_id_example",
+};
+
+const data = await apiInstance.getDAOApplications(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **daoId** | [**string**] |  | defaults to undefined
+
+
+### Return type
+
+**DAOApplicationList**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**200** | DAO pending applications |  -  |
+**401** | Unauthorized |  -  |
+**404** | DAO not found |  -  |
 **0** | Default error response |  -  |
 
 [[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
@@ -2390,7 +2629,7 @@ const request: DaosApiInitializeDAOGovernanceRequest = {
     votingPowerSystem: "Defined",
     councilEntryCondition: "Election",
     councilEntryThreshold: 1,
-    daoEntryCondition: "Candidature",
+    daoEntryCondition: "Application",
     daoEntryThreshold: 1,
     quorumPercentage: 1,
   },
@@ -2939,6 +3178,72 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
 
+# **respondToDAOApplication**
+> DAOApplicationResponse respondToDAOApplication(dAOApplicationAction)
+
+
+### Example
+
+
+```typescript
+import { createConfiguration, DaosApi } from '';
+import type { DaosApiRespondToDAOApplicationRequest } from '';
+
+const configuration = createConfiguration();
+const apiInstance = new DaosApi(configuration);
+
+const request: DaosApiRespondToDAOApplicationRequest = {
+  
+  daoId: "dao_id_example",
+  
+  applicationId: "application_id_example",
+  
+  dAOApplicationAction: {
+    action: "action_example",
+    response: "response_example",
+  },
+};
+
+const data = await apiInstance.respondToDAOApplication(request);
+console.log('API called successfully. Returned data:', data);
+```
+
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **dAOApplicationAction** | **DAOApplicationAction**|  |
+ **daoId** | [**string**] |  | defaults to undefined
+ **applicationId** | [**string**] |  | defaults to undefined
+
+
+### Return type
+
+**DAOApplicationResponse**
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+**422** | Unprocessable Entity |  -  |
+**200** | Application updated successfully |  -  |
+**400** | Bad Request |  -  |
+**401** | Unauthorized |  -  |
+**404** | Application, DAO, or user not found |  -  |
+**0** | Default error response |  -  |
+
+[[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
+
 # **respondToDAOInvitation**
 > DAOInvitationResponse respondToDAOInvitation(dAOInvitationAction)
 
@@ -3165,7 +3470,7 @@ const request: DaosApiUpdateDAOGovernanceRequest = {
     votingPowerSystem: "Defined",
     councilEntryCondition: "Election",
     councilEntryThreshold: 1,
-    daoEntryCondition: "Candidature",
+    daoEntryCondition: "Application",
     daoEntryThreshold: 1,
     quorumPercentage: 1,
   },

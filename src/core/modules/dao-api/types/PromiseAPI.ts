@@ -9,6 +9,10 @@ import { ConnectionsList } from '../models/ConnectionsList';
 import { CreateDeviceRequest } from '../models/CreateDeviceRequest';
 import { CreateDeviceResponse } from '../models/CreateDeviceResponse';
 import { DAO } from '../models/DAO';
+import { DAOApplication } from '../models/DAOApplication';
+import { DAOApplicationAction } from '../models/DAOApplicationAction';
+import { DAOApplicationList } from '../models/DAOApplicationList';
+import { DAOApplicationResponse } from '../models/DAOApplicationResponse';
 import { DAOInvitation } from '../models/DAOInvitation';
 import { DAOInvitationAction } from '../models/DAOInvitationAction';
 import { DAOInvitationList } from '../models/DAOInvitationList';
@@ -84,9 +88,11 @@ import { TransferCreate } from '../models/TransferCreate';
 import { TransferSchemaResponse } from '../models/TransferSchemaResponse';
 import { Treasury } from '../models/Treasury';
 import { User } from '../models/User';
+import { UserApplication } from '../models/UserApplication';
+import { UserApplicationResponse } from '../models/UserApplicationResponse';
 import { UserBasic } from '../models/UserBasic';
-import { UserBasic1 } from '../models/UserBasic1';
 import { UserDAOOwnershipResponse } from '../models/UserDAOOwnershipResponse';
+import { UserDetailed } from '../models/UserDetailed';
 import { UserExistResponse } from '../models/UserExistResponse';
 import { UserInfoError } from '../models/UserInfoError';
 import { UserInvitation } from '../models/UserInvitation';
@@ -97,6 +103,7 @@ import { UserRoleAssignment } from '../models/UserRoleAssignment';
 import { UserRoleCheck } from '../models/UserRoleCheck';
 import { UserRoleResponse } from '../models/UserRoleResponse';
 import { UserSearchResponse } from '../models/UserSearchResponse';
+import { UserStric } from '../models/UserStric';
 import { VerifySignature } from '../models/VerifySignature';
 import { ObservableApiKeysApi } from './ObservableAPI';
 
@@ -661,6 +668,50 @@ export class PromiseDaosApi {
     }
 
     /**
+     * Create an application to join a DAO
+     * @param daoId
+     * @param [dAOApplication]
+     */
+    public applyToDAOWithHttpInfo(daoId: string, dAOApplication?: DAOApplication, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DAOApplicationResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.applyToDAOWithHttpInfo(daoId, dAOApplication, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Create an application to join a DAO
+     * @param daoId
+     * @param [dAOApplication]
+     */
+    public applyToDAO(daoId: string, dAOApplication?: DAOApplication, _options?: PromiseConfigurationOptions): Promise<DAOApplicationResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.applyToDAO(daoId, dAOApplication, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
      * Assign a permission to a role in a DAO
      * @param daoId
      * @param roleId
@@ -1141,6 +1192,50 @@ export class PromiseDaosApi {
     }
 
     /**
+     * Delete a DAO application
+     * @param daoId
+     * @param applicationId
+     */
+    public deleteDAOApplicationWithHttpInfo(daoId: string, applicationId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DAOApplicationResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.deleteDAOApplicationWithHttpInfo(daoId, applicationId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Delete a DAO application
+     * @param daoId
+     * @param applicationId
+     */
+    public deleteDAOApplication(daoId: string, applicationId: string, _options?: PromiseConfigurationOptions): Promise<DAOApplicationResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.deleteDAOApplication(daoId, applicationId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
      * Delete a role from a DAO
      * @param daoId
      * @param roleId
@@ -1441,6 +1536,92 @@ export class PromiseDaosApi {
 	    }
 	}
         const result = this.api.getChannelMessages(daoId, podId, channelId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get details of a specific application
+     * @param daoId
+     * @param applicationId
+     */
+    public getDAOApplicationWithHttpInfo(daoId: string, applicationId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DAOApplicationResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getDAOApplicationWithHttpInfo(daoId, applicationId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get details of a specific application
+     * @param daoId
+     * @param applicationId
+     */
+    public getDAOApplication(daoId: string, applicationId: string, _options?: PromiseConfigurationOptions): Promise<DAOApplicationResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getDAOApplication(daoId, applicationId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get all pending applications for a DAO
+     * @param daoId
+     */
+    public getDAOApplicationsWithHttpInfo(daoId: string, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DAOApplicationList>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getDAOApplicationsWithHttpInfo(daoId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get all pending applications for a DAO
+     * @param daoId
+     */
+    public getDAOApplications(daoId: string, _options?: PromiseConfigurationOptions): Promise<DAOApplicationList> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getDAOApplications(daoId, observableOptions);
         return result.toPromise();
     }
 
@@ -2573,6 +2754,52 @@ export class PromiseDaosApi {
 	    }
 	}
         const result = this.api.removeRoleFromUser(daoId, userId, roleId, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Respond to a DAO application (accept/reject)
+     * @param daoId
+     * @param applicationId
+     * @param dAOApplicationAction
+     */
+    public respondToDAOApplicationWithHttpInfo(daoId: string, applicationId: string, dAOApplicationAction: DAOApplicationAction, _options?: PromiseConfigurationOptions): Promise<HttpInfo<DAOApplicationResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.respondToDAOApplicationWithHttpInfo(daoId, applicationId, dAOApplicationAction, observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Respond to a DAO application (accept/reject)
+     * @param daoId
+     * @param applicationId
+     * @param dAOApplicationAction
+     */
+    public respondToDAOApplication(daoId: string, applicationId: string, dAOApplicationAction: DAOApplicationAction, _options?: PromiseConfigurationOptions): Promise<DAOApplicationResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.respondToDAOApplication(daoId, applicationId, dAOApplicationAction, observableOptions);
         return result.toPromise();
     }
 
@@ -4420,6 +4647,46 @@ export class PromiseUsersApi {
 	    }
 	}
         const result = this.api.getAuthUserInfos(observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get all applications submitted by the authenticated user
+     */
+    public getUserApplicationsWithHttpInfo(_options?: PromiseConfigurationOptions): Promise<HttpInfo<UserApplicationResponse>> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getUserApplicationsWithHttpInfo(observableOptions);
+        return result.toPromise();
+    }
+
+    /**
+     * Get all applications submitted by the authenticated user
+     */
+    public getUserApplications(_options?: PromiseConfigurationOptions): Promise<UserApplicationResponse> {
+        let observableOptions: undefined | ConfigurationOptions
+        if (_options){
+	    observableOptions = {
+                baseServer: _options.baseServer,
+                httpApi: _options.httpApi,
+                middleware: _options.middleware?.map(
+                    m => new PromiseMiddlewareWrapper(m)
+		),
+		middlewareMergeStrategy: _options.middlewareMergeStrategy,
+                authMethods: _options.authMethods
+	    }
+	}
+        const result = this.api.getUserApplications(observableOptions);
         return result.toPromise();
     }
 

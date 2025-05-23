@@ -1,11 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Wifi, WifiOff, Loader2, PenLine, AlertCircle, UserCircle, ChevronDown, Mail } from 'lucide-react';
+import React from 'react';
+import { Wifi, WifiOff, Loader2, PenLine, AlertCircle, UserCircle, ChevronDown, Mail, FileText } from 'lucide-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { UserDisplayInfo } from '../../hooks/useApiAndWallet';
 import { useNavigate } from 'react-router-dom';
 import { ui } from '../../styles/theme';
 import ProfileModal from '../ProfileModal';
 import InvitationsModal from '../InvitationsModal';
+import ApplicationsModal from '../ApplicationsModal';
 
 interface ApiAuthStatusProps {
   apiStatus: 'online' | 'offline' | 'checking';
@@ -15,7 +16,7 @@ interface ApiAuthStatusProps {
 const ApiAuthStatus: React.FC<ApiAuthStatusProps> = ({
   apiStatus, 
   userDisplayInfo,
-}) => {
+}: ApiAuthStatusProps) => {
   const { 
     isAuthenticated, 
     isLoading, 
@@ -27,6 +28,7 @@ const ApiAuthStatus: React.FC<ApiAuthStatusProps> = ({
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = React.useState(false);
   const [isInvitationsModalOpen, setIsInvitationsModalOpen] = React.useState(false);
+  const [isApplicationsModalOpen, setIsApplicationsModalOpen] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -42,8 +44,14 @@ const ApiAuthStatus: React.FC<ApiAuthStatusProps> = ({
     setMenuOpen(false);
   };
 
+  // Handle opening the applications modal
+  const handleApplicationsClick = () => {
+    setIsApplicationsModalOpen(true);
+    setMenuOpen(false);
+  };
+
   // Close menu when clicking outside
-  useEffect(() => {
+  React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setMenuOpen(false);
@@ -142,6 +150,17 @@ const ApiAuthStatus: React.FC<ApiAuthStatusProps> = ({
               </div>
             </button>
 
+            {/* Applications section */}
+            <button 
+              onClick={handleApplicationsClick}
+              className="w-full flex items-center justify-between gap-2 px-4 py-2.5 hover:bg-[#222]/60 transition-colors border-t border-gray-800/60"
+            >
+              <div className="flex items-center gap-2">
+                <FileText size={20} className="text-green-400" />
+                <span className="text-white">Applications</span>
+              </div>
+            </button>
+
             {/* API Status section */}
             <div className="px-4 py-2.5 border-t border-gray-800/60">
               <div className="flex items-center justify-between">
@@ -180,6 +199,9 @@ const ApiAuthStatus: React.FC<ApiAuthStatusProps> = ({
 
       {/* Invitations Modal */}
       <InvitationsModal isOpen={isInvitationsModalOpen} onClose={() => setIsInvitationsModalOpen(false)} />
+
+      {/* Applications Modal */}
+      <ApplicationsModal isOpen={isApplicationsModalOpen} onClose={() => setIsApplicationsModalOpen(false)} />
     </>
   );
 };

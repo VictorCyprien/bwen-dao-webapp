@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, X, Check, AlertCircle, Clock, UserPlus, UserMinus, ChevronDown, Users, Calendar } from 'lucide-react';
+import { Search, X, Check, AlertCircle, Clock, UserPlus, UserMinus, ChevronDown, Users, Calendar, FileText } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import Card from './common/Card';
 import Button from './common/Button';
@@ -8,7 +8,7 @@ import { daosService } from '../services/DaosService';
 import { userService } from '../services/UserService';
 import { rolePermissionService } from '../services/RolePermissionService';
 import { useAuth } from '../context/AuthContext';
-import type { User, DAOInvitationResponse, Role } from '../core/modules/dao-api';
+import type { User, DAOInvitationResponse, Role, DAOApplicationResponse } from '../core/modules/dao-api';
 
 // Toast notification component
 const Toast = ({ message, type, onClose }: { message: string; type: 'success' | 'error'; onClose: () => void }) => {
@@ -124,6 +124,113 @@ const InvitationModal = ({
   );
 };
 
+// Application modal component
+const ApplicationModal = ({
+  application,
+  isOpen,
+  onClose,
+  onRespond,
+  error
+}: {
+  application: DAOApplicationResponse | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onRespond: (action: 'accept' | 'reject', responseMessage?: string) => void;
+  error?: string | null;
+}) => {
+  const [responseMessage, setResponseMessage] = React.useState<string>('');
+
+  if (!isOpen || !application) return null;
+
+  // Format date
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Unknown date';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Safe way to display wallet address
+  const displayWalletAddress = (address?: string) => {
+    if (!address) return 'No wallet address';
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  };
+
+  const user = application.user as User;
+  const message = application.message || "No message provided.";
+  const createdAt = application.createdAt;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-[#1A1A1A] rounded-xl p-6 max-w-md w-full shadow-2xl border border-gray-700">
+        <h2 className={typography.h3}>Application Details</h2>
+        <div className="mt-4 mb-6">
+          <div className="flex items-center mb-4">
+            <img 
+              src={user?.profilePicture || `https://avatars.dicebear.com/api/identicon/${user?.userId}.svg`} 
+              alt={user?.username} 
+              className="w-12 h-12 rounded-full mr-3"
+            />
+            <div>
+              <p className={typography.body + " font-bold"}>{user?.username}</p>
+              <p className={typography.small + " text-gray-400"}>
+                {displayWalletAddress(user?.walletAddress)}
+              </p>
+            </div>
+          </div>
+          
+          <div className="mb-4 p-3 bg-gray-800/50 rounded-md">
+            <p className={typography.small + " text-gray-400 mb-1"}>Application Message:</p>
+            <p className={typography.body}>{message}</p>
+          </div>
+          
+          <div className="flex items-center mb-4 text-sm text-gray-400">
+            <Clock size={14} className="mr-1" />
+            <span>Applied on {formatDate(createdAt)}</span>
+          </div>
+          
+          <div className="mb-4">
+            <label className={typography.body + " block mb-2"}>
+              Response Message <span className="text-gray-400 text-sm">(Optional)</span>
+            </label>
+            <textarea
+              value={responseMessage}
+              onChange={(e) => setResponseMessage(e.target.value)}
+              className={ui.input + " w-full min-h-[80px]"}
+              placeholder="Add a message to explain your decision..."
+            />
+          </div>
+
+          {/* Error message display */}
+          {error && (
+            <div className="bg-red-900/30 border border-red-500 rounded-md p-3 mb-4 text-red-300 flex items-start">
+              <AlertCircle size={16} className="mr-2 mt-0.5 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+        </div>
+        
+        <div className="flex justify-end space-x-3">
+          <Button variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={() => onRespond('reject', responseMessage)}>
+            Reject
+          </Button>
+          <Button onClick={() => onRespond('accept', responseMessage)}>
+            Accept
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const UserManagement = () => {
   const { daoId } = useParams<{ daoId: string }>();
   const { userInfo } = useAuth();
@@ -141,13 +248,32 @@ const UserManagement = () => {
   const [permissions, setPermissions] = React.useState<{
     canInvite: boolean;
     canRemove: boolean;
-  }>({ canInvite: false, canRemove: false });
+    canManageApplications: boolean;
+  }>({ canInvite: false, canRemove: false, canManageApplications: false });
   const [hasAccess, setHasAccess] = React.useState<boolean>(false);
+  
+  // New state variables for applications
+  const [applications, setApplications] = React.useState<DAOApplicationResponse[]>([]);
+  const [applicationLoading, setApplicationLoading] = React.useState<boolean>(false);
+  const [selectedApplication, setSelectedApplication] = React.useState<DAOApplicationResponse | null>(null);
+  const [isApplicationModalOpen, setIsApplicationModalOpen] = React.useState<boolean>(false);
+  const [applicationModalError, setApplicationModalError] = React.useState<string | null>(null);
 
   // Safe way to display wallet address
   const displayWalletAddress = (address?: string) => {
     if (!address) return 'No wallet address';
     return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  };
+
+  // Format date
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'Unknown date';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   // Check if user has access to the page (owner, admin, or has required permissions)
@@ -169,7 +295,8 @@ const UserManagement = () => {
           setHasAccess(cachedAccess.hasAccess);
           setPermissions({
             canInvite: cachedAccess.canInvite, 
-            canRemove: cachedAccess.canRemove
+            canRemove: cachedAccess.canRemove,
+            canManageApplications: cachedAccess.canInvite // If they can invite, they can manage applications
           });
           
           // Only if user has access, fetch DAO members
@@ -177,6 +304,11 @@ const UserManagement = () => {
             const daoData = await daosService.getDaoById(daoId);
             if (daoData && daoData.members) {
               setDaoMembers(daoData.members);
+            }
+            
+            // Fetch applications if user can manage them
+            if (cachedAccess.canInvite) {
+              fetchApplications();
             }
           }
           
@@ -190,13 +322,16 @@ const UserManagement = () => {
         // If user is owner or admin, they have access
         if (isOwnerOrAdmin) {
           setHasAccess(true);
-          setPermissions({ canInvite: true, canRemove: true });
+          setPermissions({ canInvite: true, canRemove: true, canManageApplications: true });
           
           // Fetch DAO members only if user has access
           const dao = await daosService.getDaoById(daoId);
           if (dao && dao.members) {
             setDaoMembers(dao.members);
           }
+          
+          // Fetch applications
+          fetchApplications();
           
           // Cache the access data
           rolePermissionService.cacheUserAccess(daoId, userInfo.userId, true, true, true);
@@ -244,7 +379,8 @@ const UserManagement = () => {
         setHasAccess(userHasAccess);
         setPermissions({
           canInvite: hasInvitePermission,
-          canRemove: hasRemovePermission
+          canRemove: hasRemovePermission,
+          canManageApplications: hasInvitePermission // If they can invite, they can manage applications
         });
         
         // Cache the access data
@@ -255,6 +391,11 @@ const UserManagement = () => {
           const daoData = await daosService.getDaoById(daoId);
           if (daoData && daoData.members) {
             setDaoMembers(daoData.members);
+          }
+          
+          // Fetch applications if user can manage them
+          if (hasInvitePermission) {
+            fetchApplications();
           }
         }
         
@@ -268,6 +409,103 @@ const UserManagement = () => {
     
     checkAccess();
   }, [daoId, userInfo]);
+
+  // Fetch DAO applications
+  const fetchApplications = async () => {
+    if (!daoId) return;
+    
+    try {
+      setApplicationLoading(true);
+      const applicationsResponse = await daosService.getDAOApplications(daoId);
+      
+      if (applicationsResponse && applicationsResponse.applications) {
+        // Filter to only show pending applications
+        const pendingApplications = applicationsResponse.applications.filter(
+          app => app.status === 'pending'
+        );
+        setApplications(pendingApplications);
+      } else {
+        setApplications([]);
+      }
+    } catch (error) {
+      console.error('Error fetching DAO applications:', error);
+      setToast({
+        message: 'Error loading applications',
+        type: 'error'
+      });
+    } finally {
+      setApplicationLoading(false);
+    }
+  };
+
+  // Handle selecting an application to view details
+  const handleViewApplication = (application: DAOApplicationResponse) => {
+    setSelectedApplication(application);
+    setApplicationModalError(null);
+    setIsApplicationModalOpen(true);
+  };
+
+  // Handle responding to an application (accept/reject)
+  const handleRespondToApplication = async (action: 'accept' | 'reject', responseMessage?: string) => {
+    if (!selectedApplication || !daoId) return;
+    
+    try {
+      setLoading(true);
+      setApplicationModalError(null);
+      
+      const applicationId = selectedApplication.applicationId;
+      if (!applicationId) {
+        throw new Error('Application ID is missing');
+      }
+      
+      const response = await daosService.respondToDAOApplication(
+        daoId,
+        applicationId,
+        action,
+        responseMessage
+      );
+      
+      if (response) {
+        setToast({
+          message: `Application ${action === 'accept' ? 'accepted' : 'rejected'} successfully`,
+          type: 'success'
+        });
+        setIsApplicationModalOpen(false);
+        setSelectedApplication(null);
+        
+        // Refresh applications list
+        fetchApplications();
+        
+        // If accepted, also refresh members list
+        if (action === 'accept') {
+          const daoData = await daosService.getDaoById(daoId);
+          if (daoData && daoData.members) {
+            setDaoMembers(daoData.members);
+          }
+        }
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing application:`, error);
+      
+      // Set error message for the modal
+      let errorMessage = `Error ${action}ing application`;
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        // Try to extract API error message if available
+        const anyError = error as any;
+        if (anyError.body?.message) {
+          errorMessage = anyError.body.message;
+        } else if (anyError.message) {
+          errorMessage = anyError.message;
+        }
+      }
+      
+      setApplicationModalError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter out the current user from the members list for display
   const displayMembers = React.useMemo(() => {
@@ -445,6 +683,15 @@ const UserManagement = () => {
         error={modalError}
       />
       
+      {/* Application modal */}
+      <ApplicationModal
+        application={selectedApplication}
+        isOpen={isApplicationModalOpen}
+        onClose={() => setIsApplicationModalOpen(false)}
+        onRespond={handleRespondToApplication}
+        error={applicationModalError}
+      />
+      
       
       <div className={containers.flexBetween + " mb-6"}>
         <h1 className={typography.h1}>User Management</h1>
@@ -491,6 +738,80 @@ const UserManagement = () => {
           </div>
         </div>
       </div>
+      
+      {/* Applications section */}
+      {permissions.canManageApplications && (
+        <Card className="mb-8">
+          <div className="flex items-center mb-4">
+            <FileText size={20} className="mr-2 text-blue-500" />
+            <h2 className={typography.h2}>Membership Applications</h2>
+          </div>
+          
+          <p className={typography.body + " mb-4"}>
+            Review and respond to users who have applied to join this DAO.
+          </p>
+          
+          {applicationLoading ? (
+            <div className="text-center py-8">
+              <div className="w-10 h-10 border-t-2 border-b-2 border-indigo-500 rounded-full animate-spin mx-auto mb-2"></div>
+              <span className="text-gray-400">Loading applications...</span>
+            </div>
+          ) : applications.length > 0 ? (
+            <div className="border border-gray-700 rounded-lg overflow-hidden mb-4">
+              <div className="px-4 py-2 bg-[#1A1A1A] border-b border-gray-700 flex">
+                <div className="flex-1 font-medium">Applicant</div>
+                <div className="w-48 font-medium">Date Applied</div>
+                <div className="w-20 font-medium">Status</div>
+                <div className="w-24"></div>
+              </div>
+              <div className="max-h-80 overflow-y-auto">
+                {applications.map((application: DAOApplicationResponse) => {
+                  const user = application.user as User;
+                  return (
+                    <div 
+                      key={application.applicationId} 
+                      className="px-4 py-3 border-b border-gray-700 last:border-0 flex items-center hover:bg-gray-800"
+                    >
+                      <div className="flex-1 flex items-center">
+                        <img 
+                          src={user?.profilePicture || `https://avatars.dicebear.com/api/identicon/${user?.userId}.svg`} 
+                          alt={user?.username} 
+                          className="w-8 h-8 rounded-full mr-2"
+                        />
+                        <div>
+                          <div className="font-medium">{user?.username}</div>
+                          <div className="text-xs text-gray-400">{displayWalletAddress(user?.walletAddress)}</div>
+                        </div>
+                      </div>
+                      <div className="w-48 text-gray-300">
+                        {formatDate(application.createdAt)}
+                      </div>
+                      <div className="w-20">
+                        <span className="px-2 py-1 text-xs rounded-full bg-blue-900/30 text-blue-400 border border-blue-500/30">
+                          Pending
+                        </span>
+                      </div>
+                      <div className="w-24 text-right">
+                        <Button 
+                          variant="secondary" 
+                          size="small"
+                          onClick={() => handleViewApplication(application)}
+                        >
+                          Review
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-400">
+              No pending applications
+            </div>
+          )}
+        </Card>
+      )}
       
       {/* Invitation section */}
       <Card className="mb-8">
