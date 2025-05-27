@@ -206,7 +206,7 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
       
       try {
         // Create the Solana transaction 
-        const { transaction } = await createFeaturedTransaction(
+        const { transaction, featuredAccount } = await createFeaturedTransaction(
           connection,
           { publicKey: wallet.publicKey },
           daoId // Pass daoId directly, the transaction function will handle getting the pubkey
@@ -220,10 +220,12 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
         );
         console.log(`Featured service transaction sent: ${signature}`);
         
-        // After successful transaction, call the API with the daoId (not public key)
+        // After successful transaction, call the API
         const response = await daosService.enableDAOFeatured(daoId, {
           featured: true,
-          days: formState.days // This is optional and might need to be added to the API
+          days: formState.days, // This is optional and might need to be added to the API
+          pubkey: featuredAccount.publicKey.toString(),
+          transaction: signature
         });
         
         if (response?.isFeatured) {
@@ -415,17 +417,10 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
                     <span className="font-medium">Time remaining:</span>{' '}
                     <span className="text-amber-400">{getTimeRemaining()}</span>
                   </p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    You can renew the featured service once the current period expires.
+                  </p>
                 </div>
-              </div>
-              
-              <div className="flex-shrink-0">
-                <Button
-                  variant="primary"
-                  className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500"
-                  onClick={() => setIsModalOpen(true)}
-                >
-                  Extend Service
-                </Button>
               </div>
             </div>
           ) : (
