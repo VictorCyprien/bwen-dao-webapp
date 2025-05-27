@@ -13,18 +13,25 @@
 import { HttpFile } from '../http/http';
 
 /**
-* Module to add to or remove from a DAO
+* Detailed information about a module including payment status
 */
-export class DAOModule {
-    'module': string;
+export class DAOModuleDetail {
     /**
-    * Blockchain account public key for payment
+    * Module name
     */
-    'pubkey'?: string;
+    'name': string;
     /**
-    * Transaction hash for payment verification
+    * Whether the module is activated for this DAO
     */
-    'transaction'?: string;
+    'isActivated': boolean;
+    /**
+    * Whether the module has been paid for
+    */
+    'isPaid': boolean;
+    /**
+    * Payment information if available
+    */
+    'paymentInfo'?: { [key: string]: any; };
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -32,26 +39,32 @@ export class DAOModule {
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "module",
-            "baseName": "module",
+            "name": "name",
+            "baseName": "name",
             "type": "string",
             "format": ""
         },
         {
-            "name": "pubkey",
-            "baseName": "pubkey",
-            "type": "string",
+            "name": "isActivated",
+            "baseName": "is_activated",
+            "type": "boolean",
             "format": ""
         },
         {
-            "name": "transaction",
-            "baseName": "transaction",
-            "type": "string",
+            "name": "isPaid",
+            "baseName": "is_paid",
+            "type": "boolean",
+            "format": ""
+        },
+        {
+            "name": "paymentInfo",
+            "baseName": "payment_info",
+            "type": "{ [key: string]: any; }",
             "format": ""
         }    ];
 
     static getAttributeTypeMap() {
-        return DAOModule.attributeTypeMap;
+        return DAOModuleDetail.attributeTypeMap;
     }
 
     public constructor() {

@@ -22,6 +22,7 @@ import { DAOMembership } from '../models/DAOMembership';
 import { DAOMembershipResponse } from '../models/DAOMembershipResponse';
 import { DAOModule } from '../models/DAOModule';
 import { DAOModuleAccessResponse } from '../models/DAOModuleAccessResponse';
+import { DAOModuleDetail } from '../models/DAOModuleDetail';
 import { DAOModuleResponse } from '../models/DAOModuleResponse';
 import { DAOModulesList } from '../models/DAOModulesList';
 import { DAOSchemaResponse } from '../models/DAOSchemaResponse';
@@ -1450,7 +1451,7 @@ export class ObservableDaosApi {
     }
 
     /**
-     * Get all modules enabled for a DAO
+     * Get all modules available for a DAO and check if they are already paid
      * @param daoId
      */
     public getDAOModulesWithHttpInfo(daoId: string, _options?: ConfigurationOptions): Observable<HttpInfo<DAOModulesList>> {
@@ -1474,7 +1475,7 @@ export class ObservableDaosApi {
     }
 
     /**
-     * Get all modules enabled for a DAO
+     * Get all modules available for a DAO and check if they are already paid
      * @param daoId
      */
     public getDAOModules(daoId: string, _options?: ConfigurationOptions): Observable<DAOModulesList> {

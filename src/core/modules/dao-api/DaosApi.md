@@ -36,7 +36,7 @@ Method | HTTP request | Description
 [**getDAOGovernance**](DaosApi.md#getDAOGovernance) | **GET** /daos/{dao_id}/governance | Get governance model for a DAO
 [**getDAOInvitation**](DaosApi.md#getDAOInvitation) | **GET** /daos/{dao_id}/invitations/{invitation_id} | Get details of a specific invitation
 [**getDAOInvitations**](DaosApi.md#getDAOInvitations) | **GET** /daos/{dao_id}/invitations | Get all invitations for a DAO
-[**getDAOModules**](DaosApi.md#getDAOModules) | **GET** /daos/{dao_id}/modules | Get all modules enabled for a DAO
+[**getDAOModules**](DaosApi.md#getDAOModules) | **GET** /daos/{dao_id}/modules | Get all modules available for a DAO and check if they are already paid
 [**getDAOPermissions**](DaosApi.md#getDAOPermissions) | **GET** /daos/{dao_id}/permissions | Get all permissions available for a DAO
 [**getDAORole**](DaosApi.md#getDAORole) | **GET** /daos/{dao_id}/roles/{role_id} | Get a specific role for a DAO
 [**getDAORoles**](DaosApi.md#getDAORoles) | **GET** /daos/{dao_id}/roles | Get all roles for a DAO
@@ -207,6 +207,8 @@ const request: DaosApiAddDAOModuleRequest = {
   
   dAOModule: {
     module: "module_example",
+    pubkey: "pubkey_example",
+    transaction: "transaction_example",
   },
 };
 
@@ -2887,6 +2889,8 @@ const request: DaosApiRemoveDAOModuleRequest = {
   
   dAOModule: {
     module: "module_example",
+    pubkey: "pubkey_example",
+    transaction: "transaction_example",
   },
 };
 

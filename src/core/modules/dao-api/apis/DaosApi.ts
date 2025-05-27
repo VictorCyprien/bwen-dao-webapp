@@ -1320,7 +1320,7 @@ export class DaosApiRequestFactory extends BaseAPIRequestFactory {
     }
 
     /**
-     * Get all modules enabled for a DAO
+     * Get all modules available for a DAO and check if they are already paid
      * @param daoId 
      */
     public async getDAOModules(daoId: string, _options?: Configuration): Promise<RequestContext> {

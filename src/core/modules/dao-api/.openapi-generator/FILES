@@ -49,6 +49,7 @@ models/DAOMembership.ts
 models/DAOMembershipResponse.ts
 models/DAOModule.ts
 models/DAOModuleAccessResponse.ts
+models/DAOModuleDetail.ts
 models/DAOModuleResponse.ts
 models/DAOModulesList.ts
 models/DAOSchemaResponse.ts
