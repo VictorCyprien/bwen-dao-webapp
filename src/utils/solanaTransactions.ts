@@ -459,14 +459,14 @@ export async function createModuleTransaction(
   connection: Connection,
   wallet: { publicKey: PublicKey },
   daoId: string,
-  moduleType: string, // "POD" or "POL"
+  moduleType: string, // "PODS" or "Proof Of Love"
   solPriceUsd?: number // Optional - will fetch current price if not provided
 ): Promise<{ transaction: Transaction, moduleAccount: Keypair }> {
   if (!wallet.publicKey) throw new Error("Wallet not connected");
   
   // Validate module type
-  if (moduleType !== "POD" && moduleType !== "PROOF_OF_LOVE") {
-    throw new Error('Invalid module type. Must be either "POD" or "Proof Of Love".');
+  if (moduleType !== "PODS" && moduleType !== "PROOF_OF_LOVE") {
+    throw new Error('Invalid module type. Must be either "PODS" or "Proof Of Love".');
   }
   
   // Get current SOL price if not provided
