@@ -3,7 +3,8 @@ import { useParams } from 'react-router-dom';
 import { daosService } from '../services/DaosService';
 import { rolePermissionService } from '../services/RolePermissionService';
 import { useAuth } from '../context/AuthContext';
-import { DAOModulesList, DAOModule } from '../core/modules/dao-api';
+import { DAOModule, DAOModulesList } from '../core/modules/dao-api';
+import { DAOModuleDetail } from '../core/modules/dao-api/models/DAOModuleDetail';
 import { ModuleTypes } from '../types/modules';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -14,6 +15,7 @@ interface ModuleCardProps {
   name: string;
   description: string;
   isEnabled: boolean;
+  isPaid: boolean;
   onToggle: () => void;
 }
 
@@ -21,6 +23,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   name, 
   description, 
   isEnabled, 
+  isPaid, 
   onToggle 
 }: ModuleCardProps) => {
   return (
@@ -50,6 +53,9 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
         </div>
       </div>
       <p className="text-text-secondary mb-4 flex-grow">{description}</p>
+      {isPaid && !isEnabled && (
+        <p className="text-xs text-primary mb-2">Already purchased - no transaction needed to activate</p>
+      )}
       <button 
         className="text-sm font-medium text-primary hover:text-primary-light transition-colors"
       >
@@ -64,7 +70,7 @@ const Modules: React.FC = () => {
   const { userInfo } = useAuth();
   const { connection } = useConnection();
   const wallet = useWallet();
-  const [modules, setModules] = React.useState<string[]>([]);
+  const [modules, setModules] = React.useState<DAOModuleDetail[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | null>(null);
   const [hasAccess, setHasAccess] = React.useState<boolean>(false);
@@ -109,7 +115,7 @@ const Modules: React.FC = () => {
               
               // Use the actual module fetching API
               const modulesList = await daosService.getDAOModules(daoId);
-              if (modulesList) {
+              if (modulesList && modulesList.modules) {
                 setModules(modulesList.modules);
               } else {
                 // Fallback to empty array if no modules returned
@@ -144,7 +150,7 @@ const Modules: React.FC = () => {
             
             // Use the actual module fetching API
             const modulesList = await daosService.getDAOModules(daoId);
-            if (modulesList) {
+            if (modulesList && modulesList.modules) {
               setModules(modulesList.modules);
             } else {
               // Fallback to empty array if no modules returned
@@ -186,7 +192,7 @@ const Modules: React.FC = () => {
           
           // Use the actual module fetching API
           const modulesList = await daosService.getDAOModules(daoId);
-          if (modulesList) {
+          if (modulesList && modulesList.modules) {
             setModules(modulesList.modules);
           } else {
             // Fallback to empty array if no modules returned
@@ -213,6 +219,10 @@ const Modules: React.FC = () => {
   const toggleModule = async (moduleName: string) => {
     if (!daoId || !hasAccess || !wallet || !connection || transactionPending) return;
     
+    // Find the module in our state
+    const moduleData = modules.find((m: DAOModuleDetail) => m.name === moduleName);
+    if (!moduleData) return;
+    
     // Check if wallet is connected
     if (!wallet.publicKey) {
       setError("Wallet not connected. Please connect your wallet first.");
@@ -220,37 +230,90 @@ const Modules: React.FC = () => {
     }
 
     try {
-      const isCurrentlyEnabled = modules.includes(moduleName);
+      const isCurrentlyEnabled = moduleData.isActivated;
       
       if (!isCurrentlyEnabled) {
-        // Only create transaction when adding a module (not removing)
-        setTransactionPending(true);
-        
-        try {
-          // Create the Solana transaction
-          const { transaction } = await createModuleTransaction(
-            connection,
-            { publicKey: wallet.publicKey },
-            daoId, // Pass daoId directly, the transaction function will handle getting the pubkey
-            moduleName
-          );
+        // Check if we need to create a transaction (only if not already paid)
+        if (!moduleData.isPaid) {
+          setTransactionPending(true);
           
-          // Send the transaction
-          const signature = await signAndSendTransaction(
-            wallet,
-            connection,
-            transaction
-          );
-          console.log(`Module activation transaction sent: ${signature}`);
-          
-          // After successful transaction, call the API with the daoId (not public key)
-          const moduleData: DAOModule = {
+          try {
+            // Create the Solana transaction
+            const { transaction, moduleAccount } = await createModuleTransaction(
+              connection,
+              { publicKey: wallet.publicKey },
+              daoId, // Pass daoId directly, the transaction function will handle getting the pubkey
+              moduleName
+            );
+            
+            // Send the transaction
+            const signature = await signAndSendTransaction(
+              wallet,
+              connection,
+              transaction
+            );
+            console.log(`Module activation transaction sent: ${signature}`);
+            
+            // After successful transaction, call the API
+            const modulePayload: DAOModule = {
+              module: moduleName,
+              pubkey: moduleAccount.publicKey.toString(),
+              transaction: signature
+            };
+            
+            const result = await daosService.addDAOModule(daoId, modulePayload);
+            if (result) {
+              // Update the modules state
+              setModules((prevModules: DAOModuleDetail[]) => 
+                prevModules.map((m: DAOModuleDetail) => 
+                  m.name === moduleName 
+                    ? {
+                        ...m,
+                        isActivated: true,
+                        isPaid: true,
+                        paymentInfo: {
+                          pubkey: moduleAccount.publicKey.toString(),
+                          transaction: signature,
+                          created_at: new Date().toISOString()
+                        }
+                      } 
+                    : m
+                )
+              );
+              
+              // Dispatch module-updated event
+              const event = new CustomEvent('module-updated', { 
+                detail: { 
+                  daoId,
+                  module: moduleName,
+                  action: 'added'
+                } 
+              });
+              window.dispatchEvent(event);
+            }
+          } catch (txError) {
+            console.error(`Transaction error for module ${moduleName}:`, txError);
+            setError(`Transaction failed: ${txError instanceof Error ? txError.message : 'Unknown error'}`);
+            return; // Don't proceed with the API call if transaction failed
+          } finally {
+            setTransactionPending(false);
+          }
+        } else {
+          // Module is already paid, just enable it without transaction
+          const modulePayload: DAOModule = {
             module: moduleName
           };
           
-          const result = await daosService.addDAOModule(daoId, moduleData);
+          const result = await daosService.addDAOModule(daoId, modulePayload);
           if (result) {
-            setModules([...modules, moduleName]);
+            // Update the modules state
+            setModules((prevModules: DAOModuleDetail[]) => 
+              prevModules.map((m: DAOModuleDetail) => 
+                m.name === moduleName 
+                  ? { ...m, isActivated: true }
+                  : m
+              )
+            );
             
             // Dispatch module-updated event
             const event = new CustomEvent('module-updated', { 
@@ -262,22 +325,23 @@ const Modules: React.FC = () => {
             });
             window.dispatchEvent(event);
           }
-        } catch (txError) {
-          console.error(`Transaction error for module ${moduleName}:`, txError);
-          setError(`Transaction failed: ${txError instanceof Error ? txError.message : 'Unknown error'}`);
-          return; // Don't proceed with the API call if transaction failed
-        } finally {
-          setTransactionPending(false);
         }
       } else {
         // For removing a module, just call the API directly (no transaction needed)
-        const moduleData: DAOModule = {
+        const modulePayload: DAOModule = {
           module: moduleName
         };
         
-        const result = await daosService.removeDAOModule(daoId, moduleData);
+        const result = await daosService.removeDAOModule(daoId, modulePayload);
         if (result) {
-          setModules(modules.filter((m: string) => m !== moduleName));
+          // Update the modules state
+          setModules((prevModules: DAOModuleDetail[]) => 
+            prevModules.map((m: DAOModuleDetail) => 
+              m.name === moduleName 
+                ? { ...m, isActivated: false }
+                : m
+            )
+          );
           
           // Dispatch module-updated event
           const event = new CustomEvent('module-updated', { 
@@ -356,13 +420,16 @@ const Modules: React.FC = () => {
     );
   }
 
+  // Count enabled modules
+  const enabledModulesCount = modules.filter((m: DAOModuleDetail) => m.isActivated).length;
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-text">DAO Modules</h1>
         <div className="flex items-center gap-4">
           <p className="text-text-secondary">
-            {modules.length} of {allModules.length} modules enabled
+            {enabledModulesCount} of {allModules.length} modules enabled
           </p>
           {!wallet.connected && (
             <WalletMultiButton className="bg-primary hover:bg-primary-dark text-white py-2 px-4 rounded-md" />
@@ -383,15 +450,26 @@ const Modules: React.FC = () => {
       )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {allModules.map(moduleKey => (
-          <ModuleCard 
-            key={moduleKey}
-            name={moduleDetails[moduleKey].name}
-            description={moduleDetails[moduleKey].description}
-            isEnabled={modules.includes(moduleKey)}
-            onToggle={() => handleToggleClick(moduleKey)}
-          />
-        ))}
+        {allModules.map(moduleKey => {
+          // Find module data or create default state
+          const moduleData = modules.find((m: DAOModuleDetail) => m.name === moduleKey) || {
+            name: moduleKey,
+            isActivated: false,
+            isPaid: false,
+            paymentInfo: null
+          };
+          
+          return (
+            <ModuleCard 
+              key={moduleKey}
+              name={moduleDetails[moduleKey].name}
+              description={moduleDetails[moduleKey].description}
+              isEnabled={moduleData.isActivated}
+              isPaid={moduleData.isPaid}
+              onToggle={() => handleToggleClick(moduleKey)}
+            />
+          );
+        })}
       </div>
       
       {transactionPending && (
