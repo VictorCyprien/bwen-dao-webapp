@@ -17,6 +17,14 @@ import { HttpFile } from '../http/http';
 */
 export class DAOModulesList {
     'modules': Array<string>;
+    /**
+    * Blockchain account public key for payment
+    */
+    'pubkey'?: string;
+    /**
+    * Transaction hash for payment verification
+    */
+    'transaction'?: string;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -27,6 +35,18 @@ export class DAOModulesList {
             "name": "modules",
             "baseName": "modules",
             "type": "Array<string>",
+            "format": ""
+        },
+        {
+            "name": "pubkey",
+            "baseName": "pubkey",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "transaction",
+            "baseName": "transaction",
+            "type": "string",
             "format": ""
         }    ];
 

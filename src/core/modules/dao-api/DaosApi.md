@@ -242,7 +242,7 @@ No authorization required
 |-------------|-------------|------------------|
 **422** | Unprocessable Entity |  -  |
 **200** | Module added successfully |  -  |
-**400** | Bad Request - Invalid module |  -  |
+**400** | Bad Request - Invalid module or missing payment |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
 **404** | DAO not found |  -  |
 **0** | Default error response |  -  |
@@ -1287,6 +1287,8 @@ const request: DaosApiEnableDAOFeaturedRequest = {
   
   featuredToggle: {
     days: 7,
+    pubkey: "pubkey_example",
+    transaction: "transaction_example",
   },
 };
 
@@ -1322,7 +1324,7 @@ No authorization required
 |-------------|-------------|------------------|
 **422** | Unprocessable Entity |  -  |
 **201** | DAO featured option enabled successfully |  -  |
-**400** | Bad Request - Invalid data |  -  |
+**400** | Bad Request - Invalid data or missing payment |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
 **404** | DAO not found |  -  |
 **0** | Default error response |  -  |

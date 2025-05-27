@@ -21,6 +21,7 @@ export class FeaturedResponse {
     * DateTime when the DAO will be unfeatured, null if not featured
     */
     'featuredUntil'?: Date | null;
+    'paymentProcessed'?: boolean;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -38,6 +39,12 @@ export class FeaturedResponse {
             "baseName": "featured_until",
             "type": "Date",
             "format": "date-time"
+        },
+        {
+            "name": "paymentProcessed",
+            "baseName": "payment_processed",
+            "type": "boolean",
+            "format": ""
         }    ];
 
     static getAttributeTypeMap() {
