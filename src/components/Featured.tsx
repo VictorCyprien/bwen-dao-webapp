@@ -9,6 +9,9 @@ import Card from './common/Card';
 import Button from './common/Button';
 import { DAO, FeaturedResponse } from '../core/modules/dao-api';
 import { typography, containers, ui } from '../styles/theme';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { createFeaturedTransaction, signAndSendTransaction } from '../utils/solanaTransactions';
 
 // Interface for the component's props
 interface FeaturedProps {
@@ -24,6 +27,8 @@ interface ActivateFormState {
 const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => {
   const { daoId } = useParams<{ daoId: string }>();
   const { userInfo } = useAuth();
+  const { connection } = useConnection();
+  const wallet = useWallet();
   
   // State variables
   const [isLoading, setIsLoading] = useState(false);
@@ -36,6 +41,7 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
     days: 7
   });
   const [hasAccess, setHasAccess] = useState<boolean>(false);
+  const [transactionPending, setTransactionPending] = useState<boolean>(false);
   
   // Check if user has access to the page (owner, admin, or has required permissions)
   useEffect(() => {
@@ -185,36 +191,65 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
   
   // Handle activating the featured service
   const handleActivateFeatured = async () => {
-    if (!daoId) return;
+    if (!daoId || !wallet || !connection) return;
+    
+    // Check if wallet is connected
+    if (!wallet.publicKey) {
+      setError("Wallet not connected. Please connect your wallet first.");
+      return;
+    }
     
     try {
       setIsLoading(true);
+      setTransactionPending(true);
       setError(null);
       
-      // Call the API to enable featured
-      const response = await daosService.enableDAOFeatured(daoId, {
-        featured: true,
-        days: formState.days // This is optional and might need to be added to the API
-      });
-      
-      if (response?.isFeatured) {
-        // Set expiry date from the API response
-        if (response.featuredUntil) {
-          setExpiryDate(new Date(response.featuredUntil));
+      try {
+        // Create the Solana transaction 
+        const { transaction } = await createFeaturedTransaction(
+          connection,
+          { publicKey: wallet.publicKey },
+          daoId // Pass daoId directly, the transaction function will handle getting the pubkey
+        );
+        
+        // Send the transaction
+        const signature = await signAndSendTransaction(
+          wallet,
+          connection,
+          transaction
+        );
+        console.log(`Featured service transaction sent: ${signature}`);
+        
+        // After successful transaction, call the API with the daoId (not public key)
+        const response = await daosService.enableDAOFeatured(daoId, {
+          featured: true,
+          days: formState.days // This is optional and might need to be added to the API
+        });
+        
+        if (response?.isFeatured) {
+          // Set expiry date from the API response
+          if (response.featuredUntil) {
+            setExpiryDate(new Date(response.featuredUntil));
+          }
+          setFeaturedStatus(true);
+          
+          // Close the modal
+          setIsModalOpen(false);
+          
+          // Call the onUpdate callback if provided
+          if (onUpdate) onUpdate();
         }
-        setFeaturedStatus(true);
-        
-        // Close the modal
-        setIsModalOpen(false);
-        
-        // Call the onUpdate callback if provided
-        if (onUpdate) onUpdate();
+      } catch (txError) {
+        console.error("Transaction error for featured service:", txError);
+        setError(`Transaction failed: ${txError instanceof Error ? txError.message : 'Unknown error'}`);
+        return; // Don't proceed with the API call if transaction failed
       }
     } catch (err) {
       console.error("Error activating featured service:", err);
       setError("Failed to activate featured service. Please try again.");
     } finally {
       setIsLoading(false);
+      setTransactionPending(false);
     }
   };
   
@@ -263,12 +298,17 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleActivateFeatured}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Processing...' : 'Activate'}
-            </Button>
+            
+            {!wallet.connected ? (
+              <WalletMultiButton className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md" />
+            ) : (
+              <Button
+                onClick={handleActivateFeatured}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Processing...' : 'Activate'}
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -440,6 +480,19 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
       
       {/* Modal for activating featured service */}
       {renderActivateModal()}
+      
+      {/* Transaction pending overlay */}
+      {transactionPending && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-[#1A1A1A] rounded-xl p-6 max-w-md w-full shadow-2xl border border-gray-700">
+            <div className="text-center">
+              <div className="w-12 h-12 border-t-2 border-b-2 border-indigo-500 rounded-full animate-spin mx-auto mb-4"></div>
+              <h3 className="text-xl font-medium text-white mb-2">Processing Transaction</h3>
+              <p className="text-gray-400">Please confirm the transaction in your wallet and wait for it to be processed.</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

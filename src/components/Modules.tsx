@@ -5,6 +5,10 @@ import { rolePermissionService } from '../services/RolePermissionService';
 import { useAuth } from '../context/AuthContext';
 import { DAOModulesList, DAOModule } from '../core/modules/dao-api';
 import { ModuleTypes } from '../types/modules';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { PublicKey } from '@solana/web3.js';
+import { createModuleTransaction, signAndSendTransaction } from '../utils/solanaTransactions';
 
 interface ModuleCardProps {
   name: string;
@@ -58,11 +62,14 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
 const Modules: React.FC = () => {
   const { daoId } = useParams<{ daoId: string }>();
   const { userInfo } = useAuth();
+  const { connection } = useConnection();
+  const wallet = useWallet();
   const [modules, setModules] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | null>(null);
   const [hasAccess, setHasAccess] = React.useState<boolean>(false);
   const [pageLoading, setPageLoading] = React.useState<boolean>(true);
+  const [transactionPending, setTransactionPending] = React.useState<boolean>(false);
 
   // Define available modules with descriptions - only keeping PODS and PROOF_OF_LOVE
   const moduleDetails: Record<string, { name: string; description: string }> = {
@@ -204,17 +211,70 @@ const Modules: React.FC = () => {
   }, [daoId, userInfo]);
 
   const toggleModule = async (moduleName: string) => {
-    if (!daoId || !hasAccess) return;
+    if (!daoId || !hasAccess || !wallet || !connection || transactionPending) return;
+    
+    // Check if wallet is connected
+    if (!wallet.publicKey) {
+      setError("Wallet not connected. Please connect your wallet first.");
+      return;
+    }
 
     try {
       const isCurrentlyEnabled = modules.includes(moduleName);
       
-      const moduleData: DAOModule = {
-        module: moduleName
-      };
-      
-      if (isCurrentlyEnabled) {
-        // Remove the module
+      if (!isCurrentlyEnabled) {
+        // Only create transaction when adding a module (not removing)
+        setTransactionPending(true);
+        
+        try {
+          // Create the Solana transaction
+          const { transaction } = await createModuleTransaction(
+            connection,
+            { publicKey: wallet.publicKey },
+            daoId, // Pass daoId directly, the transaction function will handle getting the pubkey
+            moduleName
+          );
+          
+          // Send the transaction
+          const signature = await signAndSendTransaction(
+            wallet,
+            connection,
+            transaction
+          );
+          console.log(`Module activation transaction sent: ${signature}`);
+          
+          // After successful transaction, call the API with the daoId (not public key)
+          const moduleData: DAOModule = {
+            module: moduleName
+          };
+          
+          const result = await daosService.addDAOModule(daoId, moduleData);
+          if (result) {
+            setModules([...modules, moduleName]);
+            
+            // Dispatch module-updated event
+            const event = new CustomEvent('module-updated', { 
+              detail: { 
+                daoId,
+                module: moduleName,
+                action: 'added'
+              } 
+            });
+            window.dispatchEvent(event);
+          }
+        } catch (txError) {
+          console.error(`Transaction error for module ${moduleName}:`, txError);
+          setError(`Transaction failed: ${txError instanceof Error ? txError.message : 'Unknown error'}`);
+          return; // Don't proceed with the API call if transaction failed
+        } finally {
+          setTransactionPending(false);
+        }
+      } else {
+        // For removing a module, just call the API directly (no transaction needed)
+        const moduleData: DAOModule = {
+          module: moduleName
+        };
+        
         const result = await daosService.removeDAOModule(daoId, moduleData);
         if (result) {
           setModules(modules.filter((m: string) => m !== moduleName));
@@ -229,31 +289,24 @@ const Modules: React.FC = () => {
           });
           window.dispatchEvent(event);
         }
-      } else {
-        // Add the module
-        const result = await daosService.addDAOModule(daoId, moduleData);
-        if (result) {
-          setModules([...modules, moduleName]);
-          
-          // Dispatch module-updated event
-          const event = new CustomEvent('module-updated', { 
-            detail: { 
-              daoId,
-              module: moduleName,
-              action: 'added'
-            } 
-          });
-          window.dispatchEvent(event);
-        }
       }
     } catch (err) {
       console.error(`Error toggling module ${moduleName}:`, err);
-      // Show error toast or notification here
+      setError(`Failed to toggle module: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
   // Get all available modules
   const allModules = Object.keys(moduleDetails);
+
+  // Add a function to check if wallet is connected before showing toggle UI
+  const handleToggleClick = (moduleName: string) => {
+    if (!wallet.connected) {
+      setError("Please connect your wallet to activate modules");
+    } else {
+      toggleModule(moduleName);
+    }
+  };
 
   // If page is loading, show loading indicator
   if (pageLoading) {
@@ -307,10 +360,27 @@ const Modules: React.FC = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-text">DAO Modules</h1>
-        <p className="text-text-secondary">
-          {modules.length} of {allModules.length} modules enabled
-        </p>
+        <div className="flex items-center gap-4">
+          <p className="text-text-secondary">
+            {modules.length} of {allModules.length} modules enabled
+          </p>
+          {!wallet.connected && (
+            <WalletMultiButton className="bg-primary hover:bg-primary-dark text-white py-2 px-4 rounded-md" />
+          )}
+        </div>
       </div>
+      
+      {error && (
+        <div className="bg-red-500/10 text-red-500 p-4 rounded-lg mb-4">
+          <p>{error}</p>
+          <button 
+            className="text-primary hover:text-primary-light transition-colors mt-2"
+            onClick={() => setError(null)}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {allModules.map(moduleKey => (
@@ -319,10 +389,22 @@ const Modules: React.FC = () => {
             name={moduleDetails[moduleKey].name}
             description={moduleDetails[moduleKey].description}
             isEnabled={modules.includes(moduleKey)}
-            onToggle={() => toggleModule(moduleKey)}
+            onToggle={() => handleToggleClick(moduleKey)}
           />
         ))}
       </div>
+      
+      {transactionPending && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-[#1A1A1A] rounded-xl p-6 max-w-md w-full shadow-2xl border border-gray-700">
+            <div className="text-center">
+              <div className="w-12 h-12 rounded-full border-t-2 border-l-2 border-primary animate-spin mx-auto mb-4"></div>
+              <h3 className="text-xl font-medium text-white mb-2">Processing Transaction</h3>
+              <p className="text-gray-400">Please confirm the transaction in your wallet and wait for it to be processed.</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
