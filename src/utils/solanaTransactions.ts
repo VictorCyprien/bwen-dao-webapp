@@ -328,6 +328,204 @@ export async function createVoteTransaction(
   return { transaction, voteAccount };
 }
 
+// Serialize featured instruction data
+export function serializeFeaturedInstruction(
+  daoId: string,
+  solPriceUsd: number
+): Buffer {
+  // Instruction index (3 for Featured)
+  const instructionBuf = Buffer.alloc(1);
+  instructionBuf.writeUInt8(3, 0);
+  
+  // Serialize string
+  const daoIdBuf = serializeString(daoId);
+  
+  // Serialize u64 sol price (8 bytes, little-endian)
+  const solPriceBuf = Buffer.alloc(8);
+  
+  // Convert to u64 (BN)
+  const solPriceBN = new BN(solPriceUsd.toString());
+  solPriceBN.toArray('le', 8).forEach((byte: number, index: number) => {
+    solPriceBuf[index] = byte;
+  });
+  
+  // Concat all buffers
+  return Buffer.concat([
+    instructionBuf,
+    daoIdBuf,
+    solPriceBuf
+  ]);
+}
+
+// Serialize modules instruction data
+export function serializeModulesInstruction(
+  daoId: string,
+  moduleType: string,
+  solPriceUsd: number
+): Buffer {
+  // Instruction index (4 for Module)
+  const instructionBuf = Buffer.alloc(1);
+  instructionBuf.writeUInt8(4, 0);
+  
+  // Serialize strings
+  const daoIdBuf = serializeString(daoId);
+  const moduleTypeBuf = serializeString(moduleType);
+  
+  // Serialize u64 sol price (8 bytes, little-endian)
+  const solPriceBuf = Buffer.alloc(8);
+  
+  // Convert to u64 (BN)
+  const solPriceBN = new BN(solPriceUsd.toString());
+  solPriceBN.toArray('le', 8).forEach((byte: number, index: number) => {
+    solPriceBuf[index] = byte;
+  });
+  
+  // Concat all buffers
+  return Buffer.concat([
+    instructionBuf,
+    daoIdBuf,
+    moduleTypeBuf,
+    solPriceBuf
+  ]);
+}
+
+// Create a featured transaction
+export async function createFeaturedTransaction(
+  connection: Connection,
+  wallet: { publicKey: PublicKey },
+  daoId: string,
+  solPriceUsd?: number // Optional - will fetch current price if not provided
+): Promise<{ transaction: Transaction, featuredAccount: Keypair }> {
+  if (!wallet.publicKey) throw new Error("Wallet not connected");
+  
+  // Get current SOL price if not provided
+  if (!solPriceUsd) {
+    solPriceUsd = await getSolPrice();
+  }
+  
+  // Generate a new keypair for the featured entry
+  const featuredAccount = Keypair.generate();
+  
+  // Get the DAO's public key
+  try {
+    // You might need to import the daosService here
+    const daosService = new (await import('../services/DaosService')).DaosService();
+    const daoDetails = await daosService.getDaoById(daoId);
+    
+    if (!daoDetails || !daoDetails.pubkey) {
+      throw new Error("DAO public key not found");
+    }
+    
+    const daoPubkey = new PublicKey(daoDetails.pubkey);
+    
+    // Serialize instruction data
+    const data = serializeFeaturedInstruction(
+      daoId,
+      solPriceUsd
+    );
+    
+    // Create instruction
+    const instruction = new TransactionInstruction({
+      keys: [
+        { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+        { pubkey: featuredAccount.publicKey, isSigner: true, isWritable: true },
+        { pubkey: daoPubkey, isSigner: false, isWritable: false },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        { pubkey: FEE_ADDRESS, isSigner: false, isWritable: true },
+      ],
+      programId: PROGRAM_ID,
+      data,
+    });
+    
+    // Create transaction
+    const transaction = new Transaction().add(instruction);
+    
+    // Set recent blockhash
+    transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+    transaction.feePayer = wallet.publicKey;
+    
+    // Partially sign with the featured account
+    transaction.partialSign(featuredAccount);
+    
+    return { transaction, featuredAccount };
+  } catch (error) {
+    console.error("Error creating featured transaction:", error);
+    throw error;
+  }
+}
+
+// Create a module activation transaction
+export async function createModuleTransaction(
+  connection: Connection,
+  wallet: { publicKey: PublicKey },
+  daoId: string,
+  moduleType: string, // "POD" or "POL"
+  solPriceUsd?: number // Optional - will fetch current price if not provided
+): Promise<{ transaction: Transaction, moduleAccount: Keypair }> {
+  if (!wallet.publicKey) throw new Error("Wallet not connected");
+  
+  // Validate module type
+  if (moduleType !== "POD" && moduleType !== "PROOF_OF_LOVE") {
+    throw new Error('Invalid module type. Must be either "POD" or "Proof Of Love".');
+  }
+  
+  // Get current SOL price if not provided
+  if (!solPriceUsd) {
+    solPriceUsd = await getSolPrice();
+  }
+  
+  // Generate a new keypair for the module
+  const moduleAccount = Keypair.generate();
+  
+  // Get the DAO's public key
+  try {
+    // You might need to import the daosService here
+    const daosService = new (await import('../services/DaosService')).DaosService();
+    const daoDetails = await daosService.getDaoById(daoId);
+    
+    if (!daoDetails || !daoDetails.pubkey) {
+      throw new Error("DAO public key not found");
+    }
+    
+    const daoPubkey = new PublicKey(daoDetails.pubkey);
+    
+    // Serialize instruction data
+    const data = serializeModulesInstruction(
+      daoId,
+      moduleType,
+      solPriceUsd
+    );
+    
+    // Create instruction
+    const instruction = new TransactionInstruction({
+      keys: [
+        { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+        { pubkey: moduleAccount.publicKey, isSigner: true, isWritable: true },
+        { pubkey: daoPubkey, isSigner: false, isWritable: false },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        { pubkey: FEE_ADDRESS, isSigner: false, isWritable: true },
+      ],
+      programId: PROGRAM_ID,
+      data,
+    });
+    
+    // Create transaction
+    const transaction = new Transaction().add(instruction);
+    
+    // Set recent blockhash
+    transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+    transaction.feePayer = wallet.publicKey;
+    
+    // Partially sign with the module account
+    transaction.partialSign(moduleAccount);
+    
+    return { transaction, moduleAccount };
+  } catch (error) {
+    console.error("Error creating module transaction:", error);
+    throw error;
+  }
+}
+
 /**
  * Sends a transaction using the wallet adapter
  * @param wallet User's wallet from wallet adapter
