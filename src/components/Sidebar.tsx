@@ -22,6 +22,7 @@ import {
 import { ui } from '../styles/theme';
 import { useAuth } from '../context/AuthContext';
 import { DAO } from '../core/modules/dao-api';
+import { DAOModuleDetail } from '../core/modules/dao-api/models/DAOModuleDetail';
 import { daosService } from '../services/DaosService';
 import { useEffectOnce } from '../hooks/useEffectOnce';
 import useMediaQuery from '../hooks/useMediaQuery';
@@ -98,7 +99,24 @@ const Sidebar: React.FC<SidebarProps> = ({
     try {
       const modulesList = await daosService.getDAOModules(daoId);
       if (modulesList && modulesList.modules) {
-        setActiveModules(modulesList.modules);
+        // Extract module names from the module objects
+        // If modulesList.modules is already an array of strings, this will work too
+        // If it's an array of DAOModuleDetail objects, we filter for active modules and extract names
+        const moduleNames = Array.isArray(modulesList.modules) 
+          ? modulesList.modules
+              .filter(module => 
+                typeof module === 'string' 
+                  ? true 
+                  : module.isActivated
+              )
+              .map(module => 
+                typeof module === 'string' 
+                  ? module 
+                  : module.name
+              )
+          : [];
+        
+        setActiveModules(moduleNames);
       } else {
         setActiveModules([]);
       }
