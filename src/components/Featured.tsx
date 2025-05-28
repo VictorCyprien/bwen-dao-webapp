@@ -193,7 +193,7 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
   
   // Handle activating the featured service
   const handleActivateFeatured = async () => {
-    if (!dao?.daoId || !wallet.publicKey) {
+    if (!daoId || !wallet.publicKey) {
       setError('Wallet not connected or DAO not loaded');
       return;
     }
@@ -206,8 +206,7 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
       const { transaction, featuredAccount } = await createFeaturedTransaction(
         connection,
         { publicKey: wallet.publicKey },
-        dao.daoId,
-        formState.days
+        daoId
       );
 
       // Send the transaction
@@ -232,7 +231,8 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
       }, 2000);
 
       // Call the API to activate featured status
-      const result = await daosService.activateFeatured(dao.daoId, {
+      const result = await daosService.enableDAOFeatured(daoId, {
+        featured: true,
         days: formState.days,
         pubkey: featuredAccount.publicKey.toString(),
         transaction: signature
@@ -241,7 +241,9 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
       if (result) {
         setIsLoading(false);
         setFeaturedStatus(true);
-        setExpiryDate(new Date(result.featuredUntil));
+        if (result.featuredUntil) {
+          setExpiryDate(new Date(result.featuredUntil));
+        }
         setIsModalOpen(false);
         
         // Trigger onUpdate if provided
