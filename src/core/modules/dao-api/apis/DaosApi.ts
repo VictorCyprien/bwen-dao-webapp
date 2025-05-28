@@ -1320,7 +1320,7 @@ export class DaosApiRequestFactory extends BaseAPIRequestFactory {
     }
 
     /**
-     * Get all modules enabled for a DAO
+     * Get all modules available for a DAO and check if they are already paid
      * @param daoId 
      */
     public async getDAOModules(daoId: string, _options?: Configuration): Promise<RequestContext> {
@@ -2728,7 +2728,7 @@ export class DaosApiResponseProcessor {
                 ObjectSerializer.parse(await response.body.text(), contentType),
                 "PagingError", ""
             ) as PagingError;
-            throw new ApiException<PagingError>(response.httpStatusCode, "Bad Request - Invalid module", body, response.headers);
+            throw new ApiException<PagingError>(response.httpStatusCode, "Bad Request - Invalid module or missing payment", body, response.headers);
         }
         if (isCodeInRange("401", response.httpStatusCode)) {
             const body: PagingError = ObjectSerializer.deserialize(
@@ -3768,7 +3768,7 @@ export class DaosApiResponseProcessor {
                 ObjectSerializer.parse(await response.body.text(), contentType),
                 "PagingError", ""
             ) as PagingError;
-            throw new ApiException<PagingError>(response.httpStatusCode, "Bad Request - Invalid data", body, response.headers);
+            throw new ApiException<PagingError>(response.httpStatusCode, "Bad Request - Invalid data or missing payment", body, response.headers);
         }
         if (isCodeInRange("401", response.httpStatusCode)) {
             const body: PagingError = ObjectSerializer.deserialize(

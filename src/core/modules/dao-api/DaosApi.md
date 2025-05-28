@@ -36,7 +36,7 @@ Method | HTTP request | Description
 [**getDAOGovernance**](DaosApi.md#getDAOGovernance) | **GET** /daos/{dao_id}/governance | Get governance model for a DAO
 [**getDAOInvitation**](DaosApi.md#getDAOInvitation) | **GET** /daos/{dao_id}/invitations/{invitation_id} | Get details of a specific invitation
 [**getDAOInvitations**](DaosApi.md#getDAOInvitations) | **GET** /daos/{dao_id}/invitations | Get all invitations for a DAO
-[**getDAOModules**](DaosApi.md#getDAOModules) | **GET** /daos/{dao_id}/modules | Get all modules enabled for a DAO
+[**getDAOModules**](DaosApi.md#getDAOModules) | **GET** /daos/{dao_id}/modules | Get all modules available for a DAO and check if they are already paid
 [**getDAOPermissions**](DaosApi.md#getDAOPermissions) | **GET** /daos/{dao_id}/permissions | Get all permissions available for a DAO
 [**getDAORole**](DaosApi.md#getDAORole) | **GET** /daos/{dao_id}/roles/{role_id} | Get a specific role for a DAO
 [**getDAORoles**](DaosApi.md#getDAORoles) | **GET** /daos/{dao_id}/roles | Get all roles for a DAO
@@ -207,6 +207,8 @@ const request: DaosApiAddDAOModuleRequest = {
   
   dAOModule: {
     module: "module_example",
+    pubkey: "pubkey_example",
+    transaction: "transaction_example",
   },
 };
 
@@ -242,7 +244,7 @@ No authorization required
 |-------------|-------------|------------------|
 **422** | Unprocessable Entity |  -  |
 **200** | Module added successfully |  -  |
-**400** | Bad Request - Invalid module |  -  |
+**400** | Bad Request - Invalid module or missing payment |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
 **404** | DAO not found |  -  |
 **0** | Default error response |  -  |
@@ -1287,6 +1289,8 @@ const request: DaosApiEnableDAOFeaturedRequest = {
   
   featuredToggle: {
     days: 7,
+    pubkey: "pubkey_example",
+    transaction: "transaction_example",
   },
 };
 
@@ -1322,7 +1326,7 @@ No authorization required
 |-------------|-------------|------------------|
 **422** | Unprocessable Entity |  -  |
 **201** | DAO featured option enabled successfully |  -  |
-**400** | Bad Request - Invalid data |  -  |
+**400** | Bad Request - Invalid data or missing payment |  -  |
 **401** | Unauthorized - Invalid or missing token |  -  |
 **404** | DAO not found |  -  |
 **0** | Default error response |  -  |
@@ -2885,6 +2889,8 @@ const request: DaosApiRemoveDAOModuleRequest = {
   
   dAOModule: {
     module: "module_example",
+    pubkey: "pubkey_example",
+    transaction: "transaction_example",
   },
 };
 

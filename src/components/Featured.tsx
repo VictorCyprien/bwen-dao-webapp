@@ -5,10 +5,14 @@ import { Sparkles, Clock, ArrowRight, Info, AlertCircle } from 'lucide-react';
 import { daosService } from '../services/DaosService';
 import { rolePermissionService } from '../services/RolePermissionService';
 import { useAuth } from '../context/AuthContext';
+import { useTransaction } from '../context/TransactionContext';
 import Card from './common/Card';
 import Button from './common/Button';
 import { DAO, FeaturedResponse } from '../core/modules/dao-api';
 import { typography, containers, ui } from '../styles/theme';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { createFeaturedTransaction, signAndSendTransaction } from '../utils/solanaTransactions';
 
 // Interface for the component's props
 interface FeaturedProps {
@@ -24,6 +28,9 @@ interface ActivateFormState {
 const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => {
   const { daoId } = useParams<{ daoId: string }>();
   const { userInfo } = useAuth();
+  const { connection } = useConnection();
+  const wallet = useWallet();
+  const { showTransactionModal, hideTransactionModal } = useTransaction();
   
   // State variables
   const [isLoading, setIsLoading] = useState(false);
@@ -36,6 +43,7 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
     days: 7
   });
   const [hasAccess, setHasAccess] = useState<boolean>(false);
+  const [transactionPending, setTransactionPending] = useState<boolean>(false);
   
   // Check if user has access to the page (owner, admin, or has required permissions)
   useEffect(() => {
@@ -185,34 +193,66 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
   
   // Handle activating the featured service
   const handleActivateFeatured = async () => {
-    if (!daoId) return;
-    
+    if (!dao?.daoId || !wallet.publicKey) {
+      setError('Wallet not connected or DAO not loaded');
+      return;
+    }
+
     try {
       setIsLoading(true);
-      setError(null);
+      showTransactionModal('Activating Featured Status', 'Please confirm the transaction in your wallet to activate featured status.');
+
+      // Create the transaction
+      const { transaction, featuredAccount } = await createFeaturedTransaction(
+        connection,
+        { publicKey: wallet.publicKey },
+        dao.daoId,
+        formState.days
+      );
+
+      // Send the transaction
+      const signature = await signAndSendTransaction(
+        wallet,
+        connection,
+        transaction
+      );
       
-      // Call the API to enable featured
-      const response = await daosService.enableDAOFeatured(daoId, {
-        featured: true,
-        days: formState.days // This is optional and might need to be added to the API
+      console.log(`Featured activation transaction sent: ${signature}`);
+      
+      // Show validation state while waiting for indexing
+      showTransactionModal(
+        'Transaction Confirmed', 
+        'Featured activation successful! Waiting for blockchain indexing to complete...', 
+        'validating'
+      );
+      
+      // Wait a moment to show the validation state, then hide modal
+      setTimeout(() => {
+        hideTransactionModal();
+      }, 2000);
+
+      // Call the API to activate featured status
+      const result = await daosService.activateFeatured(dao.daoId, {
+        days: formState.days,
+        pubkey: featuredAccount.publicKey.toString(),
+        transaction: signature
       });
-      
-      if (response?.isFeatured) {
-        // Set expiry date from the API response
-        if (response.featuredUntil) {
-          setExpiryDate(new Date(response.featuredUntil));
-        }
+
+      if (result) {
+        setIsLoading(false);
         setFeaturedStatus(true);
-        
-        // Close the modal
+        setExpiryDate(new Date(result.featuredUntil));
         setIsModalOpen(false);
         
-        // Call the onUpdate callback if provided
-        if (onUpdate) onUpdate();
+        // Trigger onUpdate if provided
+        if (onUpdate) {
+          onUpdate();
+        }
       }
     } catch (err) {
-      console.error("Error activating featured service:", err);
-      setError("Failed to activate featured service. Please try again.");
+      hideTransactionModal();
+      console.error('Error activating featured status:', err);
+      setError(`Failed to activate featured status: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
@@ -263,12 +303,17 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleActivateFeatured}
-              disabled={isLoading}
-            >
-              {isLoading ? 'Processing...' : 'Activate'}
-            </Button>
+            
+            {!wallet.connected ? (
+              <WalletMultiButton className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md" />
+            ) : (
+              <Button
+                onClick={handleActivateFeatured}
+                disabled={isLoading}
+              >
+                {isLoading ? 'Processing...' : 'Activate'}
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -375,17 +420,10 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
                     <span className="font-medium">Time remaining:</span>{' '}
                     <span className="text-amber-400">{getTimeRemaining()}</span>
                   </p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    You can renew the featured service once the current period expires.
+                  </p>
                 </div>
-              </div>
-              
-              <div className="flex-shrink-0">
-                <Button
-                  variant="primary"
-                  className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500"
-                  onClick={() => setIsModalOpen(true)}
-                >
-                  Extend Service
-                </Button>
               </div>
             </div>
           ) : (
@@ -440,6 +478,19 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
       
       {/* Modal for activating featured service */}
       {renderActivateModal()}
+      
+      {/* Transaction pending overlay */}
+      {transactionPending && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-[#1A1A1A] rounded-xl p-6 max-w-md w-full shadow-2xl border border-gray-700">
+            <div className="text-center">
+              <div className="w-12 h-12 border-t-2 border-b-2 border-indigo-500 rounded-full animate-spin mx-auto mb-4"></div>
+              <h3 className="text-xl font-medium text-white mb-2">Processing Transaction</h3>
+              <p className="text-gray-400">Please confirm the transaction in your wallet and wait for it to be processed.</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

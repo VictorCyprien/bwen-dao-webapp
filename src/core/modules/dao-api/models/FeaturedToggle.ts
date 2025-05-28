@@ -20,6 +20,14 @@ export class FeaturedToggle {
     * Number of days the DAO should remain featured (default: 7, max: 30)
     */
     'days'?: number;
+    /**
+    * Blockchain account public key for payment
+    */
+    'pubkey': string;
+    /**
+    * Transaction hash for payment verification
+    */
+    'transaction': string;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -30,6 +38,18 @@ export class FeaturedToggle {
             "name": "days",
             "baseName": "days",
             "type": "number",
+            "format": ""
+        },
+        {
+            "name": "pubkey",
+            "baseName": "pubkey",
+            "type": "string",
+            "format": ""
+        },
+        {
+            "name": "transaction",
+            "baseName": "transaction",
+            "type": "string",
             "format": ""
         }    ];
 

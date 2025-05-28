@@ -17,6 +17,7 @@ export * from '../models/DAOMembership';
 export * from '../models/DAOMembershipResponse';
 export * from '../models/DAOModule';
 export * from '../models/DAOModuleAccessResponse';
+export * from '../models/DAOModuleDetail';
 export * from '../models/DAOModuleResponse';
 export * from '../models/DAOModulesList';
 export * from '../models/DAOSchemaResponse';
@@ -121,6 +122,7 @@ import { DAOMembership } from '../models/DAOMembership';
 import { DAOMembershipResponse } from '../models/DAOMembershipResponse';
 import { DAOModule } from '../models/DAOModule';
 import { DAOModuleAccessResponse } from '../models/DAOModuleAccessResponse';
+import { DAOModuleDetail } from '../models/DAOModuleDetail';
 import { DAOModuleResponse } from '../models/DAOModuleResponse';
 import { DAOModulesList } from '../models/DAOModulesList';
 import { DAOSchemaResponse } from '../models/DAOSchemaResponse';
@@ -255,6 +257,7 @@ let typeMap: {[index: string]: any} = {
     "DAOMembershipResponse": DAOMembershipResponse,
     "DAOModule": DAOModule,
     "DAOModuleAccessResponse": DAOModuleAccessResponse,
+    "DAOModuleDetail": DAOModuleDetail,
     "DAOModuleResponse": DAOModuleResponse,
     "DAOModulesList": DAOModulesList,
     "DAOSchemaResponse": DAOSchemaResponse,

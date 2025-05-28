@@ -20,6 +20,7 @@ export class DAOModuleResponse {
     'action': string;
     'module': string;
     'dao': DAO;
+    'paymentProcessed'?: boolean;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -42,6 +43,12 @@ export class DAOModuleResponse {
             "name": "dao",
             "baseName": "dao",
             "type": "DAO",
+            "format": ""
+        },
+        {
+            "name": "paymentProcessed",
+            "baseName": "payment_processed",
+            "type": "boolean",
             "format": ""
         }    ];
 

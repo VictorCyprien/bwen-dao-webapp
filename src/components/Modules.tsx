@@ -3,13 +3,20 @@ import { useParams } from 'react-router-dom';
 import { daosService } from '../services/DaosService';
 import { rolePermissionService } from '../services/RolePermissionService';
 import { useAuth } from '../context/AuthContext';
-import { DAOModulesList, DAOModule } from '../core/modules/dao-api';
+import { useTransaction } from '../context/TransactionContext';
+import { DAOModule, DAOModulesList } from '../core/modules/dao-api';
+import { DAOModuleDetail } from '../core/modules/dao-api/models/DAOModuleDetail';
 import { ModuleTypes } from '../types/modules';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { PublicKey } from '@solana/web3.js';
+import { createModuleTransaction, signAndSendTransaction } from '../utils/solanaTransactions';
 
 interface ModuleCardProps {
   name: string;
   description: string;
   isEnabled: boolean;
+  isPaid: boolean;
   onToggle: () => void;
 }
 
@@ -17,6 +24,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   name, 
   description, 
   isEnabled, 
+  isPaid, 
   onToggle 
 }: ModuleCardProps) => {
   return (
@@ -46,6 +54,9 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
         </div>
       </div>
       <p className="text-text-secondary mb-4 flex-grow">{description}</p>
+      {isPaid && !isEnabled && (
+        <p className="text-xs text-primary mb-2">Already purchased - no transaction needed to activate</p>
+      )}
       <button 
         className="text-sm font-medium text-primary hover:text-primary-light transition-colors"
       >
@@ -58,7 +69,10 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
 const Modules: React.FC = () => {
   const { daoId } = useParams<{ daoId: string }>();
   const { userInfo } = useAuth();
-  const [modules, setModules] = React.useState<string[]>([]);
+  const { connection } = useConnection();
+  const wallet = useWallet();
+  const { showTransactionModal, hideTransactionModal } = useTransaction();
+  const [modules, setModules] = React.useState<DAOModuleDetail[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | null>(null);
   const [hasAccess, setHasAccess] = React.useState<boolean>(false);
@@ -102,7 +116,7 @@ const Modules: React.FC = () => {
               
               // Use the actual module fetching API
               const modulesList = await daosService.getDAOModules(daoId);
-              if (modulesList) {
+              if (modulesList && modulesList.modules) {
                 setModules(modulesList.modules);
               } else {
                 // Fallback to empty array if no modules returned
@@ -137,7 +151,7 @@ const Modules: React.FC = () => {
             
             // Use the actual module fetching API
             const modulesList = await daosService.getDAOModules(daoId);
-            if (modulesList) {
+            if (modulesList && modulesList.modules) {
               setModules(modulesList.modules);
             } else {
               // Fallback to empty array if no modules returned
@@ -179,7 +193,7 @@ const Modules: React.FC = () => {
           
           // Use the actual module fetching API
           const modulesList = await daosService.getDAOModules(daoId);
-          if (modulesList) {
+          if (modulesList && modulesList.modules) {
             setModules(modulesList.modules);
           } else {
             // Fallback to empty array if no modules returned
@@ -204,20 +218,142 @@ const Modules: React.FC = () => {
   }, [daoId, userInfo]);
 
   const toggleModule = async (moduleName: string) => {
-    if (!daoId || !hasAccess) return;
+    if (!daoId || !hasAccess || !wallet || !connection) return;
+    
+    // Find the module in our state
+    const moduleData = modules.find((m: DAOModuleDetail) => m.name === moduleName);
+    if (!moduleData) return;
+    
+    // Check if wallet is connected
+    if (!wallet.publicKey) {
+      setError("Wallet not connected. Please connect your wallet first.");
+      return;
+    }
 
     try {
-      const isCurrentlyEnabled = modules.includes(moduleName);
+      const isCurrentlyEnabled = moduleData.isActivated;
       
-      const moduleData: DAOModule = {
-        module: moduleName
-      };
-      
-      if (isCurrentlyEnabled) {
-        // Remove the module
-        const result = await daosService.removeDAOModule(daoId, moduleData);
+      if (!isCurrentlyEnabled) {
+        // Check if we need to create a transaction (only if not already paid)
+        if (!moduleData.isPaid) {
+          try {
+            showTransactionModal('Processing Module Activation', 'Please confirm the transaction in your wallet to activate this module.');
+            
+            // Create the transaction
+            const { transaction, moduleAccount } = await createModuleTransaction(
+              connection,
+              { publicKey: wallet.publicKey },
+              daoId, // Pass daoId directly, the transaction function will handle getting the pubkey
+              moduleName
+            );
+            
+            // Send the transaction
+            const signature = await signAndSendTransaction(
+              wallet,
+              connection,
+              transaction
+            );
+            console.log(`Module activation transaction sent: ${signature}`);
+            
+            // Show validation state while waiting for indexing
+            showTransactionModal(
+              'Transaction Confirmed', 
+              'Transaction successful! Waiting for blockchain indexing to complete...', 
+              'validating'
+            );
+            
+            // Wait a moment to show the validation state, then hide modal
+            setTimeout(() => {
+              hideTransactionModal();
+            }, 2000);
+            
+            // After successful transaction, call the API
+            const modulePayload: DAOModule = {
+              module: moduleName,
+              pubkey: moduleAccount.publicKey.toString(),
+              transaction: signature
+            };
+            
+            const result = await daosService.addDAOModule(daoId, modulePayload);
+            if (result) {
+              // Update the modules state
+              setModules((prevModules: DAOModuleDetail[]) => 
+                prevModules.map((m: DAOModuleDetail) => 
+                  m.name === moduleName 
+                    ? {
+                        ...m,
+                        isActivated: true,
+                        isPaid: true,
+                        paymentInfo: {
+                          pubkey: moduleAccount.publicKey.toString(),
+                          transaction: signature,
+                          created_at: new Date().toISOString()
+                        }
+                      } 
+                    : m
+                )
+              );
+              
+              // Dispatch module-updated event
+              const event = new CustomEvent('module-updated', { 
+                detail: { 
+                  daoId,
+                  module: moduleName,
+                  action: 'added'
+                } 
+              });
+              window.dispatchEvent(event);
+            }
+          } catch (txError) {
+            hideTransactionModal();
+            console.error(`Transaction error for module ${moduleName}:`, txError);
+            setError(`Transaction failed: ${txError instanceof Error ? txError.message : 'Unknown error'}`);
+            return; // Don't proceed with the API call if transaction failed
+          }
+        } else {
+          // Module is already paid, just enable it without transaction
+          const modulePayload: DAOModule = {
+            module: moduleName
+          };
+          
+          const result = await daosService.addDAOModule(daoId, modulePayload);
+          if (result) {
+            // Update the modules state
+            setModules((prevModules: DAOModuleDetail[]) => 
+              prevModules.map((m: DAOModuleDetail) => 
+                m.name === moduleName 
+                  ? { ...m, isActivated: true }
+                  : m
+              )
+            );
+            
+            // Dispatch module-updated event
+            const event = new CustomEvent('module-updated', { 
+              detail: { 
+                daoId,
+                module: moduleName,
+                action: 'added'
+              } 
+            });
+            window.dispatchEvent(event);
+          }
+        }
+      } else {
+        // For removing a module, just call the API directly (no transaction needed)
+        const modulePayload: DAOModule = {
+          module: moduleName
+        };
+        
+        const result = await daosService.removeDAOModule(daoId, modulePayload);
         if (result) {
-          setModules(modules.filter((m: string) => m !== moduleName));
+          // Update the modules state
+          setModules((prevModules: DAOModuleDetail[]) => 
+            prevModules.map((m: DAOModuleDetail) => 
+              m.name === moduleName 
+                ? { ...m, isActivated: false }
+                : m
+            )
+          );
           
           // Dispatch module-updated event
           const event = new CustomEvent('module-updated', { 
@@ -229,31 +365,24 @@ const Modules: React.FC = () => {
           });
           window.dispatchEvent(event);
         }
-      } else {
-        // Add the module
-        const result = await daosService.addDAOModule(daoId, moduleData);
-        if (result) {
-          setModules([...modules, moduleName]);
-          
-          // Dispatch module-updated event
-          const event = new CustomEvent('module-updated', { 
-            detail: { 
-              daoId,
-              module: moduleName,
-              action: 'added'
-            } 
-          });
-          window.dispatchEvent(event);
-        }
       }
     } catch (err) {
       console.error(`Error toggling module ${moduleName}:`, err);
-      // Show error toast or notification here
+      setError(`Failed to toggle module: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   };
 
   // Get all available modules
   const allModules = Object.keys(moduleDetails);
+
+  // Add a function to check if wallet is connected before showing toggle UI
+  const handleToggleClick = (moduleName: string) => {
+    if (!wallet.connected) {
+      setError("Please connect your wallet to activate modules");
+    } else {
+      toggleModule(moduleName);
+    }
+  };
 
   // If page is loading, show loading indicator
   if (pageLoading) {
@@ -303,25 +432,56 @@ const Modules: React.FC = () => {
     );
   }
 
+  // Count enabled modules
+  const enabledModulesCount = modules.filter((m: DAOModuleDetail) => m.isActivated).length;
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-text">DAO Modules</h1>
-        <p className="text-text-secondary">
-          {modules.length} of {allModules.length} modules enabled
-        </p>
+        <div className="flex items-center gap-4">
+          <p className="text-text-secondary">
+            {enabledModulesCount} of {allModules.length} modules enabled
+          </p>
+          {!wallet.connected && (
+            <WalletMultiButton className="bg-primary hover:bg-primary-dark text-white py-2 px-4 rounded-md" />
+          )}
+        </div>
       </div>
       
+      {error && (
+        <div className="bg-red-500/10 text-red-500 p-4 rounded-lg mb-4">
+          <p>{error}</p>
+          <button 
+            className="text-primary hover:text-primary-light transition-colors mt-2"
+            onClick={() => setError(null)}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {allModules.map(moduleKey => (
-          <ModuleCard 
-            key={moduleKey}
-            name={moduleDetails[moduleKey].name}
-            description={moduleDetails[moduleKey].description}
-            isEnabled={modules.includes(moduleKey)}
-            onToggle={() => toggleModule(moduleKey)}
-          />
-        ))}
+        {allModules.map(moduleKey => {
+          // Find module data or create default state
+          const moduleData = modules.find((m: DAOModuleDetail) => m.name === moduleKey) || {
+            name: moduleKey,
+            isActivated: false,
+            isPaid: false,
+            paymentInfo: null
+          };
+          
+          return (
+            <ModuleCard 
+              key={moduleKey}
+              name={moduleDetails[moduleKey].name}
+              description={moduleDetails[moduleKey].description}
+              isEnabled={moduleData.isActivated}
+              isPaid={moduleData.isPaid}
+              onToggle={() => handleToggleClick(moduleKey)}
+            />
+          );
+        })}
       </div>
     </div>
   );

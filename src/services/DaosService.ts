@@ -399,13 +399,32 @@ export class DaosService {
 
   /**
    * Add a module to a DAO
+   * @param daoId The ID of the DAO
+   * @param moduleData The module data (module name/type)
+   * @returns The module response or null if there was an error
    */
-  async addDAOModule(daoId: string, moduleData: DAOModule): Promise<DAOModuleResponse | null> {
+  async addDAOModule(daoId: string, moduleData: {
+    module: string;
+    pubkey?: string;
+    transaction?: string;
+  }): Promise<DAOModuleResponse | null> {
     try {
       const apiClient = this.createAuthenticatedApiClient();
       if (!apiClient) return null;
 
-      const response = await apiClient.addDAOModule(daoId, moduleData);
+      // Create a proper DAOModule object
+      const daoModule = new DAOModule();
+      daoModule.module = moduleData.module;
+      
+      // Include transaction data if provided - may be required in the future
+      if (moduleData.pubkey && moduleData.transaction) {
+        // Add these properties if the API is updated to require them
+        // Currently these will be ignored by the API
+        (daoModule as any).pubkey = moduleData.pubkey;
+        (daoModule as any).transaction = moduleData.transaction;
+      }
+
+      const response = await apiClient.addDAOModule(daoId, daoModule);
       
       // Clear the DAO cache after adding a module
       this.clearDaoCache(daoId);
@@ -419,13 +438,32 @@ export class DaosService {
 
   /**
    * Remove a module from a DAO
+   * @param daoId The ID of the DAO
+   * @param moduleData The module data (module name/type)
+   * @returns The module response or null if there was an error
    */
-  async removeDAOModule(daoId: string, moduleData: DAOModule): Promise<DAOModuleResponse | null> {
+  async removeDAOModule(daoId: string, moduleData: {
+    module: string;
+    pubkey?: string;
+    transaction?: string;
+  }): Promise<DAOModuleResponse | null> {
     try {
       const apiClient = this.createAuthenticatedApiClient();
       if (!apiClient) return null;
 
-      const response = await apiClient.removeDAOModule(daoId, moduleData);
+      // Create a proper DAOModule object
+      const daoModule = new DAOModule();
+      daoModule.module = moduleData.module;
+      
+      // Include transaction data if provided - may be required in the future
+      if (moduleData.pubkey && moduleData.transaction) {
+        // Add these properties if the API is updated to require them
+        // Currently these will be ignored by the API
+        (daoModule as any).pubkey = moduleData.pubkey;
+        (daoModule as any).transaction = moduleData.transaction;
+      }
+
+      const response = await apiClient.removeDAOModule(daoId, daoModule);
       
       // Clear the DAO cache after removing a module
       this.clearDaoCache(daoId);
@@ -635,12 +673,18 @@ export class DaosService {
   async enableDAOFeatured(daoId: string, featuredData: {
     featured: boolean;
     days?: number;
+    pubkey: string;
+    transaction: string;
   }): Promise<FeaturedResponse | null> {
     try {
       const apiClient = this.createAuthenticatedApiClient();
       if (!apiClient) return null;
 
       const featuredToggle = new FeaturedToggle();
+      
+      // Set required fields
+      featuredToggle.pubkey = featuredData.pubkey;
+      featuredToggle.transaction = featuredData.transaction;
 
       if (featuredData.days !== undefined) {
         featuredToggle.days = featuredData.days;

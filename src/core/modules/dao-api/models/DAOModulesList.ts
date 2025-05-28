@@ -10,13 +10,17 @@
  * Do not edit the class manually.
  */
 
+import { DAOModuleDetail } from '../models/DAOModuleDetail';
 import { HttpFile } from '../http/http';
 
 /**
-* List of current DAO modules
+* List of current DAO modules with payment information
 */
 export class DAOModulesList {
-    'modules': Array<string>;
+    /**
+    * List of current DAO modules with payment information
+    */
+    'modules'?: Array<DAOModuleDetail>;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -26,7 +30,7 @@ export class DAOModulesList {
         {
             "name": "modules",
             "baseName": "modules",
-            "type": "Array<string>",
+            "type": "Array<DAOModuleDetail>",
             "format": ""
         }    ];
 

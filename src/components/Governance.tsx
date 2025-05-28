@@ -12,6 +12,8 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Connection } from '@solana/web3.js';
 import { daosService } from '../services/DaosService';
 import { userService } from '../services/UserService';
+import { signAndSendTransaction } from '../utils/solanaTransactions';
+import { useTransaction } from '../context/TransactionContext';
 import Card from './common/Card';
 import Button from './common/Button';
 import Badge from './common/Badge';
@@ -120,6 +122,7 @@ const Governance = () => {
 
   const wallet = useWallet();
   const connection = new Connection(SOLANA_RPC_ENDPOINT);
+  const { showTransactionModal, hideTransactionModal } = useTransaction();
 
   // Add new state variables for member selection
   const [daoMembers, setDaoMembers] = React.useState<User[]>([]);
@@ -503,6 +506,7 @@ const Governance = () => {
     }
     
     setIsSubmitting(true);
+    showTransactionModal('Creating Proposal', 'Please confirm the transaction in your wallet to create this proposal.');
     
     try {
       let startDate = new Date();
@@ -558,17 +562,31 @@ const Governance = () => {
       
       sessionStorage.setItem('currentProposalAccount', proposalAccount.publicKey.toString());
       
-      const signature = await wallet.sendTransaction(transaction, connection);
+      const signature = await signAndSendTransaction(
+        wallet,
+        connection,
+        transaction
+      );
       
-      const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+      console.log('Transaction confirmed:', signature);
       
-      if (confirmation.value.err) {
-        throw new Error(`Transaction failed: ${confirmation.value.err.toString()}`);
-      }
+      // Show validation state while waiting for indexing
+      showTransactionModal(
+        'Transaction Confirmed', 
+        'Proposal transaction successful! Waiting for blockchain indexing to complete...', 
+        'validating'
+      );
       
+      // Wait a moment to show the validation state, then hide modal
+      setTimeout(() => {
+        hideTransactionModal();
+      }, 2000);
+      
+      // Call API to create the proposal
       await handleCreateProposalAPI(signature);
       
     } catch (error) {
+      hideTransactionModal();
       console.error('Failed to create proposal transaction:', error);
       alert(`Failed to create proposal transaction: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsSubmitting(false);
@@ -736,6 +754,7 @@ const Governance = () => {
 
     try {
       setIsLoading(true);
+      showTransactionModal('Processing Vote', 'Please confirm the transaction in your wallet to cast your vote.');
       
       const result = await proposalService.createVoteTransaction(
         daoId,
@@ -745,30 +764,41 @@ const Governance = () => {
       );
 
       if (!result) {
+        hideTransactionModal();
         alert('Failed to create vote transaction');
         return;
       }
       
       const { transaction, voteAccount } = result;
 
-      const signature = await wallet.sendTransaction(transaction, connection);
+      const signature = await signAndSendTransaction(wallet, connection, transaction);
       
-      const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+      console.log('Vote transaction confirmed:', signature);
       
-      if (confirmation.value.err) {
-        throw new Error(`Transaction failed: ${confirmation.value.err.toString()}`);
-      }
+      // Show validation state while waiting for indexing
+      showTransactionModal(
+        'Vote Confirmed', 
+        'Vote transaction successful! Waiting for blockchain indexing to complete...', 
+        'validating'
+      );
       
+      // Wait a moment to show the validation state, then hide modal
+      setTimeout(() => {
+        hideTransactionModal();
+      }, 2000);
+
+      // Submit vote to API
       await proposalService.voteOnProposal(
-        daoId, 
-        proposalId, 
-        vote, 
-        signature, 
+        daoId,
+        proposalId,
+        vote,
+        signature,
         voteAccount.publicKey.toString()
       );
       
       fetchProposals();
     } catch (error) {
+      hideTransactionModal();
       console.error("Error voting on proposal:", error);
       alert(`Failed to vote: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {

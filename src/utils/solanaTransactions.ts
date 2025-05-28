@@ -7,7 +7,7 @@ import {
   TransactionInstruction 
 } from '@solana/web3.js';
 import BN from 'bn.js';
-import { DAO_PROGRAM_ID, TRANSACTION_TIMEOUT, TREASURY_ADDRESS } from '../config/solana';
+import { DAO_PROGRAM_ID, TRANSACTION_TIMEOUT, TREASURY_ADDRESS, MAX_TRANSACTION_RETRIES } from '../config/solana';
 
 // Program ID from config
 const PROGRAM_ID = new PublicKey(DAO_PROGRAM_ID);
@@ -328,8 +328,206 @@ export async function createVoteTransaction(
   return { transaction, voteAccount };
 }
 
+// Serialize featured instruction data
+export function serializeFeaturedInstruction(
+  daoId: string,
+  solPriceUsd: number
+): Buffer {
+  // Instruction index (3 for Featured)
+  const instructionBuf = Buffer.alloc(1);
+  instructionBuf.writeUInt8(3, 0);
+  
+  // Serialize string
+  const daoIdBuf = serializeString(daoId);
+  
+  // Serialize u64 sol price (8 bytes, little-endian)
+  const solPriceBuf = Buffer.alloc(8);
+  
+  // Convert to u64 (BN)
+  const solPriceBN = new BN(solPriceUsd.toString());
+  solPriceBN.toArray('le', 8).forEach((byte: number, index: number) => {
+    solPriceBuf[index] = byte;
+  });
+  
+  // Concat all buffers
+  return Buffer.concat([
+    instructionBuf,
+    daoIdBuf,
+    solPriceBuf
+  ]);
+}
+
+// Serialize modules instruction data
+export function serializeModulesInstruction(
+  daoId: string,
+  moduleType: string,
+  solPriceUsd: number
+): Buffer {
+  // Instruction index (4 for Module)
+  const instructionBuf = Buffer.alloc(1);
+  instructionBuf.writeUInt8(4, 0);
+  
+  // Serialize strings
+  const daoIdBuf = serializeString(daoId);
+  const moduleTypeBuf = serializeString(moduleType);
+  
+  // Serialize u64 sol price (8 bytes, little-endian)
+  const solPriceBuf = Buffer.alloc(8);
+  
+  // Convert to u64 (BN)
+  const solPriceBN = new BN(solPriceUsd.toString());
+  solPriceBN.toArray('le', 8).forEach((byte: number, index: number) => {
+    solPriceBuf[index] = byte;
+  });
+  
+  // Concat all buffers
+  return Buffer.concat([
+    instructionBuf,
+    daoIdBuf,
+    moduleTypeBuf,
+    solPriceBuf
+  ]);
+}
+
+// Create a featured transaction
+export async function createFeaturedTransaction(
+  connection: Connection,
+  wallet: { publicKey: PublicKey },
+  daoId: string,
+  solPriceUsd?: number // Optional - will fetch current price if not provided
+): Promise<{ transaction: Transaction, featuredAccount: Keypair }> {
+  if (!wallet.publicKey) throw new Error("Wallet not connected");
+  
+  // Get current SOL price if not provided
+  if (!solPriceUsd) {
+    solPriceUsd = await getSolPrice();
+  }
+  
+  // Generate a new keypair for the featured entry
+  const featuredAccount = Keypair.generate();
+  
+  // Get the DAO's public key
+  try {
+    // You might need to import the daosService here
+    const daosService = new (await import('../services/DaosService')).DaosService();
+    const daoDetails = await daosService.getDaoById(daoId);
+    
+    if (!daoDetails || !daoDetails.pubkey) {
+      throw new Error("DAO public key not found");
+    }
+    
+    const daoPubkey = new PublicKey(daoDetails.pubkey);
+    
+    // Serialize instruction data
+    const data = serializeFeaturedInstruction(
+      daoId,
+      solPriceUsd
+    );
+    
+    // Create instruction
+    const instruction = new TransactionInstruction({
+      keys: [
+        { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+        { pubkey: featuredAccount.publicKey, isSigner: true, isWritable: true },
+        { pubkey: daoPubkey, isSigner: false, isWritable: false },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        { pubkey: FEE_ADDRESS, isSigner: false, isWritable: true },
+      ],
+      programId: PROGRAM_ID,
+      data,
+    });
+    
+    // Create transaction
+    const transaction = new Transaction().add(instruction);
+    
+    // Set recent blockhash
+    transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+    transaction.feePayer = wallet.publicKey;
+    
+    // Partially sign with the featured account
+    transaction.partialSign(featuredAccount);
+    
+    return { transaction, featuredAccount };
+  } catch (error) {
+    console.error("Error creating featured transaction:", error);
+    throw error;
+  }
+}
+
+// Create a module activation transaction
+export async function createModuleTransaction(
+  connection: Connection,
+  wallet: { publicKey: PublicKey },
+  daoId: string,
+  moduleType: string, // "PODS" or "Proof Of Love"
+  solPriceUsd?: number // Optional - will fetch current price if not provided
+): Promise<{ transaction: Transaction, moduleAccount: Keypair }> {
+  if (!wallet.publicKey) throw new Error("Wallet not connected");
+  
+  // Validate module type
+  if (moduleType !== "PODS" && moduleType !== "PROOF_OF_LOVE") {
+    throw new Error('Invalid module type. Must be either "PODS" or "Proof Of Love".');
+  }
+  
+  // Get current SOL price if not provided
+  if (!solPriceUsd) {
+    solPriceUsd = await getSolPrice();
+  }
+  
+  // Generate a new keypair for the module
+  const moduleAccount = Keypair.generate();
+  
+  // Get the DAO's public key
+  try {
+    // You might need to import the daosService here
+    const daosService = new (await import('../services/DaosService')).DaosService();
+    const daoDetails = await daosService.getDaoById(daoId);
+    
+    if (!daoDetails || !daoDetails.pubkey) {
+      throw new Error("DAO public key not found");
+    }
+    
+    const daoPubkey = new PublicKey(daoDetails.pubkey);
+    
+    // Serialize instruction data
+    const data = serializeModulesInstruction(
+      daoId,
+      moduleType,
+      solPriceUsd
+    );
+    
+    // Create instruction
+    const instruction = new TransactionInstruction({
+      keys: [
+        { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+        { pubkey: moduleAccount.publicKey, isSigner: true, isWritable: true },
+        { pubkey: daoPubkey, isSigner: false, isWritable: false },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        { pubkey: FEE_ADDRESS, isSigner: false, isWritable: true },
+      ],
+      programId: PROGRAM_ID,
+      data,
+    });
+    
+    // Create transaction
+    const transaction = new Transaction().add(instruction);
+    
+    // Set recent blockhash
+    transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+    transaction.feePayer = wallet.publicKey;
+    
+    // Partially sign with the module account
+    transaction.partialSign(moduleAccount);
+    
+    return { transaction, moduleAccount };
+  } catch (error) {
+    console.error("Error creating module transaction:", error);
+    throw error;
+  }
+}
+
 /**
- * Sends a transaction using the wallet adapter
+ * Sends a transaction using the wallet adapter with retry logic
  * @param wallet User's wallet from wallet adapter
  * @param connection Solana connection
  * @param transaction Transaction to send
@@ -340,32 +538,63 @@ export const signAndSendTransaction = async (
   connection: Connection,
   transaction: Transaction
 ): Promise<string> => {
-  try {
-    if (!wallet.signTransaction) {
-      throw new Error('Wallet does not support signing transactions');
-    }
-    
-    // Sign the transaction
-    const signedTransaction = await wallet.signTransaction(transaction);
-    
-    // Send the signed transaction to the network
-    const signature = await connection.sendRawTransaction(signedTransaction.serialize());
-    
-    // Wait for confirmation with a timeout
-    const confirmation = await Promise.race([
-      connection.confirmTransaction(signature, 'confirmed'),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Transaction confirmation timeout')), TRANSACTION_TIMEOUT)
-      )
-    ]);
-    
-    if ((confirmation as any).value?.err) {
-      throw new Error(`Transaction failed: ${(confirmation as any).value.err.toString()}`);
-    }
-    
-    return signature;
-  } catch (error) {
-    console.error('Error sending transaction:', error);
-    throw error;
+  if (!wallet.signTransaction) {
+    throw new Error('Wallet does not support signing transactions');
   }
+
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= MAX_TRANSACTION_RETRIES; attempt++) {
+    try {
+      console.log(`Transaction attempt ${attempt}/${MAX_TRANSACTION_RETRIES}`);
+      
+      // // Get fresh blockhash for each attempt
+      // const { blockhash } = await connection.getLatestBlockhash();
+      // transaction.recentBlockhash = blockhash;
+      
+      // Sign the transaction
+      const signedTransaction = await wallet.signTransaction(transaction);
+      
+      // Send the signed transaction to the network
+      const signature = await connection.sendRawTransaction(signedTransaction.serialize());
+      console.log(`Transaction sent with signature: ${signature}`);
+      
+      // Wait for confirmation with a timeout
+      const confirmation = await Promise.race([
+        connection.confirmTransaction(signature, 'confirmed'),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Transaction confirmation timeout')), TRANSACTION_TIMEOUT)
+        )
+      ]);
+      
+      if ((confirmation as any).value?.err) {
+        throw new Error(`Transaction failed: ${(confirmation as any).value.err.toString()}`);
+      }
+      
+      console.log(`Transaction confirmed on attempt ${attempt}`);
+      
+      // Wait 30 seconds for the transaction to be indexed by APIs
+      console.log('Transaction confirmed, waiting 30 seconds for indexing...');
+      await new Promise(resolve => setTimeout(resolve, 30000));
+      
+      return signature;
+      
+    } catch (error) {
+      lastError = error as Error;
+      console.error(`Transaction attempt ${attempt} failed:`, error);
+      
+      // If this is the last attempt, don't wait
+      if (attempt === MAX_TRANSACTION_RETRIES) {
+        break;
+      }
+      
+      // Exponential backoff: wait 2^attempt seconds before retrying
+      const waitTime = Math.pow(2, attempt) * 1000;
+      console.log(`Waiting ${waitTime/1000} seconds before retry...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+  }
+  
+  // If we get here, all attempts failed
+  throw new Error(`Transaction failed after ${MAX_TRANSACTION_RETRIES} attempts. Last error: ${lastError?.message}`);
 };
