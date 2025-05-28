@@ -17,6 +17,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { SOLANA_RPC_ENDPOINT } from '../config/solana';
 import { daosService } from '../services/DaosService';
 import { userService } from '../services/UserService';
+import { signAndSendTransaction } from '../utils/solanaTransactions';
 import { containers, typography, ui, utils } from '../styles/theme';
 import Card from './common/Card';
 import Button from './common/Button';
@@ -465,10 +466,7 @@ const Pods = () => {
       
       // Send the transaction using Solana wallet adapter
       const connection = new Connection(SOLANA_RPC_ENDPOINT);
-      const signature = await walletState.sendTransaction(transaction, connection);
-      
-      // Wait for confirmation
-      await connection.confirmTransaction(signature, 'confirmed');
+      const signature = await signAndSendTransaction(walletState, connection, transaction);
       
       console.log('Transaction confirmed:', signature);
       
@@ -530,7 +528,7 @@ const Pods = () => {
       
       // Send the transaction using Solana wallet adapter
       const connection = new Connection(SOLANA_RPC_ENDPOINT);
-      const signature = await walletState.sendTransaction(transaction, connection);
+      const signature = await signAndSendTransaction(walletState, connection, transaction);
       
       // Wait for confirmation
       await connection.confirmTransaction(signature, 'confirmed');

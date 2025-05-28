@@ -12,6 +12,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { Connection } from '@solana/web3.js';
 import { daosService } from '../services/DaosService';
 import { userService } from '../services/UserService';
+import { signAndSendTransaction } from '../utils/solanaTransactions';
 import Card from './common/Card';
 import Button from './common/Button';
 import Badge from './common/Badge';
@@ -558,13 +559,7 @@ const Governance = () => {
       
       sessionStorage.setItem('currentProposalAccount', proposalAccount.publicKey.toString());
       
-      const signature = await wallet.sendTransaction(transaction, connection);
-      
-      const confirmation = await connection.confirmTransaction(signature, 'confirmed');
-      
-      if (confirmation.value.err) {
-        throw new Error(`Transaction failed: ${confirmation.value.err.toString()}`);
-      }
+      const signature = await signAndSendTransaction(wallet, connection, transaction);
       
       await handleCreateProposalAPI(signature);
       
@@ -751,13 +746,7 @@ const Governance = () => {
       
       const { transaction, voteAccount } = result;
 
-      const signature = await wallet.sendTransaction(transaction, connection);
-      
-      const confirmation = await connection.confirmTransaction(signature, 'confirmed');
-      
-      if (confirmation.value.err) {
-        throw new Error(`Transaction failed: ${confirmation.value.err.toString()}`);
-      }
+      const signature = await signAndSendTransaction(wallet, connection, transaction);
       
       await proposalService.voteOnProposal(
         daoId, 
