@@ -22,9 +22,13 @@ import { containers, typography, ui, utils } from '../styles/theme';
 import Card from './common/Card';
 import Button from './common/Button';
 import Badge from './common/Badge';
+import { useAuth } from '../context/AuthContext';
+import { useTransaction } from '../context/TransactionContext';
 
 const Pods = () => {
   const { daoId } = useParams<{ daoId: string }>();
+  const { userInfo } = useAuth();
+  const { showTransactionModal, hideTransactionModal } = useTransaction();
   const [selectedPod, setSelectedPod] = useState<POD | null>(null);
   const [pods, setPods] = useState<POD[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -435,24 +439,31 @@ const Pods = () => {
     description: string,
     endDate: Date
   ) => {
-    if (!daoId || !selectedPod?.podId || !publicKey || !walletState) {
-      console.error("Missing required data for proposal creation");
-      return null;
+    if (!walletState.publicKey) {
+      alert('Wallet not connected');
+      return false;
+    }
+    
+    if (!selectedPod) {
+      alert('No pod selected');
+      return false;
     }
     
     try {
-      console.log(`Creating proposal transaction for DAO: ${daoId}, POD: ${selectedPod.podId}`);
+      showTransactionModal('Creating POD Proposal', 'Please confirm the transaction in your wallet to create this proposal.');
       
-      // Create the transaction
+      console.log(`Creating proposal transaction for POD: ${selectedPod.podId}`);
+      
+      // Create the proposal transaction
       const result = await proposalService.createProposalTransaction(
         daoId,
         selectedPod.podId,
-        publicKey,
+        walletState.publicKey,
         {
-          title: title,
-          description: description,
-          startDate: new Date(), // Start immediately
-          endDate: endDate,
+          title,
+          description,
+          startDate: new Date(),
+          endDate,
           actions: []
         }
       );
@@ -461,7 +472,7 @@ const Pods = () => {
         throw new Error('Failed to create proposal transaction');
       }
       
-      // Extract transaction
+      // Extract transaction and proposalAccount
       const { transaction, proposalAccount } = result;
       
       // Send the transaction using Solana wallet adapter
@@ -470,52 +481,64 @@ const Pods = () => {
       
       console.log('Transaction confirmed:', signature);
       
-      // Create proposal via API
-      const newProposal = await proposalService.createProposalForPOD(
-        daoId,
-        selectedPod.podId,
-        {
-          title,
-          description,
-          endDate,
-          transactionSignature: signature,
-          proposalAccount: proposalAccount.publicKey.toString()
-        }
+      // Show validation state while waiting for indexing
+      showTransactionModal(
+        'Transaction Confirmed', 
+        'POD proposal transaction successful! Waiting for blockchain indexing to complete...', 
+        'validating'
       );
       
-      // Refresh proposal list
-      if (selectedPod && selectedPod.podId && selectedPod.name) {
-        fetchProposalsForPod(selectedPod.podId, selectedPod.name);
-      }
+      // Wait a moment to show the validation state, then hide modal
+      setTimeout(() => {
+        hideTransactionModal();
+      }, 2000);
       
-      return newProposal;
+      // Create proposal via API
+      await proposalService.createProposal(daoId, {
+        title,
+        description,
+        startDate: new Date(),
+        endDate,
+        actions: [],
+        transactionSignature: signature,
+        proposalAccount: proposalAccount.publicKey.toString()
+      });
+      
+      return true;
     } catch (err) {
-      console.error('Error creating proposal transaction:', err);
+      hideTransactionModal();
+      console.error('Error creating proposal:', err);
       throw err;
     }
   };
 
   // Handler for voting on a proposal with blockchain transaction
   const handleVoteWithTransaction = async (proposalId: string, vote: 'for' | 'against') => {
-    if (!daoId || !selectedPod?.podId || !publicKey || !walletState) {
-      console.error("Missing required data for voting");
+    if (!walletState.publicKey) {
+      alert('Wallet not connected');
       return false;
     }
-
-      // Check if wallet is connected
-    if (!walletState || !walletState.connected) {
-      setError('Wallet not connected. Please connect your wallet to vote.');
-      return;
+    
+    if (!selectedPod) {
+      alert('No pod selected');
+      return false;
+    }
+    
+    if (!daoId) {
+      alert('DAO ID is missing');
+      return false;
     }
     
     try {
+      showTransactionModal('Processing Vote', 'Please confirm the transaction in your wallet to cast your vote.');
+      
       console.log(`Creating vote transaction for proposal: ${proposalId}, vote: ${vote}`);
       
       // Create the vote transaction
       const result = await proposalService.createVoteTransaction(
         daoId,
         proposalId,
-        publicKey,
+        walletState.publicKey,
         vote
       );
       
@@ -530,10 +553,19 @@ const Pods = () => {
       const connection = new Connection(SOLANA_RPC_ENDPOINT);
       const signature = await signAndSendTransaction(walletState, connection, transaction);
       
-      // Wait for confirmation
-      await connection.confirmTransaction(signature, 'confirmed');
-      
       console.log('Vote transaction confirmed:', signature);
+      
+      // Show validation state while waiting for indexing
+      showTransactionModal(
+        'Vote Confirmed', 
+        'Vote transaction successful! Waiting for blockchain indexing to complete...', 
+        'validating'
+      );
+      
+      // Wait a moment to show the validation state, then hide modal
+      setTimeout(() => {
+        hideTransactionModal();
+      }, 2000);
       
       // Submit vote to API
       await proposalService.voteOnPODProposal(
@@ -547,6 +579,7 @@ const Pods = () => {
       
       return true;
     } catch (err) {
+      hideTransactionModal();
       console.error('Error voting on proposal:', err);
       throw err;
     }

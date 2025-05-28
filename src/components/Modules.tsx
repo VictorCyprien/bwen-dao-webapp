@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { daosService } from '../services/DaosService';
 import { rolePermissionService } from '../services/RolePermissionService';
 import { useAuth } from '../context/AuthContext';
+import { useTransaction } from '../context/TransactionContext';
 import { DAOModule, DAOModulesList } from '../core/modules/dao-api';
 import { DAOModuleDetail } from '../core/modules/dao-api/models/DAOModuleDetail';
 import { ModuleTypes } from '../types/modules';
@@ -70,12 +71,12 @@ const Modules: React.FC = () => {
   const { userInfo } = useAuth();
   const { connection } = useConnection();
   const wallet = useWallet();
+  const { showTransactionModal, hideTransactionModal } = useTransaction();
   const [modules, setModules] = React.useState<DAOModuleDetail[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string | null>(null);
   const [hasAccess, setHasAccess] = React.useState<boolean>(false);
   const [pageLoading, setPageLoading] = React.useState<boolean>(true);
-  const [transactionPending, setTransactionPending] = React.useState<boolean>(false);
 
   // Define available modules with descriptions - only keeping PODS and PROOF_OF_LOVE
   const moduleDetails: Record<string, { name: string; description: string }> = {
@@ -217,7 +218,7 @@ const Modules: React.FC = () => {
   }, [daoId, userInfo]);
 
   const toggleModule = async (moduleName: string) => {
-    if (!daoId || !hasAccess || !wallet || !connection || transactionPending) return;
+    if (!daoId || !hasAccess || !wallet || !connection) return;
     
     // Find the module in our state
     const moduleData = modules.find((m: DAOModuleDetail) => m.name === moduleName);
@@ -235,10 +236,10 @@ const Modules: React.FC = () => {
       if (!isCurrentlyEnabled) {
         // Check if we need to create a transaction (only if not already paid)
         if (!moduleData.isPaid) {
-          setTransactionPending(true);
-          
           try {
-            // Create the Solana transaction
+            showTransactionModal('Processing Module Activation', 'Please confirm the transaction in your wallet to activate this module.');
+            
+            // Create the transaction
             const { transaction, moduleAccount } = await createModuleTransaction(
               connection,
               { publicKey: wallet.publicKey },
@@ -253,6 +254,18 @@ const Modules: React.FC = () => {
               transaction
             );
             console.log(`Module activation transaction sent: ${signature}`);
+            
+            // Show validation state while waiting for indexing
+            showTransactionModal(
+              'Transaction Confirmed', 
+              'Transaction successful! Waiting for blockchain indexing to complete...', 
+              'validating'
+            );
+            
+            // Wait a moment to show the validation state, then hide modal
+            setTimeout(() => {
+              hideTransactionModal();
+            }, 2000);
             
             // After successful transaction, call the API
             const modulePayload: DAOModule = {
@@ -292,11 +305,10 @@ const Modules: React.FC = () => {
               window.dispatchEvent(event);
             }
           } catch (txError) {
+            hideTransactionModal();
             console.error(`Transaction error for module ${moduleName}:`, txError);
             setError(`Transaction failed: ${txError instanceof Error ? txError.message : 'Unknown error'}`);
             return; // Don't proceed with the API call if transaction failed
-          } finally {
-            setTransactionPending(false);
           }
         } else {
           // Module is already paid, just enable it without transaction
@@ -471,18 +483,6 @@ const Modules: React.FC = () => {
           );
         })}
       </div>
-      
-      {transactionPending && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[#1A1A1A] rounded-xl p-6 max-w-md w-full shadow-2xl border border-gray-700">
-            <div className="text-center">
-              <div className="w-12 h-12 rounded-full border-t-2 border-l-2 border-primary animate-spin mx-auto mb-4"></div>
-              <h3 className="text-xl font-medium text-white mb-2">Processing Transaction</h3>
-              <p className="text-gray-400">Please confirm the transaction in your wallet and wait for it to be processed.</p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -5,6 +5,7 @@ import { Sparkles, Clock, ArrowRight, Info, AlertCircle } from 'lucide-react';
 import { daosService } from '../services/DaosService';
 import { rolePermissionService } from '../services/RolePermissionService';
 import { useAuth } from '../context/AuthContext';
+import { useTransaction } from '../context/TransactionContext';
 import Card from './common/Card';
 import Button from './common/Button';
 import { DAO, FeaturedResponse } from '../core/modules/dao-api';
@@ -29,6 +30,7 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
   const { userInfo } = useAuth();
   const { connection } = useConnection();
   const wallet = useWallet();
+  const { showTransactionModal, hideTransactionModal } = useTransaction();
   
   // State variables
   const [isLoading, setIsLoading] = useState(false);
@@ -191,67 +193,68 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
   
   // Handle activating the featured service
   const handleActivateFeatured = async () => {
-    if (!daoId || !wallet || !connection) return;
-    
-    // Check if wallet is connected
-    if (!wallet.publicKey) {
-      setError("Wallet not connected. Please connect your wallet first.");
+    if (!dao?.daoId || !wallet.publicKey) {
+      setError('Wallet not connected or DAO not loaded');
       return;
     }
-    
+
     try {
       setIsLoading(true);
-      setTransactionPending(true);
-      setError(null);
+      showTransactionModal('Activating Featured Status', 'Please confirm the transaction in your wallet to activate featured status.');
+
+      // Create the transaction
+      const { transaction, featuredAccount } = await createFeaturedTransaction(
+        connection,
+        { publicKey: wallet.publicKey },
+        dao.daoId,
+        formState.days
+      );
+
+      // Send the transaction
+      const signature = await signAndSendTransaction(
+        wallet,
+        connection,
+        transaction
+      );
       
-      try {
-        // Create the Solana transaction 
-        const { transaction, featuredAccount } = await createFeaturedTransaction(
-          connection,
-          { publicKey: wallet.publicKey },
-          daoId // Pass daoId directly, the transaction function will handle getting the pubkey
-        );
+      console.log(`Featured activation transaction sent: ${signature}`);
+      
+      // Show validation state while waiting for indexing
+      showTransactionModal(
+        'Transaction Confirmed', 
+        'Featured activation successful! Waiting for blockchain indexing to complete...', 
+        'validating'
+      );
+      
+      // Wait a moment to show the validation state, then hide modal
+      setTimeout(() => {
+        hideTransactionModal();
+      }, 2000);
+
+      // Call the API to activate featured status
+      const result = await daosService.activateFeatured(dao.daoId, {
+        days: formState.days,
+        pubkey: featuredAccount.publicKey.toString(),
+        transaction: signature
+      });
+
+      if (result) {
+        setIsLoading(false);
+        setFeaturedStatus(true);
+        setExpiryDate(new Date(result.featuredUntil));
+        setIsModalOpen(false);
         
-        // Send the transaction
-        const signature = await signAndSendTransaction(
-          wallet,
-          connection,
-          transaction
-        );
-        console.log(`Featured service transaction sent: ${signature}`);
-        
-        // After successful transaction, call the API
-        const response = await daosService.enableDAOFeatured(daoId, {
-          featured: true,
-          days: formState.days, // This is optional and might need to be added to the API
-          pubkey: featuredAccount.publicKey.toString(),
-          transaction: signature
-        });
-        
-        if (response?.isFeatured) {
-          // Set expiry date from the API response
-          if (response.featuredUntil) {
-            setExpiryDate(new Date(response.featuredUntil));
-          }
-          setFeaturedStatus(true);
-          
-          // Close the modal
-          setIsModalOpen(false);
-          
-          // Call the onUpdate callback if provided
-          if (onUpdate) onUpdate();
+        // Trigger onUpdate if provided
+        if (onUpdate) {
+          onUpdate();
         }
-      } catch (txError) {
-        console.error("Transaction error for featured service:", txError);
-        setError(`Transaction failed: ${txError instanceof Error ? txError.message : 'Unknown error'}`);
-        return; // Don't proceed with the API call if transaction failed
       }
     } catch (err) {
-      console.error("Error activating featured service:", err);
-      setError("Failed to activate featured service. Please try again.");
+      hideTransactionModal();
+      console.error('Error activating featured status:', err);
+      setError(`Failed to activate featured status: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
-      setTransactionPending(false);
     }
   };
   
