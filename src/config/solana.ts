@@ -24,6 +24,6 @@ export const TREASURY_ADDRESS = 'BAGek78CDYQ8phuDqNk7sQzD7LdJeKkb7jD4y2AyR3tJ';
 export const MAX_TRANSACTION_RETRIES = 3;
 
 // Transaction timeout in milliseconds
-export const TRANSACTION_TIMEOUT = 60000; // 1 minute
+export const TRANSACTION_TIMEOUT = 60000 * 5; // 5 minutes
 
 // Other configuration values can be added as needed 
