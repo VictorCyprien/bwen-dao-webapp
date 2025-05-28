@@ -561,6 +561,10 @@ export const signAndSendTransaction = async (
       throw new Error(`Transaction failed: ${(confirmation as any).value.err.toString()}`);
     }
     
+    // Wait 10 seconds for the transaction to be indexed by APIs
+    console.log('Transaction confirmed, waiting 30 seconds for indexing...');
+    await new Promise(resolve => setTimeout(resolve, 30000));
+    
     return signature;
   } catch (error) {
     console.error('Error sending transaction:', error);
