@@ -257,6 +257,9 @@ export const formatDateWithUserTimezone = (date?: Date | string, options?: Intl.
 export const formatServerDateToLocal = (date?: Date | string, options?: Intl.DateTimeFormatOptions): string => {
   if (!date) return 'N/A';
   
+  console.log('formatServerDateToLocal input:', date);
+  console.log('User timezone:', Intl.DateTimeFormat().resolvedOptions().timeZone);
+  
   let parsedDate: Date;
   
   if (date instanceof Date) {
@@ -277,6 +280,10 @@ export const formatServerDateToLocal = (date?: Date | string, options?: Intl.Dat
     parsedDate = new Date(date);
   }
   
+  console.log('Parsed date:', parsedDate);
+  console.log('Parsed date ISO:', parsedDate.toISOString());
+  console.log('Parsed date local string:', parsedDate.toString());
+  
   const defaultOptions: Intl.DateTimeFormatOptions = {
     year: 'numeric',
     month: 'short',
@@ -286,5 +293,9 @@ export const formatServerDateToLocal = (date?: Date | string, options?: Intl.Dat
   };
   
   // Format in user's local timezone
-  return new Intl.DateTimeFormat(navigator.language || 'en-US', { ...defaultOptions, ...options }).format(parsedDate);
+  const result = new Intl.DateTimeFormat(navigator.language || 'en-US', { ...defaultOptions, ...options }).format(parsedDate);
+  
+  console.log('Formatted result:', result);
+  
+  return result;
 }; 
