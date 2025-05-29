@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import React from 'react';
+const { useState, useEffect } = React;
 import { Plus, Users, MessageSquare, Calendar, ExternalLink, Layers, ArrowUpRight, X, Check, PlusCircle, RefreshCw, Edit, LogIn, LogOut, AlertCircle } from 'lucide-react';
 import CreatePodModal from './CreatePodModal';
 import UpdatePodModal from './UpdatePodModal';
@@ -24,6 +25,7 @@ import Button from './common/Button';
 import Badge from './common/Badge';
 import { useAuth } from '../context/AuthContext';
 import { useTransaction } from '../context/TransactionContext';
+import { formatDateUTC, getCurrentUTC } from '../utils/dateUtils';
 
 const Pods = () => {
   const { daoId } = useParams<{ daoId: string }>();
@@ -372,9 +374,9 @@ const Pods = () => {
     }
   };
 
-  // Format date for display
+  // Format date for display using UTC
   const formatDate = (date: Date): string => {
-    const now = new Date();
+    const now = getCurrentUTC();
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     
@@ -448,13 +450,23 @@ const Pods = () => {
       alert('No pod selected');
       return false;
     }
+
+    if (!daoId) {
+      alert('DAO ID is missing');
+      return false;
+    }
+
+    if (!selectedPod.podId) {
+      alert('Pod ID is missing');
+      return false;
+    }
     
     try {
       showTransactionModal('Creating POD Proposal', 'Please confirm the transaction in your wallet to create this proposal.');
       
       console.log(`Creating proposal transaction for POD: ${selectedPod.podId}`);
       
-      // Create the proposal transaction
+      // Create the proposal transaction using UTC dates
       const result = await proposalService.createProposalTransaction(
         daoId,
         selectedPod.podId,
@@ -462,7 +474,7 @@ const Pods = () => {
         {
           title,
           description,
-          startDate: new Date(),
+          startDate: getCurrentUTC(),
           endDate,
           actions: []
         }
@@ -493,11 +505,11 @@ const Pods = () => {
         hideTransactionModal();
       }, 2000);
       
-      // Create proposal via API
-      await proposalService.createProposal(daoId, {
+      // Create proposal via API using UTC dates
+      await proposalService.createProposalForPOD(daoId, selectedPod.podId, {
         title,
         description,
-        startDate: new Date(),
+        startDate: getCurrentUTC(),
         endDate,
         actions: [],
         transactionSignature: signature,
@@ -591,14 +603,14 @@ const Pods = () => {
     
     switch (filterType) {
       case 'my':
-        return pods.filter(pod => {
+        return pods.filter((pod: POD) => {
           // Check if pod has members and if current user is in them
-          return pod.podId && podMembers[pod.podId]?.some(member => member.userId === currentUserId);
+          return pod.podId && podMembers[pod.podId]?.some((member: any) => member.userId === currentUserId);
         });
       case 'available':
-        return pods.filter(pod => {
+        return pods.filter((pod: POD) => {
           // Find pods where the user is not a member
-          return pod.podId && !podMembers[pod.podId]?.some(member => member.userId === currentUserId);
+          return pod.podId && !podMembers[pod.podId]?.some((member: any) => member.userId === currentUserId);
         });
       case 'all':
       default:
@@ -609,7 +621,7 @@ const Pods = () => {
   // Check if user is a member of a specific pod
   const isUserPodMember = (podId: string | undefined) => {
     if (!podId || !currentUserId) return false;
-    return podMembers[podId]?.some(member => member.userId === currentUserId) || false;
+    return podMembers[podId]?.some((member: any) => member.userId === currentUserId) || false;
   };
 
   // Render a message for non-DAO members
@@ -760,7 +772,7 @@ const Pods = () => {
                             <p className="text-gray-400 text-sm">You haven't joined any pods yet.</p>
                           </div>
                         ) : (
-                          getFilteredPods('my').map((pod) => (
+                          getFilteredPods('my').map((pod: POD) => (
                             <div 
                               key={pod.podId}
                               className={`p-3 rounded-lg cursor-pointer transition-all mb-2 ${selectedPod?.podId === pod.podId ? 'bg-[#222]/90 border border-purple-800/60' : 'border border-gray-800/20 hover:border-gray-700/40'}`}
@@ -787,7 +799,7 @@ const Pods = () => {
                             <p className="text-gray-400 text-sm">No other pods available.</p>
                           </div>
                         ) : (
-                          getFilteredPods('available').map((pod) => (
+                          getFilteredPods('available').map((pod: POD) => (
                             <div 
                               key={pod.podId}
                               className={`p-3 rounded-lg cursor-pointer transition-all mb-2 ${selectedPod?.podId === pod.podId ? 'bg-[#222]/90 border border-purple-800/60' : 'border border-gray-800/20 hover:border-gray-700/40'}`}
@@ -807,7 +819,7 @@ const Pods = () => {
                       </div>
                     )}
 
-                    {podsFilter === 'all' && pods.map((pod) => (
+                    {podsFilter === 'all' && pods.map((pod: POD) => (
                       <div 
                         key={pod.podId}
                         className={`p-3 rounded-lg cursor-pointer transition-all mb-2 ${selectedPod?.podId === pod.podId ? 'bg-[#222]/90 border border-purple-800/60' : 'border border-gray-800/20 hover:border-gray-700/40'}`}
@@ -941,7 +953,7 @@ const Pods = () => {
                         </div>
                       ) : feedMessages.length > 0 ? (
                         <div className="space-y-4 overflow-y-auto flex-1 pr-2">
-                          {feedMessages.map((message) => (
+                          {feedMessages.map((message: DiscordMessage) => (
                             <div key={message.messageId} className="bg-[#191919] p-3 rounded-md">
                               <div className="flex justify-between items-start mb-2">
                                 <div className="flex items-center">
@@ -998,7 +1010,7 @@ const Pods = () => {
                     >
                       {filteredProposals.length > 0 ? (
                         <div className="space-y-4 overflow-y-auto flex-1 pr-2">
-                          {filteredProposals.map((proposal) => (
+                          {filteredProposals.map((proposal: Proposal) => (
                             <div 
                               key={proposal.proposalId} 
                               className="bg-[#191919] p-3 rounded-md hover:bg-[#222] cursor-pointer transition-colors"
