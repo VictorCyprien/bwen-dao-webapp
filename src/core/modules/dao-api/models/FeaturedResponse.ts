@@ -20,7 +20,7 @@ export class FeaturedResponse {
     /**
     * DateTime when the DAO will be unfeatured, null if not featured
     */
-    'featuredUntil'?: Date | null;
+    'featuredUntil'?: any | null;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -36,8 +36,8 @@ export class FeaturedResponse {
         {
             "name": "featuredUntil",
             "baseName": "featured_until",
-            "type": "Date",
-            "format": "date-time"
+            "type": "any",
+            "format": ""
         }    ];
 
     static getAttributeTypeMap() {

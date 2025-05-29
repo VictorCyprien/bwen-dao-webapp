@@ -19,7 +19,7 @@ export class FeaturedToggle {
     /**
     * Number of days the DAO should remain featured (default: 7, max: 30)
     */
-    'days'?: number;
+    'days': number;
     /**
     * Blockchain account public key for payment
     */

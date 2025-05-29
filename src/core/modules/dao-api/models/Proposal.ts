@@ -25,8 +25,8 @@ export class Proposal {
     'podId'?: string | null;
     'createdBy': string;
     'createdByUsername': string;
-    'startTime': Date;
-    'endTime': Date;
+    'startTime': any | null;
+    'endTime': any | null;
     'actions'?: Array<ProposalAction> | null;
     'forVotesCount'?: number;
     'againstVotesCount'?: number;
@@ -87,14 +87,14 @@ export class Proposal {
         {
             "name": "startTime",
             "baseName": "start_time",
-            "type": "Date",
-            "format": "date-time"
+            "type": "any",
+            "format": ""
         },
         {
             "name": "endTime",
             "baseName": "end_time",
-            "type": "Date",
-            "format": "date-time"
+            "type": "any",
+            "format": ""
         },
         {
             "name": "actions",

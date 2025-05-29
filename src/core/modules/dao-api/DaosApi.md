@@ -1288,7 +1288,7 @@ const request: DaosApiEnableDAOFeaturedRequest = {
   daoId: "dao_id_example",
   
   featuredToggle: {
-    days: 7,
+    days: 1,
     pubkey: "pubkey_example",
     transaction: "transaction_example",
   },
