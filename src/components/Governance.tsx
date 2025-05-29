@@ -213,17 +213,18 @@ const Governance = () => {
       }
       
       const transformedProposals = fetchedProposals.map(p => {
-        // Convert API dates to proper UTC dates for calculations
-        const startTime = p.startTime instanceof Date ? p.startTime : new Date(p.startTime);
-        const endTime = p.endTime instanceof Date ? p.endTime : new Date(p.endTime);
+        // Extract raw date strings before any Date object conversion
+        // Force these to be strings by converting back to ISO if they're already Date objects
+        const startTimeString = p.startTime instanceof Date ? p.startTime.toISOString() : p.startTime;
+        const endTimeString = p.endTime instanceof Date ? p.endTime.toISOString() : p.endTime;
+        const createdAtString = startTimeString; // Using startTime for createdAt
         
         // For status calculations, we need to ensure we're using UTC
-        const startTimeUTC = toUTC(startTime);
-        const endTimeUTC = toUTC(endTime);
+        const startTimeUTC = toUTC(startTimeString);
+        const endTimeUTC = toUTC(endTimeString);
         
         const isNotStartedYet = isFutureUTC(startTimeUTC);
         const hasExpired = isExpiredUTC(endTimeUTC);
-        const createdAt = p.startTime;
         
         // Determine status based on proposal lifecycle
         let status = 'Active';
@@ -243,9 +244,9 @@ const Governance = () => {
           description: p.description || '',
           status: status,
           creator: p.createdByUsername || 'Unknown',
-          createdAt: formatServerDateToLocal(createdAt),
-          startTime: formatServerDateToLocal(startTime),
-          endTime: formatServerDateToLocal(endTime),
+          createdAt: formatServerDateToLocal(createdAtString),
+          startTime: formatServerDateToLocal(startTimeString),
+          endTime: formatServerDateToLocal(endTimeString),
           votes: {
             for: p.forVotesCount || 0,
             against: p.againstVotesCount || 0,
