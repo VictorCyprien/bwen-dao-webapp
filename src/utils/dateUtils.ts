@@ -18,20 +18,44 @@ export const getCurrentUTC = (): Date => {
  */
 export const toUTC = (date: Date | string): Date => {
   if (date instanceof Date) {
+    // Check if the date is valid before trying to call toISOString()
+    if (isNaN(date.getTime())) {
+      return new Date();
+    }
     return date;
   }
   
-  // If it's a string, ensure it's parsed as UTC
-  // If the string doesn't end with 'Z' or timezone info, assume it's UTC
   if (typeof date === 'string') {
-    // If no timezone info, append 'Z' to force UTC parsing
-    if (!date.includes('Z') && !date.includes('+') && !date.includes('-', 10)) {
-      return new Date(date + 'Z');
+    // If the string already has timezone info, use it as-is
+    if (date.includes('Z') || date.includes('+') || date.includes('-', 10)) {
+      const result = new Date(date);
+      if (isNaN(result.getTime())) {
+        return new Date();
+      }
+      return result;
     }
-    return new Date(date);
+    
+    // If no timezone info, we need to be careful about how we parse it
+    // Try to parse it and see if it looks like ISO format
+    if (date.includes('T')) {
+      // ISO-like format without timezone - assume it's UTC and add 'Z'
+      const result = new Date(date + 'Z');
+      if (isNaN(result.getTime())) {
+        return new Date();
+      }
+      return result;
+    } else {
+      // Date only or other format - parse normally and let JS handle it
+      const result = new Date(date);
+      if (isNaN(result.getTime())) {
+        return new Date();
+      }
+      return result;
+    }
   }
   
-  return new Date(date);
+  // Fallback to current time
+  return new Date();
 };
 
 /**
@@ -84,7 +108,7 @@ export const formatTimeRemainingUTC = (targetDate: Date | string): string => {
 export const formatDateUTC = (date?: Date | string, options?: Intl.DateTimeFormatOptions): string => {
   if (!date) return 'N/A';
   
-  // Parse the date as UTC first
+  // Convert to UTC first, then let browser display in user's local timezone
   const utcDate = toUTC(date);
   
   const defaultOptions: Intl.DateTimeFormatOptions = {
@@ -93,10 +117,11 @@ export const formatDateUTC = (date?: Date | string, options?: Intl.DateTimeForma
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    // Don't specify timeZone - let it use user's local timezone automatically
+    // Let the browser automatically use user's local timezone
   };
   
-  return new Intl.DateTimeFormat('en-US', { ...defaultOptions, ...options }).format(utcDate);
+  // Use user's locale instead of hardcoded 'en-US' for better localization
+  return new Intl.DateTimeFormat(navigator.language || 'en-US', { ...defaultOptions, ...options }).format(utcDate);
 };
 
 /**
@@ -223,4 +248,43 @@ export const formatDateWithUserTimezone = (date?: Date | string, options?: Intl.
   };
   
   return new Intl.DateTimeFormat('en-US', { ...defaultOptions, ...options }).format(utcDate);
+};
+
+/**
+ * Format date from server (assumes server dates are in UTC) and display in user's local timezone
+ * This function specifically handles dates coming from the API
+ */
+export const formatServerDateToLocal = (date?: Date | string, options?: Intl.DateTimeFormatOptions): string => {
+  if (!date) return 'N/A';
+  
+  let parsedDate: Date;
+  
+  if (date instanceof Date) {
+    parsedDate = date;
+  } else if (typeof date === 'string') {
+    // Handle different date string formats from the API
+    if (date.includes('Z') || date.includes('+') || date.includes('-', 10)) {
+      // Already has timezone info
+      parsedDate = new Date(date);
+    } else if (date.includes('T')) {
+      // ISO-like format without timezone - assume UTC
+      parsedDate = new Date(date + 'Z');
+    } else {
+      // Other format - try to parse as UTC
+      parsedDate = new Date(date + ' UTC');
+    }
+  } else {
+    parsedDate = new Date(date);
+  }
+  
+  const defaultOptions: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  };
+  
+  // Format in user's local timezone
+  return new Intl.DateTimeFormat(navigator.language || 'en-US', { ...defaultOptions, ...options }).format(parsedDate);
 }; 

@@ -25,7 +25,7 @@ import Button from './common/Button';
 import Badge from './common/Badge';
 import { useAuth } from '../context/AuthContext';
 import { useTransaction } from '../context/TransactionContext';
-import {getCurrentUTC } from '../utils/dateUtils';
+import { getCurrentUTC } from '../utils/dateUtils';
 
 const Pods = () => {
   const { daoId } = useParams<{ daoId: string }>();

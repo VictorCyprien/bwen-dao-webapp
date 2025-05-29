@@ -13,7 +13,7 @@ import { typography, containers, ui } from '../styles/theme';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { createFeaturedTransaction, signAndSendTransaction } from '../utils/solanaTransactions';
-import { formatTimeRemainingUTC, toUTC } from '../utils/dateUtils';
+import { formatTimeRemainingUTC, toUTC, formatServerDateToLocal } from '../utils/dateUtils';
 
 // Interface for the component's props
 interface FeaturedProps {
@@ -175,6 +175,13 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
     
     // Use UTC-based calculation to match server/Redis timing
     return formatTimeRemainingUTC(expiryDate);
+  };
+  
+  // Get formatted expiry date in user's local timezone
+  const getExpiryDateLocal = (): string => {
+    if (!expiryDate) return '';
+    
+    return formatServerDateToLocal(expiryDate);
   };
   
   // Handle activating the featured service
@@ -404,9 +411,9 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
                   Your DAO is being prominently displayed at the top of the landing page, increasing visibility to all users.
                 </p>
                 <div className="mt-4 bg-[#242424] p-4 rounded-lg border border-gray-700">
-                  <p className="text-sm text-white">
-                    <span className="font-medium">Time remaining:</span>{' '}
-                    <span className="text-amber-400">{getTimeRemaining()}</span>
+                  <p className="text-sm text-white mt-1">
+                    <span className="font-medium">Expires on:</span>{' '}
+                    <span className="text-amber-400">{getExpiryDateLocal()}</span>
                   </p>
                   <p className="text-xs text-gray-400 mt-2">
                     You can renew the featured service once the current period expires.

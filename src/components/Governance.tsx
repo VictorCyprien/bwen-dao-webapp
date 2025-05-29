@@ -17,8 +17,8 @@ import { useTransaction } from '../context/TransactionContext';
 import Card from './common/Card';
 import Button from './common/Button';
 import Badge from './common/Badge';
-import { ProposalAction, ProposalActionTypeEnum } from '../core/modules/dao-api/models/ProposalAction';
-import { formatDateUTC, getTimeAgoUTC, getCurrentUTC, createUTCDate, createUTCFromLocalInput, isFutureUTC, isExpiredUTC } from '../utils/dateUtils';
+import { ProposalActionTypeEnum } from '../core/modules/dao-api/models/ProposalAction';
+import { getTimeAgoUTC, getCurrentUTC, createUTCFromLocalInput, isFutureUTC, isExpiredUTC, formatServerDateToLocal, toUTC } from '../utils/dateUtils';
 
 interface Action {
   type: ProposalActionTypeEnum;
@@ -213,11 +213,16 @@ const Governance = () => {
       }
       
       const transformedProposals = fetchedProposals.map(p => {
-        // Check if the proposal is scheduled for the future using UTC comparison
+        // Convert API dates to proper UTC dates for calculations
         const startTime = p.startTime instanceof Date ? p.startTime : new Date(p.startTime);
         const endTime = p.endTime instanceof Date ? p.endTime : new Date(p.endTime);
-        const isNotStartedYet = isFutureUTC(startTime);
-        const hasExpired = isExpiredUTC(endTime);
+        
+        // For status calculations, we need to ensure we're using UTC
+        const startTimeUTC = toUTC(startTime);
+        const endTimeUTC = toUTC(endTime);
+        
+        const isNotStartedYet = isFutureUTC(startTimeUTC);
+        const hasExpired = isExpiredUTC(endTimeUTC);
         const createdAt = p.startTime;
         
         // Determine status based on proposal lifecycle
@@ -228,8 +233,8 @@ const Governance = () => {
           // If proposal has ended, check if it passed or was rejected
           status = p.hasPassed ? 'Passed' : 'Rejected';
         } else {
-          // If proposal is currently running, use the API's isActive flag
-          status = p.isActive ? 'Active' : 'Rejected';
+          // If proposal is currently running, it should be Active
+          status = 'Active';
         }
         
         return {
@@ -238,9 +243,9 @@ const Governance = () => {
           description: p.description || '',
           status: status,
           creator: p.createdByUsername || 'Unknown',
-          createdAt: formatDateUTC(createdAt),
-          startTime: formatDateUTC(startTime),
-          endTime: formatDateUTC(endTime),
+          createdAt: formatServerDateToLocal(createdAt),
+          startTime: formatServerDateToLocal(startTime),
+          endTime: formatServerDateToLocal(endTime),
           votes: {
             for: p.forVotesCount || 0,
             against: p.againstVotesCount || 0,
@@ -666,179 +671,22 @@ const Governance = () => {
       
       const votes = await proposalService.getProposalVotes(daoId, proposalId);
       
-      // Check if the proposal is scheduled for the future using UTC comparison
+      // Convert API dates to proper UTC dates for calculations
       const startTime = proposalDetails.startTime instanceof Date ? 
         proposalDetails.startTime : new Date(proposalDetails.startTime);
       const endTime = proposalDetails.endTime instanceof Date ? 
         proposalDetails.endTime : new Date(proposalDetails.endTime);
-      const isNotStartedYet = isFutureUTC(startTime);
-      const hasExpired = isExpiredUTC(endTime);
+      
+      // For status calculations, we need to ensure we're using UTC
+      const startTimeUTC = toUTC(startTime);
+      const endTimeUTC = toUTC(endTime);
+      
+      const isNotStartedYet = isFutureUTC(startTimeUTC);
+      const hasExpired = isExpiredUTC(endTimeUTC);
       const createdAt = proposalDetails.startTime;
       
       // Determine status based on proposal lifecycle
       let status = 'Active';
-      if (isNotStartedYet) {
-        status = 'Not Active';
-      } else if (hasExpired) {
-        // If proposal has ended, check if it passed or was rejected
-        status = proposalDetails.hasPassed ? 'Passed' : 'Rejected';
-      } else {
-        // If proposal is currently running, use the API's isActive flag
-        status = proposalDetails.isActive ? 'Active' : 'Rejected';
-      }
-      
-      const transformedProposal: ProposalDetails = {
-        id: proposalDetails.proposalId || '',
-        name: proposalDetails.name || '',
-        description: proposalDetails.description || '',
-        status: status,
-        creator: proposalDetails.createdByUsername || 'Unknown',
-        createdAt: formatDateUTC(createdAt),
-        startTime: formatDateUTC(startTime),
-        endTime: formatDateUTC(endTime),
-        votes: {
-          for: votes?.forVotes || proposalDetails.forVotesCount || 0,
-          against: votes?.againstVotes || proposalDetails.againstVotesCount || 0
-        },
-        actions: proposalDetails.actions ? Object.values(proposalDetails.actions).map((action: any) => {
-          // Handle different action types with appropriate descriptions
-          let description = '';
-          
-          switch(action.type) {
-            case 'ADD_MEMBER':
-              description = action.data?.username ? `Add member: ${action.data.username}` : 'Add member to DAO';
-              break;
-            case 'REMOVE_MEMBER':
-              description = action.data?.username ? `Remove member: ${action.data.username}` : 'Remove member from DAO';
-              break;
-            case 'UPDATE_DAO':
-              description = 'Update DAO settings';
-              if (action.data?.name) description += ` - Name: ${action.data.name}`;
-              break;
-            case 'UPDATE_DAO_GOVERNANCE':
-              description = 'Update governance parameters';
-              break;
-            case 'CREATE_POD':
-              description = action.data?.name ? `Create pod: ${action.data.name}` : 'Create new pod';
-              break;
-            default:
-              description = action.description || '';
-          }
-          
-          return {
-            type: action.type || '',
-            description: description,
-            walletAddress: action.data?.wallet_address || action.wallet_address,
-            amount: action.data?.amount || action.amount,
-            token: action.data?.token || action.token,
-            data: action.data || {}
-          };
-        }) : [],
-        quorum: 1000,
-        minApproval: 60,
-        daoId: proposalDetails.daoId
-      };
-      
-      setSelectedProposal(transformedProposal);
-    } catch (error) {
-      console.error(`Failed to fetch proposal details for ${proposalId}:`, error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVoteTransaction = async (proposalId: string, vote: 'for' | 'against') => {
-    if (!publicKey || !wallet) {
-      alert('Please connect your wallet first');
-      return;
-    }
-    
-    if (!daoId) {
-      alert('DAO ID is missing');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      showTransactionModal('Processing Vote', 'Please confirm the transaction in your wallet to cast your vote.');
-      
-      const result = await proposalService.createVoteTransaction(
-        daoId,
-        proposalId,
-        publicKey,
-        vote
-      );
-
-      if (!result) {
-        hideTransactionModal();
-        alert('Failed to create vote transaction');
-        return;
-      }
-      
-      const { transaction, voteAccount } = result;
-
-      const signature = await signAndSendTransaction(wallet, connection, transaction);
-      
-      console.log('Vote transaction confirmed:', signature);
-      
-      // Show validation state while waiting for indexing
-      showTransactionModal(
-        'Vote Confirmed', 
-        'Vote transaction successful! Waiting for blockchain indexing to complete...', 
-        'validating'
-      );
-      
-      // Wait a moment to show the validation state, then hide modal
-      setTimeout(() => {
-        hideTransactionModal();
-      }, 2000);
-
-      // Submit vote to API
-      await proposalService.voteOnProposal(
-        daoId,
-        proposalId,
-        vote,
-        signature,
-        voteAccount.publicKey.toString()
-      );
-      
-      fetchProposals();
-    } catch (error) {
-      hideTransactionModal();
-      console.error("Error voting on proposal:", error);
-      alert(`Failed to vote: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVoteSubmitted = async () => {
-    fetchProposals();
-    
-    if (selectedProposal && daoId) {
-      await refreshSelectedProposal(selectedProposal.id);
-    }
-  };
-
-  const refreshSelectedProposal = async (proposalId: string) => {
-    if (!daoId) return;
-    
-    try {
-      const proposalDetails = await proposalService.getProposalById(daoId, proposalId);
-      
-      if (!proposalDetails) return;
-      
-      const votes = await proposalService.getProposalVotes(daoId, proposalId);
-      
-      // Check if the proposal is scheduled for the future using UTC comparison
-      const startTime = proposalDetails.startTime instanceof Date ? 
-        proposalDetails.startTime : new Date(proposalDetails.startTime);
-      const endTime = proposalDetails.endTime instanceof Date ? 
-        proposalDetails.endTime : new Date(proposalDetails.endTime);
-      const isNotStartedYet = isFutureUTC(startTime);
-      const hasExpired = isExpiredUTC(endTime);
-      const createdAt = proposalDetails.startTime;
-      
       const transformedProposal: ProposalDetails = {
         id: proposalDetails.proposalId || '',
         name: proposalDetails.name || '',
@@ -846,12 +694,12 @@ const Governance = () => {
         status: (() => {
           if (isNotStartedYet) return 'Not Active';
           if (hasExpired) return proposalDetails.hasPassed ? 'Passed' : 'Rejected';
-          return proposalDetails.isActive ? 'Active' : 'Rejected';
+          return 'Active';
         })(),
         creator: proposalDetails.createdByUsername || 'Unknown',
-        createdAt: formatDateUTC(createdAt),
-        startTime: formatDateUTC(startTime),
-        endTime: formatDateUTC(endTime),
+        createdAt: formatServerDateToLocal(createdAt),
+        startTime: formatServerDateToLocal(startTime),
+        endTime: formatServerDateToLocal(endTime),
         votes: {
           for: votes?.forVotes || proposalDetails.forVotesCount || 0,
           against: votes?.againstVotes || proposalDetails.againstVotesCount || 0
@@ -897,6 +745,8 @@ const Governance = () => {
       setSelectedProposal(transformedProposal);
     } catch (error) {
       console.error(`Failed to refresh proposal ${proposalId} after vote:`, error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -1743,6 +1593,79 @@ const Governance = () => {
     setUserSearchQuery('');
     setSearchResults([]);
     setHasSearched(false);
+  };
+
+  const handleVoteTransaction = async (proposalId: string, vote: 'for' | 'against') => {
+    if (!publicKey || !wallet) {
+      alert('Please connect your wallet first');
+      return;
+    }
+    
+    if (!daoId) {
+      alert('DAO ID is missing');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      showTransactionModal('Processing Vote', 'Please confirm the transaction in your wallet to cast your vote.');
+      
+      const result = await proposalService.createVoteTransaction(
+        daoId,
+        proposalId,
+        publicKey,
+        vote
+      );
+
+      if (!result) {
+        hideTransactionModal();
+        alert('Failed to create vote transaction');
+        return;
+      }
+      
+      const { transaction, voteAccount } = result;
+
+      const signature = await signAndSendTransaction(wallet, connection, transaction);
+      
+      console.log('Vote transaction confirmed:', signature);
+      
+      // Show validation state while waiting for indexing
+      showTransactionModal(
+        'Vote Confirmed', 
+        'Vote transaction successful! Waiting for blockchain indexing to complete...', 
+        'validating'
+      );
+      
+      // Wait a moment to show the validation state, then hide modal
+      setTimeout(() => {
+        hideTransactionModal();
+      }, 2000);
+
+      // Submit vote to API
+      await proposalService.voteOnProposal(
+        daoId,
+        proposalId,
+        vote,
+        signature,
+        voteAccount.publicKey.toString()
+      );
+      
+      fetchProposals();
+    } catch (error) {
+      hideTransactionModal();
+      console.error("Error voting on proposal:", error);
+      alert(`Failed to vote: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVoteSubmitted = async () => {
+    fetchProposals();
+    
+    if (selectedProposal && daoId) {
+      await handleViewProposal(selectedProposal.id);
+    }
   };
 
   return (
