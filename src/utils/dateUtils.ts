@@ -7,8 +7,11 @@
 
 /**
  * Get current time in UTC
+ * Returns a Date object representing the current moment in UTC
  */
 export const getCurrentUTC = (): Date => {
+  // new Date() already returns the current moment with correct UTC internal representation
+  // The confusion comes from display methods, but for API submission this is correct
   return new Date();
 };
 
@@ -187,8 +190,22 @@ export const createUTCDate = (dateString?: string, timeString?: string): Date =>
 export const createUTCFromLocalInput = (dateString: string, timeString: string): Date => {
   // Create date in user's local timezone first
   const localDate = new Date(`${dateString}T${timeString}:00`);
-  // Return as-is, JavaScript will handle UTC conversion automatically
+  
+  // The Date object already represents the correct UTC time!
+  // When we create new Date("2025-05-29T16:30:00"), JavaScript interprets this
+  // as 16:30 in the LOCAL timezone and internally stores the equivalent UTC time
+  // So if it's 16:30 Paris time, the Date object internally stores 14:30 UTC
   return localDate;
+};
+
+/**
+ * Create a UTC Date object for API submission
+ * This ensures the date is properly formatted as UTC when sent to the API
+ */
+export const createAPIDate = (date: Date): Date => {
+  // Since JavaScript Date objects store UTC internally,
+  // we just need to ensure we're creating them correctly
+  return new Date(date.getTime());
 };
 
 /**
