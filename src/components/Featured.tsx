@@ -13,7 +13,7 @@ import { typography, containers, ui } from '../styles/theme';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { createFeaturedTransaction, signAndSendTransaction } from '../utils/solanaTransactions';
-import { formatTimeRemainingUTC } from '../utils/dateUtils';
+import { formatTimeRemainingUTC, toUTC } from '../utils/dateUtils';
 
 // Interface for the component's props
 interface FeaturedProps {
@@ -157,7 +157,7 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
       
       // If featured is active, use featuredUntil from the API response
       if (response?.isFeatured && response?.featuredUntil) {
-        setExpiryDate(new Date(response.featuredUntil));
+        setExpiryDate(toUTC(response.featuredUntil));
       } else {
         setExpiryDate(null);
       }
@@ -228,7 +228,7 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
         setIsLoading(false);
         setFeaturedStatus(true);
         if (result.featuredUntil) {
-          setExpiryDate(new Date(result.featuredUntil));
+          setExpiryDate(toUTC(result.featuredUntil));
         }
         setIsModalOpen(false);
         

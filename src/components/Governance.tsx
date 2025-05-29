@@ -18,7 +18,7 @@ import Card from './common/Card';
 import Button from './common/Button';
 import Badge from './common/Badge';
 import { ProposalAction, ProposalActionTypeEnum } from '../core/modules/dao-api/models/ProposalAction';
-import { formatDateUTC, getTimeAgoUTC, getCurrentUTC, createUTCDate, isFutureUTC } from '../utils/dateUtils';
+import { formatDateUTC, getTimeAgoUTC, getCurrentUTC, createUTCDate, createUTCFromLocalInput, isFutureUTC } from '../utils/dateUtils';
 
 interface Action {
   type: ProposalActionTypeEnum;
@@ -486,8 +486,8 @@ const Governance = () => {
     try {
       let startDate = getCurrentUTC();
       if (proposal.startTime === 'custom' && proposal.customStartDate && proposal.customStartTime) {
-        // Create UTC date for custom start time
-        startDate = createUTCDate(proposal.customStartDate, proposal.customStartTime);
+        // Create UTC date from user's local timezone input
+        startDate = createUTCFromLocalInput(proposal.customStartDate, proposal.customStartTime);
       }
       
       const days = parseInt(proposal.expirationDays) || 0;
@@ -575,8 +575,8 @@ const Governance = () => {
     try {
       let startDate = getCurrentUTC();
       if (proposal.startTime === 'custom' && proposal.customStartDate && proposal.customStartTime) {
-        // Create UTC date for custom start time
-        startDate = createUTCDate(proposal.customStartDate, proposal.customStartTime);
+        // Create UTC date from user's local timezone input
+        startDate = createUTCFromLocalInput(proposal.customStartDate, proposal.customStartTime);
       }
       
       const days = parseInt(proposal.expirationDays) || 0;
