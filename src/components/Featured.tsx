@@ -13,6 +13,7 @@ import { typography, containers, ui } from '../styles/theme';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { createFeaturedTransaction, signAndSendTransaction } from '../utils/solanaTransactions';
+import { formatTimeRemainingUTC } from '../utils/dateUtils';
 
 // Interface for the component's props
 interface FeaturedProps {
@@ -168,27 +169,12 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
     }
   };
   
-  // Calculate time remaining if featured is active
+  // Calculate time remaining if featured is active using UTC
   const getTimeRemaining = (): string => {
     if (!expiryDate) return '';
     
-    const now = new Date();
-    const diff = expiryDate.getTime() - now.getTime();
-    
-    // If expired, return expired
-    if (diff <= 0) return 'Expired';
-    
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
-    if (days > 0) {
-      return `${days} day${days === 1 ? '' : 's'}, ${hours} hour${hours === 1 ? '' : 's'} and ${minutes} minute${minutes === 1 ? '' : 's'}`;
-    } else if (hours > 0) {
-      return `${hours} hour${hours === 1 ? '' : 's'} and ${minutes} minute${minutes === 1 ? '' : 's'}`;
-    } else {
-      return `${minutes} minute${minutes === 1 ? '' : 's'}`;
-    }
+    // Use UTC-based calculation to match server/Redis timing
+    return formatTimeRemainingUTC(expiryDate);
   };
   
   // Handle activating the featured service

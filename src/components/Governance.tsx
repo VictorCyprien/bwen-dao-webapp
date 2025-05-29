@@ -18,6 +18,7 @@ import Card from './common/Card';
 import Button from './common/Button';
 import Badge from './common/Badge';
 import { ProposalAction, ProposalActionTypeEnum } from '../core/modules/dao-api/models/ProposalAction';
+import { formatDateUTC, getTimeAgoUTC, getCurrentUTC, createUTCDate, isFutureUTC } from '../utils/dateUtils';
 
 interface Action {
   type: ProposalActionTypeEnum;
@@ -212,9 +213,9 @@ const Governance = () => {
       }
       
       const transformedProposals = fetchedProposals.map(p => {
-        // Check if the proposal is scheduled for the future
+        // Check if the proposal is scheduled for the future using UTC comparison
         const startTime = p.startTime instanceof Date ? p.startTime : new Date(p.startTime);
-        const isNotStartedYet = startTime > new Date();
+        const isNotStartedYet = isFutureUTC(startTime);
         const createdAt = p.startTime;
         
         return {
@@ -223,9 +224,9 @@ const Governance = () => {
           description: p.description || '',
           status: isNotStartedYet ? 'Not Active' : p.isActive ? 'Active' : p.hasPassed ? 'Passed' : 'Rejected',
           creator: p.createdByUsername || 'Unknown',
-          createdAt: formatDate(createdAt),
-          startTime: formatDate(startTime),
-          endTime: formatDate(p.endTime instanceof Date ? p.endTime : new Date(p.endTime)),
+          createdAt: formatDateUTC(createdAt),
+          startTime: formatDateUTC(startTime),
+          endTime: formatDateUTC(p.endTime instanceof Date ? p.endTime : new Date(p.endTime)),
           votes: {
             for: p.forVotesCount || 0,
             against: p.againstVotesCount || 0,
@@ -318,23 +319,8 @@ const Governance = () => {
   }, [proposals, searchQuery, statusFilter, createdSince, createdUntil, sortOrder]);
 
   const getTimeAgo = (dateString: string | Date) => {
-    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffSec = Math.floor(diffMs / 1000);
-    const diffMin = Math.floor(diffSec / 60);
-    const diffHour = Math.floor(diffMin / 60);
-    const diffDay = Math.floor(diffHour / 24);
-
-    if (diffDay > 0) {
-      return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
-    } else if (diffHour > 0) {
-      return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
-    } else if (diffMin > 0) {
-      return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
-    } else {
-      return 'Just now';
-    }
+    // Use UTC-based time calculation
+    return getTimeAgoUTC(dateString);
   };
   
   const toggleDropdown = (dropdown: string) => {
@@ -379,17 +365,6 @@ const Governance = () => {
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = Math.min(startIndex + rowsPerPage, filteredProposals.length);
   const paginatedProposals = filteredProposals.slice(startIndex, endIndex);
-
-  const formatDate = (date?: Date | string) => {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -509,9 +484,10 @@ const Governance = () => {
     showTransactionModal('Creating Proposal', 'Please confirm the transaction in your wallet to create this proposal.');
     
     try {
-      let startDate = new Date();
+      let startDate = getCurrentUTC();
       if (proposal.startTime === 'custom' && proposal.customStartDate && proposal.customStartTime) {
-        startDate = new Date(`${proposal.customStartDate}T${proposal.customStartTime}`);
+        // Create UTC date for custom start time
+        startDate = createUTCDate(proposal.customStartDate, proposal.customStartTime);
       }
       
       const days = parseInt(proposal.expirationDays) || 0;
@@ -597,9 +573,10 @@ const Governance = () => {
     if (!daoId) return;
     
     try {
-      let startDate = new Date();
+      let startDate = getCurrentUTC();
       if (proposal.startTime === 'custom' && proposal.customStartDate && proposal.customStartTime) {
-        startDate = new Date(`${proposal.customStartDate}T${proposal.customStartTime}`);
+        // Create UTC date for custom start time
+        startDate = createUTCDate(proposal.customStartDate, proposal.customStartTime);
       }
       
       const days = parseInt(proposal.expirationDays) || 0;
@@ -675,10 +652,10 @@ const Governance = () => {
       
       const votes = await proposalService.getProposalVotes(daoId, proposalId);
       
-      // Check if the proposal is scheduled for the future
+      // Check if the proposal is scheduled for the future using UTC comparison
       const startTime = proposalDetails.startTime instanceof Date ? 
         proposalDetails.startTime : new Date(proposalDetails.startTime);
-      const isNotStartedYet = startTime > new Date();
+      const isNotStartedYet = isFutureUTC(startTime);
       const createdAt = proposalDetails.startTime;
       
       const transformedProposal: ProposalDetails = {
@@ -687,9 +664,9 @@ const Governance = () => {
         description: proposalDetails.description || '',
         status: isNotStartedYet ? 'Not Active' : proposalDetails.isActive ? 'Active' : proposalDetails.hasPassed ? 'Passed' : 'Rejected',
         creator: proposalDetails.createdByUsername || 'Unknown',
-        createdAt: formatDate(createdAt),
-        startTime: formatDate(startTime),
-        endTime: formatDate(proposalDetails.endTime instanceof Date ? proposalDetails.endTime : new Date(proposalDetails.endTime)),
+        createdAt: formatDateUTC(createdAt),
+        startTime: formatDateUTC(startTime),
+        endTime: formatDateUTC(proposalDetails.endTime instanceof Date ? proposalDetails.endTime : new Date(proposalDetails.endTime)),
         votes: {
           for: votes?.forVotes || proposalDetails.forVotesCount || 0,
           against: votes?.againstVotes || proposalDetails.againstVotesCount || 0
@@ -824,10 +801,10 @@ const Governance = () => {
       
       const votes = await proposalService.getProposalVotes(daoId, proposalId);
       
-      // Check if the proposal is scheduled for the future
+      // Check if the proposal is scheduled for the future using UTC comparison
       const startTime = proposalDetails.startTime instanceof Date ? 
         proposalDetails.startTime : new Date(proposalDetails.startTime);
-      const isNotStartedYet = startTime > new Date();
+      const isNotStartedYet = isFutureUTC(startTime);
       const createdAt = proposalDetails.startTime;
       
       const transformedProposal: ProposalDetails = {
@@ -836,9 +813,9 @@ const Governance = () => {
         description: proposalDetails.description || '',
         status: isNotStartedYet ? 'Not Active' : proposalDetails.isActive ? 'Active' : proposalDetails.hasPassed ? 'Passed' : 'Rejected',
         creator: proposalDetails.createdByUsername || 'Unknown',
-        createdAt: formatDate(createdAt),
-        startTime: formatDate(startTime),
-        endTime: formatDate(proposalDetails.endTime instanceof Date ? proposalDetails.endTime : new Date(proposalDetails.endTime)),
+        createdAt: formatDateUTC(createdAt),
+        startTime: formatDateUTC(startTime),
+        endTime: formatDateUTC(proposalDetails.endTime instanceof Date ? proposalDetails.endTime : new Date(proposalDetails.endTime)),
         votes: {
           for: votes?.forVotes || proposalDetails.forVotesCount || 0,
           against: votes?.againstVotes || proposalDetails.againstVotesCount || 0
