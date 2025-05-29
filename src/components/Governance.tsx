@@ -18,7 +18,7 @@ import Card from './common/Card';
 import Button from './common/Button';
 import Badge from './common/Badge';
 import { ProposalAction, ProposalActionTypeEnum } from '../core/modules/dao-api/models/ProposalAction';
-import { formatDateUTC, getTimeAgoUTC, getCurrentUTC, createUTCDate, createUTCFromLocalInput, isFutureUTC } from '../utils/dateUtils';
+import { formatDateUTC, getTimeAgoUTC, getCurrentUTC, createUTCDate, createUTCFromLocalInput, isFutureUTC, isExpiredUTC } from '../utils/dateUtils';
 
 interface Action {
   type: ProposalActionTypeEnum;
@@ -215,18 +215,32 @@ const Governance = () => {
       const transformedProposals = fetchedProposals.map(p => {
         // Check if the proposal is scheduled for the future using UTC comparison
         const startTime = p.startTime instanceof Date ? p.startTime : new Date(p.startTime);
+        const endTime = p.endTime instanceof Date ? p.endTime : new Date(p.endTime);
         const isNotStartedYet = isFutureUTC(startTime);
+        const hasExpired = isExpiredUTC(endTime);
         const createdAt = p.startTime;
+        
+        // Determine status based on proposal lifecycle
+        let status = 'Active';
+        if (isNotStartedYet) {
+          status = 'Not Active';
+        } else if (hasExpired) {
+          // If proposal has ended, check if it passed or was rejected
+          status = p.hasPassed ? 'Passed' : 'Rejected';
+        } else {
+          // If proposal is currently running, use the API's isActive flag
+          status = p.isActive ? 'Active' : 'Rejected';
+        }
         
         return {
           id: p.proposalId || '',
           name: p.name || '',
           description: p.description || '',
-          status: isNotStartedYet ? 'Not Active' : p.isActive ? 'Active' : p.hasPassed ? 'Passed' : 'Rejected',
+          status: status,
           creator: p.createdByUsername || 'Unknown',
           createdAt: formatDateUTC(createdAt),
           startTime: formatDateUTC(startTime),
-          endTime: formatDateUTC(p.endTime instanceof Date ? p.endTime : new Date(p.endTime)),
+          endTime: formatDateUTC(endTime),
           votes: {
             for: p.forVotesCount || 0,
             against: p.againstVotesCount || 0,
@@ -655,18 +669,33 @@ const Governance = () => {
       // Check if the proposal is scheduled for the future using UTC comparison
       const startTime = proposalDetails.startTime instanceof Date ? 
         proposalDetails.startTime : new Date(proposalDetails.startTime);
+      const endTime = proposalDetails.endTime instanceof Date ? 
+        proposalDetails.endTime : new Date(proposalDetails.endTime);
       const isNotStartedYet = isFutureUTC(startTime);
+      const hasExpired = isExpiredUTC(endTime);
       const createdAt = proposalDetails.startTime;
+      
+      // Determine status based on proposal lifecycle
+      let status = 'Active';
+      if (isNotStartedYet) {
+        status = 'Not Active';
+      } else if (hasExpired) {
+        // If proposal has ended, check if it passed or was rejected
+        status = proposalDetails.hasPassed ? 'Passed' : 'Rejected';
+      } else {
+        // If proposal is currently running, use the API's isActive flag
+        status = proposalDetails.isActive ? 'Active' : 'Rejected';
+      }
       
       const transformedProposal: ProposalDetails = {
         id: proposalDetails.proposalId || '',
         name: proposalDetails.name || '',
         description: proposalDetails.description || '',
-        status: isNotStartedYet ? 'Not Active' : proposalDetails.isActive ? 'Active' : proposalDetails.hasPassed ? 'Passed' : 'Rejected',
+        status: status,
         creator: proposalDetails.createdByUsername || 'Unknown',
         createdAt: formatDateUTC(createdAt),
         startTime: formatDateUTC(startTime),
-        endTime: formatDateUTC(proposalDetails.endTime instanceof Date ? proposalDetails.endTime : new Date(proposalDetails.endTime)),
+        endTime: formatDateUTC(endTime),
         votes: {
           for: votes?.forVotes || proposalDetails.forVotesCount || 0,
           against: votes?.againstVotes || proposalDetails.againstVotesCount || 0
@@ -804,18 +833,25 @@ const Governance = () => {
       // Check if the proposal is scheduled for the future using UTC comparison
       const startTime = proposalDetails.startTime instanceof Date ? 
         proposalDetails.startTime : new Date(proposalDetails.startTime);
+      const endTime = proposalDetails.endTime instanceof Date ? 
+        proposalDetails.endTime : new Date(proposalDetails.endTime);
       const isNotStartedYet = isFutureUTC(startTime);
+      const hasExpired = isExpiredUTC(endTime);
       const createdAt = proposalDetails.startTime;
       
       const transformedProposal: ProposalDetails = {
         id: proposalDetails.proposalId || '',
         name: proposalDetails.name || '',
         description: proposalDetails.description || '',
-        status: isNotStartedYet ? 'Not Active' : proposalDetails.isActive ? 'Active' : proposalDetails.hasPassed ? 'Passed' : 'Rejected',
+        status: (() => {
+          if (isNotStartedYet) return 'Not Active';
+          if (hasExpired) return proposalDetails.hasPassed ? 'Passed' : 'Rejected';
+          return proposalDetails.isActive ? 'Active' : 'Rejected';
+        })(),
         creator: proposalDetails.createdByUsername || 'Unknown',
         createdAt: formatDateUTC(createdAt),
         startTime: formatDateUTC(startTime),
-        endTime: formatDateUTC(proposalDetails.endTime instanceof Date ? proposalDetails.endTime : new Date(proposalDetails.endTime)),
+        endTime: formatDateUTC(endTime),
         votes: {
           for: votes?.forVotes || proposalDetails.forVotesCount || 0,
           against: votes?.againstVotes || proposalDetails.againstVotesCount || 0
