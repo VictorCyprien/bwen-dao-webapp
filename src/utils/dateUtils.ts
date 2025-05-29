@@ -176,10 +176,12 @@ export const isFutureUTC = (date: Date | string): boolean => {
 };
 
 /**
- * Check if a date/time has expired (UTC comparison)
+ * Check if a proposal has expired (past its end time) using UTC comparison
  */
-export const isExpiredUTC = (date: Date | string): boolean => {
-  return !isFutureUTC(date);
+export const isExpiredUTC = (endDate: Date | string): boolean => {
+  const now = getCurrentUTC();
+  const end = toUTC(endDate);
+  return now.getTime() > end.getTime();
 };
 
 /**
