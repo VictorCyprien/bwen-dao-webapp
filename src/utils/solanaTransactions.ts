@@ -331,6 +331,7 @@ export async function createVoteTransaction(
 // Serialize featured instruction data
 export function serializeFeaturedInstruction(
   daoId: string,
+  days: number,
   solPriceUsd: number
 ): Buffer {
   // Instruction index (3 for Featured)
@@ -339,6 +340,13 @@ export function serializeFeaturedInstruction(
   
   // Serialize string
   const daoIdBuf = serializeString(daoId);
+  
+  // Serialize u64 days (8 bytes, little-endian)
+  const daysBuf = Buffer.alloc(8);
+  const daysBN = new BN(days.toString());
+  daysBN.toArray('le', 8).forEach((byte: number, index: number) => {
+    daysBuf[index] = byte;
+  });
   
   // Serialize u64 sol price (8 bytes, little-endian)
   const solPriceBuf = Buffer.alloc(8);
@@ -353,6 +361,7 @@ export function serializeFeaturedInstruction(
   return Buffer.concat([
     instructionBuf,
     daoIdBuf,
+    daysBuf,
     solPriceBuf
   ]);
 }
@@ -394,6 +403,7 @@ export async function createFeaturedTransaction(
   connection: Connection,
   wallet: { publicKey: PublicKey },
   daoId: string,
+  days: number,
   solPriceUsd?: number // Optional - will fetch current price if not provided
 ): Promise<{ transaction: Transaction, featuredAccount: Keypair }> {
   if (!wallet.publicKey) throw new Error("Wallet not connected");
@@ -421,6 +431,7 @@ export async function createFeaturedTransaction(
     // Serialize instruction data
     const data = serializeFeaturedInstruction(
       daoId,
+      days,
       solPriceUsd
     );
     

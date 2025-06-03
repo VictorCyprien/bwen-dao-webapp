@@ -199,7 +199,8 @@ const Featured: React.FC<FeaturedProps> = ({ dao, onUpdate }: FeaturedProps) => 
       const { transaction, featuredAccount } = await createFeaturedTransaction(
         connection,
         { publicKey: wallet.publicKey },
-        daoId
+        daoId,
+        formState.days
       );
 
       // Send the transaction
