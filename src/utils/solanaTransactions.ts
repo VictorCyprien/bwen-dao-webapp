@@ -584,9 +584,9 @@ export const signAndSendTransaction = async (
       
       console.log(`Transaction confirmed on attempt ${attempt}`);
       
-      // Wait 30 seconds for the transaction to be indexed by APIs
-      console.log('Transaction confirmed, waiting 30 seconds for indexing...');
-      await new Promise(resolve => setTimeout(resolve, 30000));
+      // Wait 20 seconds for the transaction to be indexed by APIs
+      console.log('Transaction confirmed, waiting 20 seconds for indexing...');
+      await new Promise(resolve => setTimeout(resolve, 20000));
       
       return signature;
       
